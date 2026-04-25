@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <record id="group_scheduled_orders_user" model="res.groups">
+        <field name="name">Scheduled Orders User</field>
+        <field name="implied_ids" eval="[(4, ref('base.group_user'))]"/>
+        <field name="comment">
+            Users with this group can see the Scheduled Orders menu.
+            Portal and shop users never get this group.
+        </field>
+    </record>
+</odoo>

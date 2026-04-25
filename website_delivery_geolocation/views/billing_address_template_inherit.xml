@@ -1,0 +1,137 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Hide billing address section -->
+    <template id="billing_address_row_inherit" inherit_id="website_sale.billing_address_list">
+        <xpath expr="//div[@id='billing_address_list']" position="attributes">
+            <attribute name="class">mb-3 d-none</attribute>
+        </xpath>
+
+        <xpath expr="//input[@id='use_delivery_as_billing']" position="attributes">
+            <attribute name="checked">checked</attribute>
+        </xpath>
+    </template>
+
+    <!--    Hide zip code and set default value-->
+    <!-- Inherit the correct base template for field modifications -->
+    <template id="address_form_zip_hide" inherit_id="portal.address_form_fields">
+
+        <!-- Replace zip code when it appears before city -->
+        <xpath expr="//t[@t-if='zip_before_city']/div[@id='div_zip']" position="replace">
+            <div id="div_zip" class="col-md-4 mb-2 d-none">
+                <label class="col-form-label" for="o_zip">Zip Code</label>
+                <input
+                        id="o_zip"
+                        type="text"
+                        name="zip"
+                        class="form-control"
+                        t-att-value="partner_sudo.zip or '00000'"
+                />
+            </div>
+        </xpath>
+
+        <!-- Replace zip code when it appears after city -->
+        <xpath expr="//t[@t-if='not zip_before_city']/div[@id='div_zip']" position="replace">
+            <div id="div_zip" class="col-md-4 mb-2 d-none">
+                <label class="col-form-label" for="o_zip">Zip Code</label>
+                <input
+                        id="o_zip"
+                        type="text"
+                        name="zip"
+                        class="form-control"
+                        t-att-value="partner_sudo.zip or '00000'"
+                />
+            </div>
+        </xpath>
+
+        <!-- Make city full width since zip is hidden -->
+        <xpath expr="//div[@id='div_city']" position="attributes">
+            <attribute name="class">col-md-12 mb-2</attribute>
+        </xpath>
+
+        <!-- Inject script inside the form fields, after csrf_token -->
+        <xpath expr="//input[@name='csrf_token']" position="after">
+            <script type="text/javascript">
+                (function () {
+                'use strict';
+
+                function ensureZipCode() {
+                var zipInput = document.getElementById('o_zip');
+                if (zipInput) {
+                if (!zipInput.value || zipInput.value.trim() === '') {
+                zipInput.value = '00000';
+                }
+                zipInput.setAttribute('readonly', 'readonly');
+                }
+                }
+
+                document.addEventListener('DOMContentLoaded', function () {
+                ensureZipCode();
+
+                var form = document.querySelector('form.checkout_autoformat');
+                if (form) {
+                form.addEventListener('submit', function () {
+                ensureZipCode();
+                }, true);
+                }
+
+                var submitButton = document.getElementById('save_address');
+                if (submitButton) {
+                submitButton.addEventListener('click', function () {
+                ensureZipCode();
+                }, true);
+                }
+                });
+                })();
+            </script>
+        </xpath>
+
+    </template>
+    <template id="custom_cart_order_note" inherit_id="website_sale.cart" name="Cart - Order Notes">
+        <xpath expr="//t[@t-call='website_sale.cart_lines']" position="after">
+            <div class="mb-4 mt-4" id="order_note_section">
+                <h4>Order Notes</h4>
+                <textarea
+                        id="order_note_input"
+                        name="order_note"
+                        class="form-control"
+                        rows="3"
+                        placeholder="Add any special instructions or notes for your order..."
+                        t-att-value="website_sale_order.order_note or ''"
+                />
+            </div>
+            <script>
+                <![CDATA[
+            document.addEventListener('DOMContentLoaded', function () {
+                const noteInput = document.getElementById('order_note_input');
+                if (noteInput) {
+                    let timeout;
+                    noteInput.addEventListener('input', function () {
+                        clearTimeout(timeout);
+                        timeout = setTimeout(function () {
+                            fetch('/shop/save_order_note', {
+                                method: 'POST',
+                                headers: {'Content-Type': 'application/json'},
+                                body: JSON.stringify({
+                                    jsonrpc: '2.0',
+                                    method: 'call',
+                                    params: {order_note: noteInput.value},
+                                }),
+                            })
+                            .then(response => response.json())
+                            .then(data => {
+                                if (data.result && data.result.success) {
+                                    console.log('Note saved!');
+                                }
+                            })
+                            .catch(error => {
+                                console.error('Error saving note:', error);
+                            });
+                    }, 500);
+                    });
+                }
+            });
+            ]]>
+            </script>
+        </xpath>
+    </template>
+</odoo>

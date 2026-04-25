@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <template id="delivery_form_zone_warning" inherit_id="website_sale.delivery_form">
+
+        <!-- Replace the "No suitable delivery method" message -->
+        <xpath expr="//div[@t-else='']" position="replace">
+            <div t-else="" class="alert alert-warning">
+                <!-- Check if it's a zone issue or other issue -->
+                <t t-if="not zone_found">
+                    <h5 class="alert-heading mb-2">
+                        <i class="fa fa-exclamation-triangle"/> No Delivery Zone Available
+                    </h5>
+                    <p class="mb-1">Your delivery address is not covered by any of our delivery zones.</p>
+                    <p class="mb-0 small">Please contact us or choose a different address to proceed with your order.</p>
+                </t>
+                <t t-else="">
+                    <!-- Keep original message for other cases -->
+                    <strong>No suitable delivery method could be found.</strong>
+                </t>
+            </div>
+        </xpath>
+
+    </template>
+</odoo>

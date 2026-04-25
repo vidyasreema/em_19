@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ═══════════════════════════════════════════════════
+         1. ADD FILTERS TO SALE ORDER SEARCH VIEW
+    ═══════════════════════════════════════════════════ -->
+    <record id="sale_order_search_delivery_filters" model="ir.ui.view">
+        <field name="name">sale.order.search.delivery.filters</field>
+        <field name="model">sale.order</field>
+        <field name="inherit_id" ref="sale.view_sales_order_filter"/>
+        <field name="arch" type="xml">
+            <xpath expr="//filter[last()]" position="after">
+                <separator/>
+                <!-- Filter: Today's Orders -->
+                <filter
+                    string="Today's Deliveries"
+                    name="filter_delivery_today"
+                    domain="[
+                        ('commitment_date', '>=', datetime.datetime.combine(context_today(), datetime.time(0,0,0)).strftime('%Y-%m-%d %H:%M:%S')),
+                        ('commitment_date', '&lt;=', datetime.datetime.combine(context_today(), datetime.time(23,59,59)).strftime('%Y-%m-%d %H:%M:%S'))
+                    ]"
+                />
+                <!-- Filter: Scheduled Orders (commitment_date > today) -->
+                <filter
+                    string="Scheduled Deliveries"
+                    name="filter_delivery_scheduled"
+                    domain="[
+                        ('commitment_date', '&gt;', datetime.datetime.combine(context_today(), datetime.time(23,59,59)).strftime('%Y-%m-%d %H:%M:%S'))
+                    ]"
+                />
+            </xpath>
+        </field>
+    </record>
+
+    <!-- ═══════════════════════════════════════════════════
+         2. SCHEDULED ORDERS LIST VIEW
+    ═══════════════════════════════════════════════════ -->
+    <record id="view_scheduled_orders_list" model="ir.ui.view">
+        <field name="name">sale.order.scheduled.list</field>
+        <field name="model">sale.order</field>
+        <field name="arch" type="xml">
+            <list string="Scheduled Orders">
+                <field name="name" string="Order"/>
+                <field name="partner_id" string="Customer"/>
+                <field name="commitment_date" string="Delivery Date" widget="date"/>
+                <field name="carrier_id" string="Delivery Method" optional="show"/>
+                <field name="amount_total" string="Total" widget="monetary"/>
+                <field name="state" widget="badge"
+                    decoration-success="state == 'sale'"
+                    decoration-warning="state == 'draft'"
+                    decoration-info="state == 'sent'"/>
+                <field name="currency_id" column_invisible="1"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- ═══════════════════════════════════════════════════
+         3. SCHEDULED ORDERS ACTION
+    ═══════════════════════════════════════════════════ -->
+    <record id="action_scheduled_orders" model="ir.actions.act_window">
+        <field name="name">Scheduled Orders</field>
+        <field name="res_model">sale.order</field>
+        <field name="view_mode">list,form</field>
+        <field name="view_id" ref="view_scheduled_orders_list"/>
+        <field name="domain">[
+            ('commitment_date', '&gt;', datetime.datetime.combine(datetime.date.today(), datetime.time(23,59,59)).strftime('%Y-%m-%d %H:%M:%S'))
+        ]</field>
+        <field name="context">{'search_default_filter_delivery_scheduled': 1}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                No scheduled orders found.
+            </p>
+            <p>Orders with a delivery date set for a future date will appear here.</p>
+        </field>
+    </record>
+
+    <!-- ═══════════════════════════════════════════════════
+         4. MENU ITEM — internal users only (no portal/website group)
+    ═══════════════════════════════════════════════════ -->
+    <menuitem
+        id="menu_scheduled_orders"
+        name="Scheduled Orders"
+        parent="sale.sale_order_menu"
+        action="action_scheduled_orders"
+        sequence="25"
+        groups="group_scheduled_orders_user"
+    />
+
+</odoo>

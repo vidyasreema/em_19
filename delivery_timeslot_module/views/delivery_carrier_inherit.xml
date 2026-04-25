@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_delivery_carrier_form_inherit_delivery_timing" model="ir.ui.view">
+        <field name="name">delivery.carrier.form.inherit.delivery.timing</field>
+        <field name="model">delivery.carrier</field>
+        <field name="inherit_id" ref="delivery.view_delivery_carrier_form"/>
+        <field name="arch" type="xml">
+            <notebook position="inside">
+                <page string="Delivery Timing" name="delivery_timing">
+
+                    <!-- Delivery Behaviour -->
+                    <group string="Delivery Settings">
+                        <group>
+                            <field name="enable_same_day_delivery"
+                                   string="Support Same-Day Delivery?"/>
+                            <field name="lead_time_days"
+                                   string="Extra Lead Time (days)"/>
+                        </group>
+                    </group>
+
+                    <separator string="Customer Messages per Scenario"/>
+
+                    <!-- Scenario 1 -->
+                    <group string="Scenario 1 — Within Working Hours">
+                        <group>
+                            <label for="message_scenario_1" string="Message (optional):"/>
+                            <field name="message_scenario_1"
+                                   nolabel="1"
+                                   placeholder="Leave empty for no message"/>
+                            <field name="show_popup_scenario_1"
+                                   string="Show Warning Popup"/>
+                            <p class="text-muted small">
+                                Triggered when: customer orders within shop hours (e.g. 3:00 PM).
+                            </p>
+                        </group>
+                    </group>
+
+                    <!-- Scenario 2 -->
+                    <group string="Scenario 2 — Shortly After Closing">
+                        <group>
+                            <label for="message_scenario_2" string="Message:"/>
+                            <field name="message_scenario_2"
+                                   nolabel="1"
+                                   placeholder="e.g. Your order will be ready for delivery tomorrow during working hours."/>
+                            <field name="show_popup_scenario_2"
+                                   string="Show Warning Popup"/>
+                            <p class="text-muted small">
+                                Triggered when: customer orders within the grace period after closing (e.g. 11:30 PM).
+                            </p>
+                        </group>
+                    </group>
+
+                    <!-- Scenario 3 -->
+                    <group string="Scenario 3 — Late Night / Early Morning">
+                        <group>
+                            <label for="message_scenario_3" string="Message:"/>
+                            <field name="message_scenario_3"
+                                   nolabel="1"
+                                   placeholder="e.g. Your order will be available for delivery today by {opening_time}."/>
+                            <field name="show_popup_scenario_3"
+                                   string="Show Warning Popup"/>
+                            <p class="text-muted small">
+                                Triggered when: customer orders in deep off-hours (e.g. 1:00 AM).
+                                Use <strong>{opening_time}</strong> to insert the actual opening time.
+                            </p>
+                        </group>
+                    </group>
+
+                    <separator/>
+
+                </page>
+            </notebook>
+        </field>
+    </record>
+</odoo>

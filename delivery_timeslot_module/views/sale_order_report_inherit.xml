@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <template id="report_saleorder_delivery_date"
+              inherit_id="sale.report_saleorder_document">
+
+        <!-- Add Delivery Date column after Salesperson in the informations row -->
+        <xpath expr="//div[@id='informations']/div[last()]" position="after">
+            <div t-if="doc.commitment_date" class="col" name="informations_delivery_date">
+                <strong>Expected Delivery Date</strong>
+                <div t-field="doc.commitment_date" t-options='{"widget": "date"}'>2023-12-31</div>
+            </div>
+        </xpath>
+
+    </template>
+
+</odoo>

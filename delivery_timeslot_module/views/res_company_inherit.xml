@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <record id="view_company_form_inherit_shop_timing" model="ir.ui.view">
+        <field name="name">res.company.form.inherit.shop.timing</field>
+        <field name="model">res.company</field>
+        <field name="inherit_id" ref="base.view_company_form"/>
+        <field name="arch" type="xml">
+            <notebook position="inside">
+                <page string="Shop Timing" name="shop_timing">
+
+                    <group>
+                        <group string="Operating Hours">
+                            <field name="shop_opening_time" widget="float_time"/>
+                            <field name="shop_closing_time" widget="float_time"/>
+                        </group>
+                        <group string="Operating Days">
+                            <field name="shop_monday"/>
+                            <field name="shop_tuesday"/>
+                            <field name="shop_wednesday"/>
+                            <field name="shop_thursday"/>
+                            <field name="shop_friday"/>
+                            <field name="shop_saturday"/>
+                            <field name="shop_sunday"/>
+                        </group>
+                    </group>
+
+                    <separator string="Off-Hours Behaviour"/>
+
+                    <group>
+                        <group string="After-Close Grace Period">
+                            <field name="shop_scenario2_grace_hours"
+                                   string="Grace Period (hours)"
+                                   help="Orders placed within this many hours after closing trigger the 'Tomorrow delivery' message (Scenario 2). Orders after this window trigger the 'Today by opening time' message (Scenario 3)."/>
+                        </group>
+                    </group>
+
+                    <separator/>
+
+                    <!--                    <div class="alert alert-info" role="alert">-->
+                    <!--                        <h5>How Delivery Messages Are Determined</h5>-->
+                    <!--                        <table class="table table-sm mb-0">-->
+                    <!--                            <thead>-->
+                    <!--                                <tr>-->
+                    <!--                                    <th>Scenario</th>-->
+                    <!--                                    <th>When It Applies</th>-->
+                    <!--                                    <th>Example (close=10 PM, grace=2 hrs)</th>-->
+                    <!--                                </tr>-->
+                    <!--                            </thead>-->
+                    <!--                            <tbody>-->
+                    <!--                                <tr>-->
+                    <!--                                    <td><strong>Scenario 1</strong></td>-->
+                    <!--                                    <td>Within working hours</td>-->
+                    <!--                                    <td>Order at 3:00 PM → no message</td>-->
+                    <!--                                </tr>-->
+                    <!--                                <tr>-->
+                    <!--                                    <td><strong>Scenario 2</strong></td>-->
+                    <!--                                    <td>Up to 2 hrs after closing</td>-->
+                    <!--                                    <td>Order at 11:30 PM → "Delivery tomorrow"</td>-->
+                    <!--                                </tr>-->
+                    <!--                                <tr>-->
+                    <!--                                    <td><strong>Scenario 3</strong></td>-->
+                    <!--                                    <td>After grace window / before opening</td>-->
+                    <!--                                    <td>Order at 1:00 AM → "Delivery today by 9:00 AM"</td>-->
+                    <!--                                </tr>-->
+                    <!--                            </tbody>-->
+                    <!--                        </table>-->
+                    <!--                    </div>-->
+
+                </page>
+            </notebook>
+        </field>
+    </record>
+</odoo>

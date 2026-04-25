@@ -1,0 +1,92 @@
+/* ============================= */
+/* Map Container */
+/* ============================= */
+#o_delivery_map {
+    height: 400px;
+    width: 100%;
+    border-radius: 8px;
+    border: 2px solid #dee2e6;
+    z-index: 1;
+}
+
+/* ============================= */
+/* Card Styles */
+/* ============================= */
+.o_map_address_selector .card {
+    border: none;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.o_map_address_selector .card-header {
+    background: linear-gradient(135deg, #8B1534 0%, #B21E44 100%);
+    border-radius: 8px 8px 0 0;
+    color: #ffffff;
+}
+
+/* ============================= */
+/* Selected Location Box */
+/* ============================= */
+#o_map_selected_location {
+    background: #f8e6eb;
+    border: 1px solid #e1b6c2;
+    border-radius: 8px;
+    padding: 15px;
+    animation: slideIn 0.3s ease-in-out;
+}
+
+#o_map_selected_address {
+    color: #6f1029;
+    font-size: 14px;
+}
+
+/* ============================= */
+/* Animation */
+/* ============================= */
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* ============================= */
+/* Button Styles */
+/* ============================= */
+.o_map_address_selector .btn-primary {
+    background: linear-gradient(135deg, #8B1534 0%, #B21E44 100%);
+    border: none;
+    color: #ffffff;
+    transition: all 0.3s ease;
+}
+
+.o_map_address_selector .btn-primary:hover {
+    background: linear-gradient(135deg, #B21E44 0%, #8B1534 100%);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+}
+
+/* ============================= */
+/* Search Input */
+/* ============================= */
+#o_map_search_input {
+    border: 2px solid #e0e0e0;
+    transition: border-color 0.3s, box-shadow 0.3s;
+}
+
+#o_map_search_input:focus {
+    border-color: #8B1534;
+    box-shadow: 0 0 0 0.2rem rgba(139, 21, 52, 0.25);
+}
+
+/* ============================= */
+/* Responsive */
+/* ============================= */
+@media (max-width: 768px) {
+    #o_delivery_map {
+        height: 300px;
+    }
+}

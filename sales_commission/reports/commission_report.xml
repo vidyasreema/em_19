@@ -1,0 +1,510 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+
+    <template id="report_commission_statement">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="doc">
+                <div class="page commission-report">
+
+                    <style>
+                        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+                        html, body {
+                            font-family: Arial, Helvetica, sans-serif;
+                            font-size: 15px;
+                            color: #37474F;
+                            background: #ffffff;
+                        }
+
+                        .commission-report {
+                            background: #ffffff;
+                            padding: 0;
+                            width: 100%;
+                        }
+
+                        /* == HEADER == */
+                        .report-header {
+                            width: 100%;
+                            display: table;
+                            margin-bottom: 0;
+                            border-collapse: collapse;
+                        }
+                        .header-left {
+                            display: table-cell;
+                            width: 66%;
+                            background: #1B3A6B;
+                            padding: 22px 18px 22px 26px;
+                            vertical-align: middle;
+                        }
+                        .header-right {
+                            display: table-cell;
+                            width: 34%;
+                            background: #2563EB;
+                            padding: 22px 22px;
+                            vertical-align: middle;
+                            text-align: right;
+                        }
+                        .header-title {
+                            font-size: 22px;
+                            font-weight: 900;
+                            color: #FFFFFF;
+                            letter-spacing: 0.3px;
+                            margin-bottom: 6px;
+                        }
+                        .header-subtitle {
+                            font-size: 13px;
+                            color: #90CAF9;
+                        }
+                        .emp-name {
+                            font-size: 18px;
+                            font-weight: 700;
+                            color: #FFFFFF;
+                        }
+                        .emp-month {
+                            font-size: 14px;
+                            color: #90CAF9;
+                            margin-top: 5px;
+                        }
+
+                        /* == BLUE SEPARATOR == */
+                        .blue-sep {
+                            height: 2px;
+                            background: #2563EB;
+                            margin: 0;
+                            font-size: 2px;
+                            line-height: 2px;
+                            overflow: hidden;
+                        }
+
+                        /* == SECTION TITLE == */
+                        .section-title {
+                            font-size: 14px;
+                            font-weight: 700;
+                            color: #1B3A6B;
+                            margin: 8px 0 5px 0;
+                            letter-spacing: 0.5px;
+                            text-transform: uppercase;
+                        }
+
+                        /* == KPI GRID == */
+                        .kpi-table {
+                            width: 100%;
+                            border-collapse: collapse;
+                            margin-bottom: 0;
+                        }
+                        .kpi-table td {
+                            width: 33.33%;
+                            padding: 10px 10px 8px 10px;
+                            text-align: center;
+                            vertical-align: middle;
+                        }
+                        .kpi-blue   { background: #EFF7FF; }
+                        .kpi-green  { background: #F0FDF4; }
+                        .kpi-gray   { background: #F8FAFB; }
+                        .kpi-orange { background: #FFF7ED; }
+
+                        .kpi-value {
+                            font-size: 26px;
+                            font-weight: 900;
+                            display: block;
+                            margin-bottom: 6px;
+                        }
+                        .kpi-blue   .kpi-value { color: #1565C0; }
+                        .kpi-green  .kpi-value { color: #2E7D32; }
+                        .kpi-gray   .kpi-value { color: #1565C0; }
+                        .kpi-orange .kpi-value { color: #E65100; }
+
+                        .kpi-label {
+                            font-size: 11px;
+                            color: #607D8B;
+                            font-weight: 600;
+                            text-transform: uppercase;
+                            letter-spacing: 0.5px;
+                        }
+
+                        /* == DATA TABLES == */
+                        .data-table {
+                            width: 100%;
+                            border-collapse: collapse;
+                            font-size: 13px;
+                        }
+                        .data-table thead tr { background: #1B3A6B; }
+                        .data-table thead th {
+                            color: #FFFFFF;
+                            padding: 8px 14px;
+                            font-size: 14px;
+                            font-weight: 700;
+                            text-align: left;
+                        }
+                        .data-table thead th:last-child  { text-align: right; }
+                        .data-table thead th.th-center,
+                        .data-table thead th.th-center:first-child,
+                        .data-table thead th.th-center:last-child { text-align: center !important; }
+                        .data-table tbody td {
+                            padding: 7px 14px;
+                            color: #37474F;
+                            border-bottom: 0.5px solid #ECEFF1;
+                            background: #FFFFFF;
+                            font-size: 14px;
+                        }
+                        .data-table tbody td.col-left   { text-align: left; }
+                        .data-table tbody td.col-right  { text-align: right; color: #37474F; }
+                        .data-table tbody td.col-center { text-align: center; color: #37474F; }
+                        .data-table tbody td.bold-val   { font-weight: 700; color: #1565C0; }
+                        .data-table tbody td.green-bg   { background: #F0FDF4; }
+                        .data-table tbody tr:last-child td { border-bottom: 2px solid #CFD8DC; }
+
+                        /* == PAYABLE BOX == */
+                        .payable-box {
+                            background: #1B3A6B;
+                            padding: 14px 32px;
+                            margin-top: 10px;
+                            width: 100%;
+                            text-align: center;
+                        }
+                        .payable-label {
+                            font-size: 13px;
+                            font-weight: 700;
+                            color: #93C5FD;
+                            letter-spacing: 1px;
+                            text-transform: uppercase;
+                            margin-bottom: 5px;
+                        }
+                        .payable-amount {
+                            font-size: 40px;
+                            font-weight: 900;
+                            color: #FFFFFF;
+                            margin-bottom: 5px;
+                            letter-spacing: 0.5px;
+                        }
+                        .payable-status {
+                            font-size: 13px;
+                            font-weight: 700;
+                            color: #86EFAC;
+                            letter-spacing: 0.8px;
+                        }
+
+                        /* == SIGNATURE == */
+                        .signature-table {
+                            width: 100%;
+                            border-collapse: collapse;
+                            margin-top: 20px;
+                            margin-bottom: 6px;
+                        }
+                        .signature-table td {
+                            width: 33.33%;
+                            text-align: center;
+                            padding: 0 20px;
+                            vertical-align: bottom;
+                            border: none;
+                            background: #ffffff;
+                        }
+                        .sig-space {
+                            height: 50px;
+                            display: block;
+                        }
+                        .sig-line {
+                            border-top: 1.5px solid #1B3A6B;
+                            margin-bottom: 6px;
+                        }
+                        .sig-name {
+                            font-size: 12px;
+                            font-weight: 700;
+                            color: #1B3A6B;
+                        }
+                        .sig-title {
+                            font-size: 10px;
+                            color: #607D8B;
+                            margin-top: 2px;
+                        }
+
+                        /* == FOOTER == */
+                        .report-footer {
+                            margin-top: 18px;
+                            padding-top: 7px;
+                            border-top: 1px solid #CFD8DC;
+                            font-size: 13px;
+                            color: #6B7280;
+                            width: 100%;
+                            display: table;
+                            border-collapse: collapse;
+                        }
+                        .footer-left  { display: table-cell; text-align: left; }
+                        .footer-right { display: table-cell; text-align: right; }
+                    </style>
+
+                    <!-- HEADER -->
+                    <div class="report-header">
+                        <div class="header-left">
+                            <div class="header-title">MONTHLY COMMISSION STATEMENT</div>
+                            <div class="header-subtitle">Confidential - Internal Use Only</div>
+                        </div>
+                        <div class="header-right">
+                            <div class="emp-name"><t t-esc="doc.employee_id.name"/></div>
+                            <div class="emp-month"><t t-esc="doc.month.strftime('%B %Y')"/></div>
+                        </div>
+                    </div>
+
+                    <div class="blue-sep"> </div>
+
+                    <!-- 01 KPI SUMMARY -->
+                    <div class="section-title">01 - Header KPI Summary</div>
+
+                    <!-- Row 1: Monthly Target | Total Sales | Achievement Rate -->
+                    <table class="kpi-table">
+                        <tr>
+                            <td class="kpi-blue">
+                                <span class="kpi-value">
+                                    <t t-esc="'{:,.0f}'.format(doc.target_amount)"/> <t t-esc="doc.currency_id.name"/>
+                                </span>
+                                <span class="kpi-label">Monthly Target</span>
+                            </td>
+                            <td class="kpi-blue">
+                                <span class="kpi-value">
+                                    <t t-esc="'{:,.0f}'.format(doc.invoiced_net)"/> <t t-esc="doc.currency_id.name"/>
+                                </span>
+                                <span class="kpi-label">Total Sales</span>
+                            </td>
+                            <td class="kpi-green">
+                                <span class="kpi-value">
+                                    <t t-esc="'{:.1f}%'.format((doc.invoiced_net / doc.target_amount * 100) if doc.target_amount else 0)"/>
+                                </span>
+                                <span class="kpi-label">Achievement Rate</span>
+                            </td>
+                        </tr>
+                    </table>
+
+                    <!-- Row 2: Total Invoices | Collected Amount (orange) | Commission Base (green) -->
+                    <table class="kpi-table" style="margin-top:6px;">
+                        <tr>
+                            <td class="kpi-gray">
+                                <span class="kpi-value"><t t-esc="doc.invoice_count"/></span>
+                                <span class="kpi-label">Total Invoices</span>
+                            </td>
+                            <td class="kpi-orange">
+                                <span class="kpi-value">
+                                    <t t-esc="'{:,.0f}'.format(doc.collected_net)"/> <t t-esc="doc.currency_id.name"/>
+                                </span>
+                                <span class="kpi-label">Collected Amount</span>
+                            </td>
+                            <td class="kpi-green">
+                                <span class="kpi-value">
+                                    <t t-esc="'{:,.0f}'.format(doc.commission_base)"/> <t t-esc="doc.currency_id.name"/>
+                                </span>
+                                <span class="kpi-label">Commission Base</span>
+                            </td>
+                        </tr>
+                    </table>
+
+                    <div class="blue-sep" style="margin-top:9px;"> </div>
+
+                    <!-- 02 SALES PERFORMANCE -->
+                    <div class="section-title">02 - Sales Performance</div>
+
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th style="width:70%;">Metric</th>
+                                <th style="width:30%;">Amount (AED)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td class="col-left">Sales Target</td>
+                                <td class="col-right">
+                                    <t t-esc="'{:,.0f}'.format(doc.target_amount)"/>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td class="col-left">Total Sales (Invoiced)</td>
+                                <td class="col-right bold-val green-bg">
+                                    <t t-esc="'{:,.0f}'.format(doc.invoiced_net)"/>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td class="col-left">Cost of Goods Sold</td>
+                                <td class="col-right">
+                                    <t t-esc="'{:,.0f}'.format(doc.invoiced_net - doc.collected_net)"/>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td class="col-left">Net Profit</td>
+                                <td class="col-right bold-val green-bg">
+                                    <t t-esc="'{:,.0f}'.format(doc.collected_net)"/>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td class="col-left">Target Achievement</td>
+                                <td class="col-right">
+                                    <t t-if="doc.target_amount and doc.invoiced_net >= doc.target_amount">
+                                        <t t-esc="'+{:.1f}% above target'.format((doc.invoiced_net / doc.target_amount * 100) - 100)"/>
+                                    </t>
+                                    <t t-elif="doc.target_amount">
+                                        <t t-esc="'{:.1f}% below target'.format(100 - (doc.invoiced_net / doc.target_amount * 100))"/>
+                                    </t>
+                                    <t t-else="">0%</t>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <div class="blue-sep" style="margin-top:9px;"> </div>
+
+                    <!-- 03 COLLECTION BREAKDOWN -->
+                    <div class="section-title">03 - Collection Breakdown</div>
+
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th style="width:70%;">Collection Category</th>
+                                <th style="width:30%;">Amount (AED)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td class="col-left">Fully Paid Invoices</td>
+                                <td class="col-right bold-val green-bg">
+                                    <t t-esc="'{:,.0f}'.format(doc.collected_net)"/>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td class="col-left">Partially Paid Invoices</td>
+                                <td class="col-right">
+                                    <t t-esc="'{:,.0f}'.format(doc.outstanding)"/>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td class="col-left">Unpaid Invoices</td>
+                                <td class="col-right">
+                                    <t t-esc="'{:,.0f}'.format(doc.invoiced_net - doc.collected_net - doc.outstanding)"/>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td class="col-left">Collected Cost of Goods</td>
+                                <td class="col-right">
+                                    <t t-esc="'{:,.0f}'.format(doc.collected_net * (1 - doc.commission_rate / 100) if doc.commission_rate else 0)"/>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td class="col-left">Collected Net Profit</td>
+                                <td class="col-right bold-val green-bg">
+                                    <t t-esc="'{:,.0f}'.format(doc.commission_base)"/>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <div class="blue-sep" style="margin-top:9px;"> </div>
+
+                    <!-- 04 COMMISSION CALCULATION -->
+                    <div class="section-title">04 - Commission Calculation</div>
+
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th style="width:70%;">Parameter</th>
+                                <th style="width:30%;">Value</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td class="col-left">Commission Basis</td>
+                                <td class="col-right">Collected Net Profit</td>
+                            </tr>
+                            <tr>
+                                <td class="col-left">Eligible Base Amount</td>
+                                <td class="col-right">
+                                    <t t-esc="doc.currency_id.name"/> <t t-esc="'{:,.0f}'.format(doc.commission_base)"/>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td class="col-left">Commission Rate</td>
+                                <td class="col-right">
+                                    <t t-esc="'{:.0f}%'.format(doc.commission_rate)"/>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <!-- COMMISSION PAYABLE BOX -->
+                    <div class="payable-box">
+                        <div class="payable-label">Commission Payable</div>
+                        <div class="payable-amount">
+                            <t t-esc="doc.currency_id.name"/> <t t-esc="'{:,.2f}'.format(doc.paid_commission_amount or doc.payable_amount)"/>
+                        </div>
+                        <div class="payable-status">
+                            <t t-if="doc.status in ('paid', 'month_closed')">PAID</t>
+                            <t t-elif="doc.status == 'ready_to_pay'">READY TO PAY</t>
+                            <t t-elif="doc.status == 'pending_collections'">PENDING COLLECTIONS</t>
+                            <t t-else="">NOT ACHIEVED</t>
+                        </div>
+                    </div>
+
+                    <!-- SIGNATURE SECTION -->
+                    <table class="signature-table">
+                        <tr>
+                            <td style="padding: 0 20px; text-align:center; border:none; background:#fff;">
+                                <br/><br/><br/><br/><br/>
+                                <div style="border-top:1.5px solid #1B3A6B; padding-top:6px;">
+                                    <div class="sig-name"><t t-esc="doc.employee_id.name"/></div>
+                                    <div class="sig-title">Salesperson Signature</div>
+                                </div>
+                            </td>
+                            <td style="padding: 0 20px; text-align:center; border:none; background:#fff;">
+                                <br/><br/><br/><br/><br/>
+                                <div style="border-top:1.5px solid #1B3A6B; padding-top:6px;">
+                                    <div class="sig-name">Reviewed &amp; Approved</div>
+                                    <div class="sig-title">Manager</div>
+                                </div>
+                            </td>
+                            <td style="padding: 0 20px; text-align:center; border:none; background:#fff;">
+                                <br/><br/><br/><br/><br/>
+                                <div style="border-top:1.5px solid #1B3A6B; padding-top:6px;">
+                                    <div class="sig-name">Finance Department</div>
+                                    <div class="sig-title">Authorized Signatory</div>
+                                </div>
+                            </td>
+                        </tr>
+                    </table>
+
+                    <!-- FOOTER -->
+                    <div class="report-footer">
+                        <div class="footer-left">
+                            Generated: <t t-esc="doc.month.strftime('%B %Y')"/> - Finance Department
+                        </div>
+                        <div class="footer-right">
+                            CONFIDENTIAL - Page 1 of 1
+                        </div>
+                    </div>
+
+                </div>
+            </t>
+        </t>
+    </template>
+
+    <record id="paperformat_commission_statement" model="report.paperformat">
+        <field name="name">Commission Statement (A4 Single Page)</field>
+        <field name="format">A4</field>
+        <field name="orientation">Portrait</field>
+        <field name="margin_top">12</field>
+        <field name="margin_bottom">12</field>
+        <field name="margin_left">14</field>
+        <field name="margin_right">14</field>
+        <field name="header_line">False</field>
+        <field name="header_spacing">0</field>
+        <field name="dpi">96</field>
+        <field name="disable_shrinking">False</field>
+    </record>
+
+    <record id="action_report_commission_statement" model="ir.actions.report">
+        <field name="name">Commission Statement</field>
+        <field name="model">commission.statement</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">sales_commission.report_commission_statement</field>
+        <field name="report_file">sales_commission.report_commission_statement</field>
+        <field name="print_report_name">'Commission_%s_%s' % (object.employee_id.name.replace(' ', '_'), object.month.strftime('%Y_%m'))</field>
+        <field name="binding_model_id" ref="model_commission_statement"/>
+        <field name="paperformat_id" ref="paperformat_commission_statement"/>
+    </record>
+
+</odoo>

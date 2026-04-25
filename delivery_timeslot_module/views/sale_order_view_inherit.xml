@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <record id="sale_order_form_inherit_commitment_date" model="ir.ui.view">
+            <field name="name">sale.order.form.inherit.commitment.date</field>
+            <field name="model">sale.order</field>
+            <field name="inherit_id" ref="sale.view_order_form"/>
+            <field name="arch" type="xml">
+                <xpath expr="//field[@name='partner_shipping_id']" position="after">
+                    <label for="commitment_date" string="Delivery Date"/>
+                    <div class="o_row">
+                        <field name="commitment_date" readonly="state == 'cancel' or locked"/>
+                        <span class="text-muted">
+                            Expected: <field name="expected_date" class="oe_inline" widget="date"/>
+                        </span>
+                    </div>
+                </xpath>
+
+            </field>
+        </record>
+    </data>
+</odoo>

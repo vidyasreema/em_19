@@ -1,0 +1,189 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <!-- ── Form View ── -->
+    <record id="commission_statement_form_view" model="ir.ui.view">
+        <field name="name">commission.statement.form</field>
+        <field name="model">commission.statement</field>
+        <field name="arch" type="xml">
+            <form string="Commission Statement">
+                <header>
+                    <!--
+                        Reset to Draft:
+                        - Paid + journal DRAFT  → resets statement so accountant
+                          can re-pay with correct amount
+                        - Month Closed (journal POSTED) → resets journal to draft
+                          first, then unlocks statement so error can be corrected
+                    -->
+                    <button name="action_reset_to_draft"
+                            string="Reset to Draft"
+                            type="object"
+                            class="btn-danger"
+                            invisible="not paid and not month_closed"
+                            confirm="This will reset the journal entry to draft and unlock the statement. Are you sure?"/>
+
+                    <!-- Pay Commission: only when eligible -->
+                    <button name="action_pay_commission"
+                            string="Pay Commission"
+                            type="object"
+                            class="oe_highlight"
+                            invisible="not eligible"/>
+
+                    <!--
+                        Status bar shows the full flow:
+                        Not Achieved → Pending Collections → Ready to Pay
+                        → Paid (journal DRAFT) → Month Closed (journal posted)
+                    -->
+                    <field name="status"
+                           widget="statusbar"
+                           statusbar_visible="not_achieved,pending_collections,ready_to_pay,paid,month_closed"/>
+                </header>
+                <sheet>
+                    <!-- Alert: eligible but not yet paid -->
+                    <div class="alert alert-warning"
+                         role="alert"
+                         invisible="not eligible">
+                        ⚠️ <strong>Before paying:</strong>
+                        Make sure Commission Expense Account and
+                        Payment Journal are set in Commission Rules.
+                    </div>
+
+                    <!-- Alert: paid, journal still DRAFT → awaiting accountant -->
+                    <div class="alert alert-info"
+                         role="alert"
+                         invisible="not paid or month_closed">
+                        📋 <strong>Commission paid.</strong>
+                        The journal entry is in <strong>DRAFT</strong> state.
+                        Please ask your accountant to review and post it.
+                        The month will close automatically once the journal is posted.
+                        If anything is wrong, use <strong>Reset to Draft</strong> to correct it.
+                    </div>
+
+                    <!-- Alert: journal posted → month is closed -->
+                    <div class="alert alert-danger"
+                         role="alert"
+                         invisible="not month_closed">
+                        🔒 <strong>This statement is paid and the journal entry is posted (Month Closed).</strong>
+                        If a correction is needed, use <strong>Reset to Draft</strong> —
+                        this will reset the journal entry back to draft so your accountant can fix it.
+                        Do not delete this record as it will cause accounting inconsistencies.
+                    </div>
+
+                    <group string="General">
+                        <group>
+                            <field name="employee_id"  readonly="paid or month_closed"/>
+                            <field name="month"        readonly="paid or month_closed"/>
+                            <field name="company_id"   readonly="paid or month_closed"/>
+                        </group>
+                        <group>
+                            <field name="target_amount"   readonly="1"/>
+                            <field name="commission_rate" string="Commission Rate (%)" readonly="1"/>
+                            <field name="month_closed"    readonly="1"/>
+                        </group>
+                    </group>
+
+                    <group string="Sales Performance">
+                        <group>
+                            <field name="invoice_count"           readonly="1"/>
+                            <field name="invoiced_net"            readonly="1"/>
+                            <field name="collected_net"           readonly="1"/>
+                            <field name="outstanding"             readonly="1"/>
+                            <field name="collection_pct_of_sales" string="Collection % of Sales" readonly="1"/>
+                        </group>
+                        <group>
+                            <field name="invoice_fully_paid_count"   readonly="1"/>
+                            <field name="invoice_partial_paid_count" readonly="1"/>
+                            <field name="invoice_cancelled_count"    readonly="1"/>
+                            <field name="invoice_refunded_count"     readonly="1"/>
+                        </group>
+                    </group>
+
+                    <group string="Commission Calculation">
+                        <group>
+                            <field name="commission_base"
+                                   string="Step 1 (Collected x Rate%)"
+                                   readonly="1"/>
+                            <!-- Before payment: show computed payable -->
+                            <field name="payable_amount"
+                                   string="Step 2 Payable (Step1 x Rate%)"
+                                   readonly="1"
+                                   invisible="paid"/>
+                            <!-- After payment: show the locked snapshot -->
+                            <field name="paid_commission_amount"
+                                   string="Commission Paid"
+                                   readonly="1"
+                                   invisible="not paid"/>
+                        </group>
+                        <group>
+                            <field name="target_achieved"         readonly="1"/>
+                            <field name="eligible"                readonly="1"/>
+                            <field name="cfg_min_collection_rate" string="Min Collection Rate (%)" readonly="1"/>
+                            <field name="cfg_target_required"     string="Target Required"         readonly="1"/>
+                        </group>
+                    </group>
+
+                    <group string="Payment" invisible="not paid">
+                        <group>
+                            <field name="paid"              readonly="1"/>
+                            <field name="paid_date"         readonly="1"/>
+                            <field name="payment_ref"       readonly="1"/>
+                            <field name="journal_entry_id"  readonly="1"/>
+                            <!--
+                                Shows the live state of the journal entry:
+                                draft  = waiting for accountant to post
+                                posted = month is closed
+                            -->
+                            <field name="journal_entry_state"
+                                   string="Journal Entry State"
+                                   readonly="1"
+                                   invisible="not journal_entry_id"/>
+                        </group>
+                    </group>
+
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- ── List View ── -->
+    <record id="commission_statement_list_view" model="ir.ui.view">
+        <field name="name">commission.statement.list</field>
+        <field name="model">commission.statement</field>
+        <field name="arch" type="xml">
+            <list string="Commission Statements"
+                  decoration-success="status == 'month_closed'"
+                  decoration-warning="status == 'ready_to_pay' or status == 'paid'"
+                  decoration-danger="status == 'not_achieved'"
+                  decoration-info="status == 'pending_collections'">
+                <field name="employee_id"/>
+                <field name="month"/>
+                <field name="target_amount"/>
+                <field name="invoiced_net"/>
+                <field name="collected_net"/>
+                <field name="collection_pct_of_sales" string="Collection %"/>
+                <field name="commission_base"          string="Step 1"/>
+                <field name="paid_commission_amount"   string="Commission Paid" optional="show"/>
+                <field name="payable_amount"           string="Payable (pre-payment)" optional="hide"/>
+                <field name="journal_entry_state"      string="Journal State" optional="show"/>
+                <field name="status"/>
+                <field name="paid"         column_invisible="1"/>
+                <field name="month_closed" column_invisible="1"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- ── Action ── -->
+    <record id="commission_statement_action" model="ir.actions.act_window">
+        <field name="name">Commission Statements</field>
+        <field name="res_model">commission.statement</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+    <!-- ── Menu ── -->
+    <menuitem
+            id="menu_commission_statement"
+            name="Statements"
+            parent="menu_commission_config"
+            action="commission_statement_action"
+            sequence="30"/>
+
+</odoo>

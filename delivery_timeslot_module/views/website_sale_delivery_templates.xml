@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ─────────────────────────────────────────────────────────
+         Banner — Before Delivery Address List
+         Injected above the address cards so it's always visible
+         regardless of which carrier radio is on screen.
+    ───────────────────────────────────────────────────────────── -->
+    <template id="delivery_timing_banner_address_list"
+              inherit_id="website_sale.delivery_address_list"
+              name="Delivery Timing Banner — Address List">
+
+        <xpath expr="//div[@id='delivery_address_list']" position="before">
+            <div id="delivery_timing_container"
+                 class="delivery_banner alert alert-warning mb-3"
+                 style="display: none;"
+                 role="alert">
+                <div class="d-flex align-items-start gap-3">
+                    <i class="fa fa-truck fa-2x mt-1 text-warning"></i>
+                    <div class="flex-grow-1">
+                        <div class="d-flex align-items-center gap-2 mb-2">
+                            <h5 class="mb-0">Delivery Information</h5>
+                        </div>
+                        <p id="delivery_timing_text"
+                           class="mb-2"
+                           style="display: none;"></p>
+                        <p id="delivery_date_display"
+                           class="mb-0"
+                           style="display: none;">
+                            <strong>Expected Delivery: </strong>
+                            <span id="delivery_date_text" class="fw-semibold"></span>
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </xpath>
+    </template>
+
+
+    <!-- ─────────────────────────────────────────────────────────
+         Banner — Payment Page
+    ───────────────────────────────────────────────────────────── -->
+    <template id="payment_inherit_custom"
+              inherit_id="website_sale.payment"
+              name="Delivery Timing Banner — Payment Page">
+
+        <xpath expr="//div[contains(@class,'col-12')]" position="after">
+            <div id="delivery_timing_confirmation_banner"
+                 class="delivery_banner alert alert-info mb-3"
+                 style="display: none;"
+                 role="alert">
+                <div class="d-flex align-items-start gap-3">
+                    <i class="fa fa-truck fa-2x mt-1 text-info"></i>
+                    <div class="flex-grow-1">
+                        <div class="d-flex align-items-center gap-2 mb-2">
+                            <h5 class="mb-0">Delivery Information</h5>
+                        </div>
+                        <p id="payment_delivery_timing_text"
+                           class="mb-2"
+                           style="display: none;"></p>
+                        <p id="payment_delivery_date_display"
+                           class="mb-0"
+                           style="display: none;">
+                            <strong>Expected Delivery: </strong>
+                            <span id="payment_delivery_date_text"
+                                  class="fw-semibold"></span>
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </xpath>
+    </template>
+
+</odoo>

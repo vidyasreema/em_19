@@ -1,0 +1,238 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="sales_commission.CommissionDashboard">
+        <div class="commission_dashboard">
+
+            <!-- Toolbar: Refresh -->
+            <div class="dashboard_toolbar">
+                <button class="btn_refresh" t-on-click="() => this.refreshDashboard()">
+                    ↻ Refresh
+                </button>
+            </div>
+
+            <t t-if="state.loading">
+                <div class="dashboard_loading">
+                    <i class="fa fa-spinner fa-spin me-2"/>
+                    Loading commission data...
+                </div>
+            </t>
+            <t t-else="">
+                <t t-if="state.data.length === 0">
+                    <div class="dashboard_empty">
+                        No commission data available.
+                    </div>
+                </t>
+                <t t-else="">
+                    <table class="dashboard_table">
+                        <thead>
+                            <tr>
+                                <th>Month</th>
+                                <th>Commission &amp; Collection</th>
+                                <th>Payment Status</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <t t-foreach="state.data"
+                               t-as="row"
+                               t-key="row.month">
+                                <tr t-att-class="
+                                    'dashboard_row ' +
+                                    (row.month_closed ? 'row_paid' :
+                                     row.paid         ? 'row_journal_draft' :
+                                     row.eligible     ? 'row_ready' :
+                                     row.has_statement ? 'row_not_achieved' :
+                                     'row_empty')">
+
+                                    <!-- Month -->
+                                    <td class="col_month">
+                                        <strong t-esc="row.month"/>
+                                    </td>
+
+                                    <!-- Commission and Collection -->
+                                    <td class="col_commission">
+                                        <t t-if="row.has_statement">
+                                            <t t-if="row.invoiced_net > 0">
+
+                                                <!-- Target Amount -->
+                                                <t t-if="row.target_amount > 0">
+                                                    <div class="target_line">
+                                                        <span class="col_label">Target: </span>
+                                                        <span t-esc="formatAmount(row.target_amount, row.currency_symbol)"/>
+                                                    </div>
+                                                </t>
+
+                                                <!-- Total Sales -->
+                                                <div class="sales_line">
+                                                    <span class="col_label">Total Sales: </span>
+                                                    <span t-esc="formatAmount(row.invoiced_net, row.currency_symbol)"/>
+                                                    <t t-if="row.target_amount > 0">
+                                                        <span t-att-class="'pct_badge ' + (row.target_achieved ? 'pct_green' : 'pct_red')">
+                                                            <t t-esc="row.target_pct"/>%
+                                                        </span>
+                                                    </t>
+                                                </div>
+
+                                                <!-- Total Collected -->
+                                                <div class="collection_line">
+                                                    <span class="col_label">Collected: </span>
+                                                    <span t-esc="formatAmount(row.collected_net, row.currency_symbol)"/>
+                                                    <span t-att-class="'pct_badge ' + (row.collection_pct >= 80 ? 'pct_green' : 'pct_red')">
+                                                        <t t-esc="row.collection_pct"/>%
+                                                    </span>
+                                                </div>
+
+                                                <!-- Remaining — only when not paid -->
+                                                <t t-if="!row.paid">
+                                                    <div class="remaining_line">
+                                                        <t t-if="row.amount_left > 0">
+                                                            <span class="col_label">Remaining: </span>
+                                                            <span class="amount_left"
+                                                                  t-esc="formatAmount(row.amount_left, row.currency_symbol)"/>
+                                                        </t>
+                                                        <t t-else="">
+                                                            <span class="col_label">Remaining: </span>
+                                                            <span class="pct_badge pct_green">Collection target met ✓</span>
+                                                        </t>
+                                                    </div>
+                                                </t>
+
+                                                <!-- Commission -->
+                                                <div class="commission_line">
+                                                    <span class="col_label">Commission: </span>
+                                                    <t t-if="row.paid">
+                                                        <span class="commission_amount"
+                                                              t-esc="formatAmount(row.payable_amount, row.currency_symbol)"/>
+                                                        <t t-if="row.month_closed">
+                                                            <span class="commission_note"> (month closed)</span>
+                                                        </t>
+                                                        <t t-else="">
+                                                            <span class="commission_note"> (paid — journal pending)</span>
+                                                        </t>
+                                                    </t>
+                                                    <t t-elif="row.payable_amount > 0">
+                                                        <span class="commission_amount"
+                                                              t-esc="formatAmount(row.payable_amount, row.currency_symbol)"/>
+                                                    </t>
+                                                    <t t-elif="row.commission_base > 0">
+                                                        <span class="commission_amount"
+                                                              t-esc="formatAmount(row.commission_base, row.currency_symbol)"/>
+                                                        <span class="commission_note"> (projected)</span>
+                                                    </t>
+                                                    <t t-else="">
+                                                        <span class="no_data">—</span>
+                                                    </t>
+                                                </div>
+
+                                                <!-- Journal state — only when paid -->
+                                                <t t-if="row.paid">
+                                                    <div class="journal_line">
+                                                        <span class="col_label">Journal: </span>
+                                                        <t t-if="row.journal_entry_state === 'posted'">
+                                                            <span class="pct_badge pct_green">Posted ✓</span>
+                                                        </t>
+                                                        <t t-elif="row.journal_entry_state === 'draft'">
+                                                            <span class="pct_badge pct_orange">Draft — awaiting accountant</span>
+                                                        </t>
+                                                        <t t-elif="row.journal_entry_state === 'cancel'">
+                                                            <span class="pct_badge pct_red">Cancelled</span>
+                                                        </t>
+                                                        <t t-else="">
+                                                            <span class="no_data">—</span>
+                                                        </t>
+                                                    </div>
+                                                </t>
+
+                                            </t>
+                                            <t t-else="">
+                                                <!-- Statement exists but no sales data found -->
+                                                <div class="no_sales_warning">
+                                                    <span class="no_data">No sales data found for this month.</span>
+                                                    <div class="no_sales_hint">
+                                                        ⚠️ Check that customers are assigned to this salesperson
+                                                        via the <strong>Sales Man</strong> field on the customer record.
+                                                        After fixing, click <strong>↻ Refresh</strong> to reload.
+                                                    </div>
+                                                </div>
+                                            </t>
+                                        </t>
+                                        <t t-else="">
+                                            <span class="no_data">No statement generated</span>
+                                        </t>
+                                    </td>
+
+                                    <!-- Status -->
+                                    <td class="col_status">
+                                        <t t-set="sinfo" t-value="getStatusInfo(row)"/>
+                                        <span t-att-class="'status_badge ' + sinfo.cls"
+                                              t-esc="sinfo.text"/>
+                                    </td>
+
+                                    <!-- Action -->
+                                    <td class="col_action">
+                                        <!-- No statement yet: show Generate -->
+                                        <t t-if="!row.has_statement">
+                                            <button class="btn_action btn_generate"
+                                                    t-on-click="() => this.generateStatement(row.month_date, row)">
+                                                + Generate
+                                            </button>
+                                        </t>
+
+                                        <!-- Month closed: View + Download -->
+                                        <t t-elif="row.month_closed">
+                                            <button class="btn_action btn_closed"
+                                                    t-on-click="() => this.openStatement(row.statement_id, false)">
+                                                🔒 Closed
+                                            </button>
+                                            <button class="btn_action btn_download"
+                                                    t-on-click="() => this.downloadReport(row.statement_id)">
+                                                ⬇ Download Report
+                                            </button>
+                                        </t>
+
+                                        <!-- Paid (journal draft): View + Download -->
+                                        <t t-elif="row.paid">
+                                            <button class="btn_action btn_paid"
+                                                    t-on-click="() => this.openStatement(row.statement_id, false)">
+                                                📋 View Statement
+                                            </button>
+                                            <button class="btn_action btn_download"
+                                                    t-on-click="() => this.downloadReport(row.statement_id)">
+                                                ⬇ Download Report
+                                            </button>
+                                        </t>
+
+                                        <!-- Eligible: Pay Now + Download -->
+                                        <t t-elif="row.eligible">
+                                            <button class="btn_action btn_pay"
+                                                    t-on-click="() => this.payCommission(row.statement_id, row)">
+                                                💰 Pay Now
+                                            </button>
+                                            <button class="btn_action btn_download"
+                                                    t-on-click="() => this.downloadReport(row.statement_id)">
+                                                ⬇ Download Report
+                                            </button>
+                                        </t>
+
+                                        <!-- Statement exists, not eligible: View + Download -->
+                                        <t t-else="">
+                                            <button class="btn_action btn_view"
+                                                    t-on-click="() => this.openStatement(row.statement_id, false)">
+                                                🔍 View
+                                            </button>
+                                            <button class="btn_action btn_download"
+                                                    t-on-click="() => this.downloadReport(row.statement_id)">
+                                                ⬇ Download Report
+                                            </button>
+                                        </t>
+                                    </td>
+
+                                </tr>
+                            </t>
+                        </tbody>
+                    </table>
+                </t>
+            </t>
+        </div>
+    </t>
+</templates>

@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ── List View ── -->
+    <record id="view_store_settings_list" model="ir.ui.view">
+        <field name="name">store.settings.list</field>
+        <field name="model">store.settings</field>
+        <field name="arch" type="xml">
+            <list string="Store Settings">
+                <field name="name"/>
+                <field name="website_id"/>
+                <field name="shop_opening_time" widget="float_time"/>
+                <field name="shop_closing_time" widget="float_time"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- ── Form View ── -->
+    <record id="view_store_settings_form" model="ir.ui.view">
+        <field name="name">store.settings.form</field>
+        <field name="model">store.settings</field>
+        <field name="arch" type="xml">
+            <form string="Store Settings">
+                <sheet>
+                    <!-- Warning if accounts not set -->
+                    <div class="alert alert-warning" role="alert"
+                         invisible="shop_opening_time != 0 and shop_closing_time != 0">
+                        Please set Opening Time and Closing Time before proceeding.
+                    </div>
+
+                    <div class="oe_title">
+                        <h1>Store Settings</h1>
+                    </div>
+
+                    <group string="Website">
+                        <field name="website_id"/>
+                    </group>
+
+                    <group string="Operating Hours">
+                        <group>
+                            <field name="shop_opening_time" widget="float_time"/>
+                            <field name="shop_closing_time" widget="float_time"/>
+                        </group>
+                    </group>
+
+                    <group string="Operating Days">
+                        <group>
+                            <field name="shop_monday"/>
+                            <field name="shop_tuesday"/>
+                            <field name="shop_wednesday"/>
+                            <field name="shop_thursday"/>
+                            <field name="shop_friday"/>
+                            <field name="shop_saturday"/>
+                            <field name="shop_sunday"/>
+                        </group>
+                    </group>
+
+                    <separator string="Off-Hours Behaviour"/>
+
+                    <group string="After-Close Grace Period">
+                        <group>
+                            <field name="shop_scenario2_grace_hours"
+                                   string="Grace Period (hours)"/>
+                        </group>
+                    </group>
+
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- ── Action ── -->
+    <record id="action_store_settings" model="ir.actions.act_window">
+        <field name="name">Store Settings</field>
+        <field name="res_model">store.settings</field>
+        <field name="view_mode">list,form</field>
+        <field name="target">current</field>
+    </record>
+
+    <!-- ── Menu under eCommerce / Website Configuration ── -->
+    <menuitem
+            id="menu_store_settings"
+            name="Store Settings"
+            parent="website_sale.menu_ecommerce_settings"
+            action="action_store_settings"
+            sequence="100"/>
+
+</odoo>

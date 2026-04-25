@@ -1,0 +1,4 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_commission_target,commission.target,model_commission_target,,1,1,1,1
+access_commission_config,commission.config,model_commission_config,,1,1,1,1
+access_commission_statement,commission.statement,model_commission_statement,,1,1,1,1

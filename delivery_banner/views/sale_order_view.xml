@@ -1,0 +1,41 @@
+<odoo>
+  <record id="sale_order_delivery_banner_view" model="ir.ui.view">
+    <field name="name">sale.order.delivery.banner</field>
+    <field name="model">sale.order</field>
+    <field name="inherit_id" ref="sale.view_order_form"/>
+    <field name="arch" type="xml">
+      <xpath expr="//div[hasclass('oe_title')]" position="before">
+        <field name="website_id" invisible="1"/>
+        <field name="banner_delivery_date_label" invisible="1"/>
+        <field name="banner_delivery_type_label" invisible="1"/>
+        <div invisible="not website_id" style=" background: linear-gradient(135deg, #875A7B 0%, #6B3F6B 50%, #4C2B5A 100%); border-radius: 10px; margin-bottom: 20px; overflow: hidden; box-shadow: 0 4px 20px rgba(135, 90, 123, 0.45), 0 1px 4px rgba(0,0,0,0.15); border: 2px solid #A06A96; font-family: sans-serif; ">
+          <!--  HEADER BAR  -->
+          <div style=" background: rgba(0,0,0,0.25); padding: 8px 20px; display: flex; align-items: center; gap: 10px; border-bottom: 1px solid rgba(255,255,255,0.12); ">
+            <span style=" display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: #FFD700; box-shadow: 0 0 0 3px rgba(255,215,0,0.3); "/>
+            <span style=" font-size: 11px; font-weight: 700; letter-spacing: 0.2em; text-transform: uppercase; color: #FFD700; "> Delivery Info </span>
+            <span style=" margin-left: auto; background: #FFD700; color: #4C2B5A; font-size: 10px; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; padding: 3px 10px; border-radius: 20px; "> Action Required </span>
+          </div>
+          <!--  BODY: DATE | DIVIDER | TYPE  -->
+          <div style=" display: flex; align-items: center; padding: 18px 28px; ">
+            <!--  Delivery Date  -->
+            <div style="flex: 1;">
+              <div style=" font-size: 10px; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase; color: rgba(255,255,255,0.55); margin-bottom: 6px; "> 📅 Delivery Date </div>
+              <div style=" font-size: 28px; font-weight: 800; color: #FFFFFF; line-height: 1.1; ">
+                <field name="banner_delivery_date_label" readonly="1" style="font-size:28px; font-weight:800; color:#FFFFFF;"/>
+              </div>
+            </div>
+            <!--  Vertical Divider  -->
+            <div style=" width: 1px; height: 56px; background: linear-gradient(to bottom, transparent, rgba(255,255,255,0.3), transparent); margin: 0 32px; "/>
+            <!--  Delivery Type  -->
+            <div style="flex: 1; text-align: right;">
+              <!--              <div style=" font-size: 10px; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase; color: rgba(255,255,255,0.55); margin-bottom: 6px; "> Delivery Method </div>-->
+              <div style=" font-size: 28px; font-weight: 800; color: #FFD700; line-height: 1.1; ">
+                <field name="banner_delivery_type_label" readonly="1" style="font-size:28px; font-weight:800; color:#FFD700;"/>
+              </div>
+            </div>
+          </div>
+        </div>
+      </xpath>
+    </field>
+  </record>
+</odoo>

@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <!-- ── Form View ── -->
+    <record id="commission_target_form_view" model="ir.ui.view">
+        <field name="name">commission.target.form</field>
+        <field name="model">commission.target</field>
+        <field name="arch" type="xml">
+            <form string="Commission Target">
+                <sheet>
+                    <group string="General">
+                        <group>
+                            <field name="employee_id"/>
+                            <field name="month"/>
+                        </group>
+                        <group>
+                            <field name="target_amount"/>
+                            <field name="commission_rate"
+                                   string="Commission Rate (%)"/>
+                        </group>
+                    </group>
+                    <group string="Status">
+                        <group>
+<!--                            <field name="locked"/>-->
+                            <field name="notes"/>
+                        </group>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- ── List View ── -->
+    <record id="commission_target_list_view" model="ir.ui.view">
+        <field name="name">commission.target.list</field>
+        <field name="model">commission.target</field>
+        <field name="arch" type="xml">
+            <list string="Commission Targets" editable="bottom">
+                <field name="employee_id"/>
+                <field name="month"/>
+                <field name="target_amount"/>
+                <field name="commission_rate"
+                       string="Commission Rate (%)"/>
+                <field name="notes"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- ── Action ── -->
+    <record id="commission_target_action" model="ir.actions.act_window">
+        <field name="name">Commission Targets</field>
+        <field name="res_model">commission.target</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+    <!-- ── Menu ── -->
+    <menuitem
+        id="menu_commission_target"
+        name="Commission Targets"
+        parent="menu_commission_config"
+        action="commission_target_action"
+        sequence="20"/>
+
+</odoo>

@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <record id="res_partner_form_view_inherit" model="ir.ui.view">
+        <field name="name">res.partner.form.view.inherit</field>
+        <field name="model">res.partner</field>
+        <field name="inherit_id" ref="base.view_partner_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='property_payment_term_id']" position="before">
+                <field name="sales_man" domain="[('is_sales_man','=',True)]"/>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="action_call_get_sales_man_data" model="ir.actions.server">
+        <field name="name">Fetch Sales Man</field>
+        <field name="model_id" ref="base.model_res_partner"/>
+        <field name="binding_model_id" ref="base.model_res_partner"/>
+        <field name="state">code</field>
+        <field name="code">
+            records.get_sales_man_data()
+        </field>
+    </record>
+
+</odoo>

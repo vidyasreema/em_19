@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <record id="hr_employee_form_view_inherit" model="ir.ui.view">
+        <field name="name">hr.employee.form.view.inherit</field>
+        <field name="model">hr.employee</field>
+        <field name="inherit_id" ref="hr.view_employee_form"/>
+        <field name="arch" type="xml">
+
+            <xpath expr="//group[@name='identification_group']" position="before">
+                <group string="Sales Commission">
+                    <field name="is_sales_man"/>
+                </group>
+            </xpath>
+
+            <xpath expr="//notebook" position="inside">
+                <page string="Sales Commission"
+                      invisible="not is_sales_man">
+
+                    <!-- Per-Employee Commission Rules -->
+                    <group string="Commission Rules">
+                        <group>
+                            <field name="min_collection_rate"
+                                   string="Minimum Collection Rate (%)"/>
+                            <field name="target_achievement_required"/>
+                        </group>
+                    </group>
+
+                    <!-- Current Settings (computed from latest target) -->
+                    <group string="Current Commission Settings">
+                        <group>
+                            <field name="current_target_amount"/>
+                            <field name="current_commission_rate"
+                                   string="Commission Rate (%)"/>
+                        </group>
+                    </group>
+
+                    <!-- Target History -->
+<!--                    <group string="Target History">-->
+<!--                        <field name="commission_target_ids"-->
+<!--                               nolabel="1"-->
+<!--                               context="{'default_employee_id': id}">-->
+<!--                            <list editable="bottom">-->
+<!--                                <field name="month"/>-->
+<!--                                <field name="target_amount"/>-->
+<!--                                <field name="commission_rate"-->
+<!--                                       string="Commission Rate (%)"/>-->
+<!--                                <field name="notes"/>-->
+<!--                            </list>-->
+<!--                        </field>-->
+<!--                    </group>-->
+
+                    <!-- Commission Dashboard -->
+                    <group string="Monthly Commission Dashboard">
+                        <field name="id"
+                               widget="commission_dashboard"
+                               nolabel="1"/>
+                    </group>
+
+                </page>
+            </xpath>
+
+        </field>
+    </record>
+</odoo>

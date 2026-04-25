@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ═══════════════════════════════════════════════ -->
+    <!-- Inherit Sale Order Form View — Odoo 18          -->
+    <!-- 1. Add Delivered button                         -->
+    <!-- 2. Add Delivered to statusbar                   -->
+    <!-- ═══════════════════════════════════════════════ -->
+    <record id="view_sale_order_deliver_button_form"
+            model="ir.ui.view">
+        <field name="name">sale.order.deliver.button.form</field>
+        <field name="model">sale.order</field>
+        <field name="inherit_id"
+               ref="sale.view_order_form"/>
+        <field name="arch" type="xml">
+
+            <!-- ════════════════════════════════════════ -->
+            <!-- 1. Add Mark as Delivered button          -->
+            <!-- ════════════════════════════════════════ -->
+            <xpath expr="//header//button[@name='action_cancel']"
+                   position="before">
+                <button
+                        name="action_mark_as_delivered"
+                        string="Mark as Delivered"
+                        type="object"
+                        class="btn-success"
+                        icon="fa-truck"
+                        invisible="not delivery_button_visible"
+                        confirm="Are you sure you want to mark this order as delivered?This action cannot be undone!."/>
+            </xpath>
+
+            <!-- ════════════════════════════════════════ -->
+            <!-- 2. Add Delivered to statusbar            -->
+            <!-- ════════════════════════════════════════ -->
+            <xpath expr="//field[@name='state'][@widget='statusbar']"
+                   position="attributes">
+                <attribute name="statusbar_visible">
+                    draft,sent,sale,delivered,done
+                </attribute>
+            </xpath>
+
+        </field>
+    </record>
+
+</odoo>

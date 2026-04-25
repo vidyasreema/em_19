@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <template id="custom_sale_report_order_note" inherit_id="sale.report_saleorder_document">
+
+        <!-- Fix: product_uom renamed to product_uom_id in Odoo 19 -->
+        <xpath expr="//span[@t-field='line.product_uom']" position="replace">
+            <span t-field="line.product_uom_id"/>
+        </xpath>
+
+        <!-- 1. Hide right side address -->
+        <xpath expr="//t[@t-set='address']" position="replace">
+            <t t-set="address"/>
+        </xpath>
+
+        <!-- 2. Hide the entire information_block conditional -->
+        <xpath expr="//t[@t-set='information_block']" position="replace"/>
+
+        <!-- 3. Inject shipping address directly at top of page content -->
+        <xpath expr="//div[contains(@class,'page')]//div[contains(@class,'oe_structure')][1]" position="before">
+            <div class="row mb-4">
+                <div class="col-6">
+                    <strong>Shipping Address</strong>
+                    <div t-field="doc.partner_shipping_id"
+                         t-options='{"widget": "contact", "fields": ["address", "name", "phone"], "no_marker": True, "phone_icons": True}'/>
+                </div>
+            </div>
+        </xpath>
+
+        <!-- 4. Remove Payment Terms note -->
+        <xpath expr="//p[.//span[@t-field='doc.payment_term_id.note']]" position="replace"/>
+
+        <!-- 5. Add Order Notes after existing note span -->
+        <xpath expr="//span[@name='order_note']" position="before">
+            <t t-if="doc.order_note">
+                <div class="mt-3">
+                    <strong>Order Notes:</strong>
+                    <p t-field="doc.order_note" class="mt-1 mb-0" style="color: #a4193d;"/>
+                    <br/>
+                </div>
+            </t>
+        </xpath>
+
+    </template>
+</odoo>
