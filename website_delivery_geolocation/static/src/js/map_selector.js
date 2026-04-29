@@ -147,9 +147,11 @@ publicWidget.registry.MapAddressCheckout = publicWidget.Widget.extend({
             self._selectLocation(event.latLng.lat(), event.latLng.lng());
         });
 
+        // ✅ FIXED: use event.latLng directly instead of event.target.getPosition()
+        // Google Maps dragend events expose coordinates via event.latLng,
+        // not via event.target (which is a DOM convention and is undefined here).
         google.maps.event.addListener(this.marker, "dragend", function (event) {
-            var pos = event.target.getPosition();
-            self._selectLocation(pos.lat(), pos.lng());
+            self._selectLocation(event.latLng.lat(), event.latLng.lng());
         });
 
         $('#o_map_search_btn').off('click').on('click', function () {
