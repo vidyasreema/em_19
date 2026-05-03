@@ -1,0 +1,616 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!--
+        Customer Performance Analysis Report
+        Odoo 19 — Custom backend module (migrated from Studio v18)
+
+        Fields referenced are x_studio_* fields that already exist on
+        res.partner via the Studio migration.  No fields are recomputed
+        here — we read them directly from the partner record.
+    -->
+    <template id="customer_performance_template">
+        <t t-call="web.html_container">
+
+            <!-- Support single record (form print) and multi-record (list print) -->
+            <t t-set="o" t-value="docs and docs[0] or False"/>
+            <t t-if="env.context.get('active_id')">
+                <t t-set="o" t-value="env['res.partner'].browse(env.context['active_id'])"/>
+            </t>
+
+            <t t-call="web.external_layout">
+                <div class="page">
+
+                    <!-- ═══════════════════════════════════════════════
+                         HEADER
+                    ════════════════════════════════════════════════ -->
+                    <div class="text-center" style="margin-bottom: 25px;">
+
+                        <!-- Global weighted avg unit cost (used for manual-cost warning) -->
+                        <t t-set="g_raw_products_json" t-value="o and (o.x_studio_products_data_json or '[]')"/>
+                        <t t-set="g_product_data"      t-value="json.loads(g_raw_products_json) if g_raw_products_json else []"/>
+                        <t t-set="g_total_qty_all"     t-value="sum([p.get('total_qty', 0.0) for p in g_product_data])"/>
+                        <t t-set="g_total_cost_weighted" t-value="sum([p.get('unit_cost', 0.0) * p.get('total_qty', 0.0) for p in g_product_data])"/>
+                        <t t-set="g_avg_cost_overall"  t-value="(g_total_cost_weighted / g_total_qty_all) if g_total_qty_all > 0 else 0.0"/>
+
+                        <!-- Group header (multiple customers) -->
+                        <t t-if="original_customer_ids and len(original_customer_ids) > 1">
+                            <h2 style="color: #1565C0; font-weight: bold; margin-bottom: 15px;">
+                                Group Performance Analysis
+                            </h2>
+                            <div style="margin: 15px 0; padding: 15px; background-color: #E3F2FD; border: 2px solid #1976D2; border-radius: 8px;">
+                                <div style="font-size: 13px; font-weight: 600; color: #1565C0; margin-bottom: 8px;">
+                                    📋 Selected Customers (<t t-esc="len(original_customer_ids)"/> Customers):
+                                </div>
+                                <div style="font-size: 12px; color: #424242; line-height: 1.6;">
+                                    <t t-set="selected_partners" t-value="env['res.partner'].browse(original_customer_ids)"/>
+                                    <t t-set="customer_names"    t-value="', '.join(selected_partners.mapped('name'))"/>
+                                    <strong><t t-esc="customer_names"/></strong>
+                                </div>
+                            </div>
+                        </t>
+
+                        <!-- Single customer header -->
+                        <t t-else="">
+                            <h2 style="color: #1565C0; font-weight: bold; margin-bottom: 15px;">
+                                <t t-esc="o and o.name or ''"/>
+                            </h2>
+                        </t>
+
+                        <!-- Manual cost warning banner -->
+                        <div t-if="o and o.x_studio_is_manual_cost_used"
+                             style="margin: 15px 0; padding: 12px 20px; background-color: #fff3cd; border: 2px solid #ffc107; border-radius: 6px; text-align: center;">
+                            <span style="color: #856404; font-size: 13px; font-weight: 600;">
+                                ⚠️ Analysis calculated using Manual Average Unit Cost:
+                                <strong><t t-esc="'{:,.2f}'.format(g_avg_cost_overall)"/> AED</strong>
+                            </span>
+                        </div>
+
+                        <!-- Status badge row -->
+                        <div style="margin-top: 20px; padding: 15px; background-color: #F5F5F5; border-radius: 8px; text-align: center; font-size: 14px;">
+
+                            <!-- Net Profitability -->
+                            <span style="color: #555; font-weight: 300;">Net Profitability: </span>
+                            <span t-if="o and o.x_studio_customer_breakeven_status == 'profitable'"
+                                  style="background-color: #28a745; color: white; padding: 6px 14px; border-radius: 4px; font-weight: 600; font-size: 11px; display: inline-block;">PROFITABLE</span>
+                            <span t-elif="o and o.x_studio_customer_breakeven_status == 'at_breakeven'"
+                                  style="background-color: #ffc107; color: #212529; padding: 6px 14px; border-radius: 4px; font-weight: 600; font-size: 11px; display: inline-block;">AT BREAKEVEN</span>
+                            <span t-else=""
+                                  style="background-color: #dc3545; color: white; padding: 6px 14px; border-radius: 4px; font-weight: 600; font-size: 11px; display: inline-block;">UNPROFITABLE</span>
+
+                            <span style="margin: 0 20px; color: #999; font-weight: bold; font-size: 18px;">|</span>
+
+                            <!-- Payment Status -->
+                            <span style="color: #555; font-weight: 300;">Payment Status: </span>
+                            <span t-if="o and o.x_studio_payment_punctuality == 'committed'"
+                                  style="background-color: #28a745; color: white; padding: 6px 14px; border-radius: 4px; font-weight: 600; font-size: 11px; display: inline-block;">COMMITTED</span>
+                            <span t-elif="o and o.x_studio_payment_punctuality == 'late'"
+                                  style="background-color: #ffc107; color: #212529; padding: 6px 14px; border-radius: 4px; font-weight: 600; font-size: 11px; display: inline-block;">LATE</span>
+                            <span t-else=""
+                                  style="background-color: #dc3545; color: white; padding: 6px 14px; border-radius: 4px; font-weight: 600; font-size: 11px; display: inline-block;">CRITICAL</span>
+
+                            <span style="margin: 0 20px; color: #999; font-weight: bold; font-size: 18px;">|</span>
+
+                            <!-- Customer Tier -->
+                            <span style="color: #555; font-weight: 300;">Customer Tier: </span>
+                            <span t-if="o and o.x_studio_customer_tier == 'loss_making'"
+                                  style="background-color: #000000; color: white; padding: 6px 14px; border-radius: 4px; font-weight: 600; font-size: 11px; display: inline-block;">LOSS-MAKING</span>
+                            <span t-elif="o and o.x_studio_customer_tier == 'platinum'"
+                                  style="background-color: #28a745; color: white; padding: 6px 14px; border-radius: 4px; font-weight: 600; font-size: 11px; display: inline-block;">PLATINUM</span>
+                            <span t-elif="o and o.x_studio_customer_tier == 'gold'"
+                                  style="background-color: #FFD700; color: #212529; padding: 6px 14px; border-radius: 4px; font-weight: 600; font-size: 11px; display: inline-block;">GOLD</span>
+                            <span t-elif="o and o.x_studio_customer_tier == 'stable'"
+                                  style="background-color: #17a2b8; color: white; padding: 6px 14px; border-radius: 4px; font-weight: 600; font-size: 11px; display: inline-block;">STABLE</span>
+                            <span t-elif="o and o.x_studio_customer_tier == 'watchlist'"
+                                  style="background-color: #ffc107; color: #212529; padding: 6px 14px; border-radius: 4px; font-weight: 600; font-size: 11px; display: inline-block;">WATCHLIST</span>
+                            <span t-elif="o and o.x_studio_customer_tier == 'at_risk'"
+                                  style="background-color: #dc3545; color: white; padding: 6px 14px; border-radius: 4px; font-weight: 600; font-size: 11px; display: inline-block;">AT RISK</span>
+                            <span t-else=""
+                                  style="background-color: #6c757d; color: white; padding: 6px 14px; border-radius: 4px; font-weight: 600; font-size: 11px; display: inline-block;">DORMANT</span>
+                        </div>
+                    </div>
+
+                    <!-- ═══════════════════════════════════════════════
+                         ANALYSIS PERIOD
+                    ════════════════════════════════════════════════ -->
+                    <div style="margin-top: 15px; padding: 12px; background-color: #FFF9E6; border-left: 4px solid #FF9800; border-radius: 4px;">
+                        <div style="font-size: 12px; color: #E65100;">
+                            <strong>📅 Analysis Period:</strong>
+                            <t t-if="o and o.x_studio_analysis_date_from and o.x_studio_analysis_date_to">
+                                <span style="font-weight: 600; color: #D84315;">
+                                    From <t t-esc="o.x_studio_analysis_date_from.strftime('%d %B %Y')"/>
+                                    to <t t-esc="o.x_studio_analysis_date_to.strftime('%d %B %Y')"/>
+                                </span>
+                            </t>
+                            <t t-else="">
+                                <span style="font-weight: 600; color: #1565C0;">
+                                    Current Fiscal Year (Jan 1, <t t-esc="datetime.datetime.now().year"/> –
+                                    <t t-esc="datetime.datetime.now().strftime('%d %B %Y')"/>)
+                                </span>
+                            </t>
+                        </div>
+                    </div>
+
+                    <!-- ═══════════════════════════════════════════════
+                         ROW 1 — Sales Performance | Payment Collection
+                    ════════════════════════════════════════════════ -->
+                    <div class="row" style="margin-top: 30px; margin-bottom: 20px; page-break-inside: avoid;">
+
+                        <!-- Sales Performance -->
+                        <div class="col-6" style="padding-right: 15px;">
+                            <div style="border: 1px solid #E0E0E0; border-radius: 5px; padding: 15px; height: 100%; background-color: #F9FBFD;">
+                                <h5 style="color: #1565C0; font-weight: bold; margin-bottom: 12px; border-bottom: 2px solid #1565C0; padding-bottom: 5px;">
+                                    Sales Performance
+                                </h5>
+                                <table class="table table-sm table-borderless" style="margin-bottom: 0;">
+                                    <tr>
+                                        <td style="width: 55%; color: #555; font-size: 11px;">Total Sales Revenue</td>
+                                        <td style="text-align: right; font-weight: bold; font-size: 11px;">
+                                            <t t-esc="'{:,.2f}'.format(o.x_studio_total_gross_sales)"/> AED
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td style="color: #555; font-size: 11px;">Total Gross Margin</td>
+                                        <td style="text-align: right; font-weight: bold; font-size: 11px;"
+                                            t-att-style="'color: ' + ('#4CAF50' if o.x_studio_total_gross_profit_sales > 0 else '#F44336')">
+                                            <t t-esc="'{:,.2f}'.format(o.x_studio_total_gross_profit_sales)"/> AED
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td style="color: #555; font-size: 11px;">Gross Margin Ratio (%)</td>
+                                        <td style="text-align: right; font-weight: bold; font-size: 11px;"
+                                            t-att-style="'color: ' + ('#4CAF50' if o.x_studio_overall_profit_percentage > 0.20 else ('#FF9800' if o.x_studio_overall_profit_percentage > 0 else '#F44336'))">
+                                            <t t-esc="'{:.1f}'.format(o.x_studio_overall_profit_percentage * 100)"/>%
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td style="color: #555; font-size: 11px;">Total Invoices</td>
+                                        <td style="text-align: right; font-size: 11px;">
+                                            <t t-esc="o.x_studio_invoices_count"/>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td style="color: #555; font-size: 11px;">Avg. Monthly Invoices</td>
+                                        <td style="text-align: right; font-size: 11px;">
+                                            <t t-esc="'{:.2f}'.format(o.x_studio_avg_invoices_monthly)"/>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td style="color: #555; font-size: 11px;">First Invoice</td>
+                                        <td style="text-align: right; font-size: 11px;">
+                                            <t t-esc="o.x_studio_first_invoice_date"/>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td style="color: #555; font-size: 11px;">Last Invoice</td>
+                                        <td style="text-align: right; font-size: 11px;">
+                                            <t t-esc="o.x_studio_last_date_selling"/>
+                                        </td>
+                                    </tr>
+                                    <tr t-if="o and o.x_studio_is_manual_cost_used">
+                                        <td style="color: #555; font-size: 11px;">💡 Average Unit Cost (Manual)</td>
+                                        <td style="text-align: right; font-weight: bold; font-size: 11px; color: #ffc107;">
+                                            <t t-esc="'{:,.2f}'.format(o.x_studio_manual_cost_amount or 0)"/> AED
+                                        </td>
+                                    </tr>
+                                </table>
+                            </div>
+                        </div>
+
+                        <!-- Payment Collection -->
+                        <div class="col-6" style="padding-left: 15px;">
+                            <div style="border: 1px solid #E0E0E0; border-radius: 5px; padding: 15px; height: 100%; background-color: #F9FDF9;">
+                                <h5 style="color: #2E7D32; font-weight: bold; margin-bottom: 12px; border-bottom: 2px solid #2E7D32; padding-bottom: 5px;">
+                                    Payment Collection
+                                </h5>
+                                <table class="table table-sm table-borderless" style="margin-bottom: 0;">
+                                    <tr>
+                                        <td style="width: 55%; color: #555; font-size: 11px;">Total Customer Payments (incl. VAT)</td>
+                                        <td style="text-align: right; font-weight: bold; font-size: 11px;">
+                                            <t t-esc="'{:,.2f}'.format(o.x_studio_total_paid_amount)"/> AED
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td style="color: #555; font-size: 11px;">Net Profit Based on Payments</td>
+                                        <td style="text-align: right; font-weight: bold; font-size: 11px;"
+                                            t-att-style="'color: ' + ('#4CAF50' if o.x_studio_total_net_profit_paid > 0 else '#F44336')">
+                                            <t t-esc="'{:,.2f}'.format(o.x_studio_total_net_profit_paid)"/> AED
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td style="color: #555; font-size: 11px;">Last Payment Date</td>
+                                        <td style="text-align: right; font-size: 11px;">
+                                            <!-- x_studio_date_field_7tr_1j6gaa94n = last payment date (Studio auto-name) -->
+                                            <t t-esc="o.x_studio_date_field_7tr_1j6gaa94n"/>
+                                        </td>
+                                    </tr>
+                                </table>
+                            </div>
+                        </div>
+
+                    </div>
+
+                    <!-- ═══════════════════════════════════════════════
+                         ROW 2 — Net Profitability | Outstanding Invoices
+                    ════════════════════════════════════════════════ -->
+                    <div class="row" style="margin-bottom: 20px; page-break-inside: avoid;">
+
+                        <!-- Net Profitability Status -->
+                        <div class="col-6" style="padding-right: 15px;">
+                            <div style="border: 1px solid #E0E0E0; border-radius: 5px; padding: 15px; height: 100%; background-color: #FDF9FD;">
+                                <h5 style="color: #6A1B9A; font-weight: bold; margin-bottom: 12px; border-bottom: 2px solid #6A1B9A; padding-bottom: 5px;">
+                                    Net Profitability Status
+                                </h5>
+                                <table class="table table-sm table-borderless" style="margin-bottom: 0;">
+                                    <tr>
+                                        <td style="width: 55%; color: #555; font-size: 11px;">Customer Cost Coverage Status</td>
+                                        <td style="text-align: right; font-size: 11px;">
+                                            <span t-if="o and o.x_studio_customer_breakeven_status == 'profitable'"
+                                                  style="background-color: #28a745; color: white; padding: 4px 10px; border-radius: 3px; font-weight: 600; font-size: 11px; display: inline-block;">PROFITABLE</span>
+                                            <span t-elif="o and o.x_studio_customer_breakeven_status == 'at_breakeven'"
+                                                  style="background-color: #ffc107; color: #212529; padding: 4px 10px; border-radius: 3px; font-weight: 600; font-size: 11px; display: inline-block;">AT BREAKEVEN</span>
+                                            <span t-else=""
+                                                  style="background-color: #dc3545; color: white; padding: 4px 10px; border-radius: 3px; font-weight: 600; font-size: 11px; display: inline-block;">UNPROFITABLE</span>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td style="color: #555; font-size: 11px;">Net Cost Coverage Difference</td>
+                                        <td style="text-align: right; font-weight: bold; font-size: 11px;"
+                                            t-att-style="'color: ' + ('#4CAF50' if o.x_studio_breakeven_difference > 0 else '#F44336')">
+                                            <t t-esc="'{:,.3f}'.format(o.x_studio_breakeven_difference)"/> AED
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td style="color: #555; font-size: 11px;">Profitability Ratio</td>
+                                        <td style="text-align: right; font-weight: bold; font-size: 11px;"
+                                            t-att-style="'color: ' + ('#4CAF50' if o.x_studio_breakeven_percentage > 0 else '#F44336')">
+                                            <t t-esc="'{:.3f}'.format(o.x_studio_breakeven_percentage * 100)"/>%
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td colspan="2" style="padding-top: 10px; font-size: 10px; color: #666; font-style: italic;">
+                                            ℹ️ VAT (5%) deducted from payments for accurate profitability
+                                        </td>
+                                    </tr>
+                                </table>
+                            </div>
+                        </div>
+
+                        <!-- Outstanding Invoices -->
+                        <div class="col-6" style="padding-left: 15px;">
+                            <div style="border: 1px solid #E0E0E0; border-radius: 5px; padding: 15px; height: 100%; background-color: #FFF9F5;">
+                                <h5 style="color: #D84315; font-weight: bold; margin-bottom: 12px; border-bottom: 2px solid #D84315; padding-bottom: 5px;">
+                                    Outstanding Invoices Status
+                                </h5>
+                                <table class="table table-sm table-borderless" style="margin-bottom: 0;">
+                                    <tr>
+                                        <td style="width: 55%; color: #555; font-size: 11px;">Overdue Balance</td>
+                                        <td style="text-align: right; font-weight: bold; font-size: 11px;"
+                                            t-att-style="'color: ' + ('#F44336' if o.x_studio_overdue_amount > 0 else '#666')">
+                                            <t t-esc="'{:,.2f}'.format(o.x_studio_overdue_amount)"/> AED
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td style="color: #555; font-size: 11px;">Max Overdue Days</td>
+                                        <td style="text-align: right; font-weight: bold; font-size: 11px;"
+                                            t-att-style="'color: ' + ('#F44336' if o.x_studio_overdue_days > 30 else ('#FF9800' if o.x_studio_overdue_days > 14 else '#666'))">
+                                            <t t-esc="o.x_studio_overdue_days"/> Days
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td style="color: #555; font-size: 11px;">Current Invoice Status</td>
+                                        <td style="text-align: right; font-size: 11px;">
+                                            <span t-if="o and o.x_studio_payment_punctuality == 'committed'"
+                                                  style="background-color: #28a745; color: white; padding: 4px 10px; border-radius: 3px; font-weight: 600; font-size: 11px; display: inline-block;">COMMITTED</span>
+                                            <span t-elif="o and o.x_studio_payment_punctuality == 'late'"
+                                                  style="background-color: #ffc107; color: #212529; padding: 4px 10px; border-radius: 3px; font-weight: 600; font-size: 11px; display: inline-block;">LATE</span>
+                                            <span t-else=""
+                                                  style="background-color: #dc3545; color: white; padding: 4px 10px; border-radius: 3px; font-weight: 600; font-size: 11px; display: inline-block;">CRITICAL</span>
+                                        </td>
+                                    </tr>
+                                </table>
+                            </div>
+                        </div>
+
+                    </div>
+
+                    <!-- ═══════════════════════════════════════════════
+                         ROW 3 — Payment Reliability (full width)
+                    ════════════════════════════════════════════════ -->
+                    <div class="row" style="margin-bottom: 20px; page-break-inside: avoid;">
+                        <div class="col-12">
+                            <div style="border: 1px solid #E0E0E0; border-radius: 5px; padding: 15px; background-color: #F3E5F5;">
+                                <h5 style="color: #6A1B9A; font-weight: bold; margin-bottom: 12px; border-bottom: 2px solid #6A1B9A; padding-bottom: 5px;">
+                                    Payment Reliability (Historical Analysis)
+                                </h5>
+                                <div class="row">
+
+                                    <div class="col-6">
+                                        <table class="table table-sm table-borderless" style="margin-bottom: 0;">
+                                            <tr>
+                                                <td style="width: 55%; color: #555; font-size: 11px;">Paid Invoices Analyzed</td>
+                                                <td style="text-align: right; font-size: 11px;">
+                                                    <t t-esc="o.x_studio_paid_invoices_analyzed"/>
+                                                </td>
+                                            </tr>
+                                            <tr>
+                                                <td style="color: #555; font-size: 11px;">Avg. Payment Delay</td>
+                                                <td style="text-align: right; font-weight: bold; font-size: 11px;"
+                                                    t-att-style="'color: ' + ('#4CAF50' if (o.x_studio_avg_payment_delay_days or 0) &lt; 0 else ('#17a2b8' if (o.x_studio_avg_payment_delay_days or 0) &lt;= 5 else ('#FF9800' if (o.x_studio_avg_payment_delay_days or 0) &lt;= 15 else '#F44336')))">
+                                                    <t t-esc="'{:.1f}'.format(o.x_studio_avg_payment_delay_days or 0.0)"/> Days
+                                                </td>
+                                            </tr>
+                                            <tr>
+                                                <td style="color: #555; font-size: 11px;">Reliability Rating</td>
+                                                <td style="text-align: right; font-size: 11px;">
+                                                    <span t-if="o and o.x_studio_payment_reliability == 'excellent'"
+                                                          style="background-color: #28a745; color: white; padding: 4px 10px; border-radius: 3px; font-weight: 600; font-size: 11px; display: inline-block;">EXCELLENT</span>
+                                                    <span t-elif="o and o.x_studio_payment_reliability == 'good'"
+                                                          style="background-color: #17a2b8; color: white; padding: 4px 10px; border-radius: 3px; font-weight: 600; font-size: 11px; display: inline-block;">GOOD</span>
+                                                    <span t-elif="o and o.x_studio_payment_reliability == 'fair'"
+                                                          style="background-color: #ffc107; color: #212529; padding: 4px 10px; border-radius: 3px; font-weight: 600; font-size: 11px; display: inline-block;">FAIR</span>
+                                                    <span t-else=""
+                                                          style="background-color: #dc3545; color: white; padding: 4px 10px; border-radius: 3px; font-weight: 600; font-size: 11px; display: inline-block;">POOR</span>
+                                                </td>
+                                            </tr>
+                                        </table>
+                                    </div>
+
+                                    <div class="col-6">
+                                        <table class="table table-sm table-borderless" style="margin-bottom: 0;">
+                                            <tr>
+                                                <td style="width: 55%; color: #555; font-size: 11px;">Early Payments</td>
+                                                <td style="text-align: right; font-weight: bold; font-size: 11px;"
+                                                    t-att-style="'color: ' + ('#4CAF50' if (o.x_studio_early_payment_percentage or 0) > 0.50 else '#666')">
+                                                    <t t-esc="'{:.1f}'.format((o.x_studio_early_payment_percentage or 0.0) * 100)"/>%
+                                                </td>
+                                            </tr>
+                                            <tr>
+                                                <td style="color: #555; font-size: 11px;">On-Time Payments</td>
+                                                <td style="text-align: right; font-weight: bold; font-size: 11px;">
+                                                    <t t-esc="'{:.1f}'.format((o.x_studio_ontime_payment_percentage or 0.0) * 100)"/>%
+                                                </td>
+                                            </tr>
+                                            <tr>
+                                                <td style="color: #555; font-size: 11px;">Late Payments</td>
+                                                <td style="text-align: right; font-weight: bold; font-size: 11px;"
+                                                    t-att-style="'color: ' + ('#F44336' if (o.x_studio_late_payment_percentage or 0) > 0.40 else '#666')">
+                                                    <t t-esc="'{:.1f}'.format((o.x_studio_late_payment_percentage or 0.0) * 100)"/>%
+                                                </td>
+                                            </tr>
+                                        </table>
+                                    </div>
+
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ═══════════════════════════════════════════════
+                         ROW 4 — Monthly Trend | Customer Value
+                    ════════════════════════════════════════════════ -->
+                    <div class="row" style="margin-bottom: 20px; page-break-inside: avoid;">
+
+                        <!-- Monthly Sales Trend -->
+                        <div class="col-6" style="padding-right: 15px;">
+                            <div style="border: 1px solid #E0E0E0; border-radius: 5px; padding: 15px; height: 100%; background-color: #F5FDFD;">
+                                <h5 style="color: #00838F; font-weight: bold; margin-bottom: 12px; border-bottom: 2px solid #00838F; padding-bottom: 5px;">
+                                    Monthly Sales Trend
+                                </h5>
+                                <table class="table table-sm table-borderless" style="margin-bottom: 0;">
+                                    <tr>
+                                        <td style="width: 55%; color: #555; font-size: 11px;">Average Monthly Revenue</td>
+                                        <td style="text-align: right; font-weight: bold; font-size: 11px;">
+                                            <t t-esc="'{:,.2f}'.format(o.x_studio_avg_monthly_sales)"/> AED
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td style="color: #555; font-size: 11px;">Month-over-Month Sales Trend</td>
+                                        <td style="text-align: right; font-size: 11px;">
+                                            <span t-if="o and o.x_studio_sales_trend == 'Increasing'"
+                                                  style="background-color: #28a745; color: white; padding: 4px 10px; border-radius: 3px; font-weight: 600; font-size: 11px; display: inline-block;">INCREASING</span>
+                                            <span t-elif="o and o.x_studio_sales_trend == 'stable'"
+                                                  style="background-color: #17a2b8; color: white; padding: 4px 10px; border-radius: 3px; font-weight: 600; font-size: 11px; display: inline-block;">STABLE</span>
+                                            <span t-else=""
+                                                  style="background-color: #ffc107; color: #212529; padding: 4px 10px; border-radius: 3px; font-weight: 600; font-size: 11px; display: inline-block;">DECREASING</span>
+                                        </td>
+                                    </tr>
+                                </table>
+                            </div>
+                        </div>
+
+                        <!-- Customer Value -->
+                        <div class="col-6" style="padding-left: 15px;">
+                            <div style="border: 1px solid #E0E0E0; border-radius: 5px; padding: 15px; height: 100%; background-color: #FFF3E0;">
+                                <h5 style="color: #C62828; font-weight: bold; margin-bottom: 12px; border-bottom: 2px solid #C62828; padding-bottom: 5px;">
+                                    Customer Value
+                                </h5>
+                                <table class="table table-sm table-borderless" style="margin-bottom: 0;">
+                                    <tr>
+                                        <td style="width: 55%; color: #555; font-size: 11px;">Financial Behavior Tier</td>
+                                        <td style="text-align: right; font-size: 11px;">
+                                            <span t-if="o and o.x_studio_customer_tier == 'loss_making'"
+                                                  style="background-color: #000000; color: white; padding: 5px 12px; border-radius: 3px; font-weight: 600; font-size: 12px; display: inline-block;">LOSS-MAKING</span>
+                                            <span t-elif="o and o.x_studio_customer_tier == 'platinum'"
+                                                  style="background-color: #28a745; color: white; padding: 5px 12px; border-radius: 3px; font-weight: 600; font-size: 12px; display: inline-block;">PLATINUM</span>
+                                            <span t-elif="o and o.x_studio_customer_tier == 'gold'"
+                                                  style="background-color: #FFD700; color: #212529; padding: 5px 12px; border-radius: 3px; font-weight: 600; font-size: 12px; display: inline-block;">GOLD</span>
+                                            <span t-elif="o and o.x_studio_customer_tier == 'stable'"
+                                                  style="background-color: #17a2b8; color: white; padding: 5px 12px; border-radius: 3px; font-weight: 600; font-size: 12px; display: inline-block;">STABLE</span>
+                                            <span t-elif="o and o.x_studio_customer_tier == 'watchlist'"
+                                                  style="background-color: #ffc107; color: #212529; padding: 5px 12px; border-radius: 3px; font-weight: 600; font-size: 12px; display: inline-block;">WATCHLIST</span>
+                                            <span t-elif="o and o.x_studio_customer_tier == 'at_risk'"
+                                                  style="background-color: #dc3545; color: white; padding: 5px 12px; border-radius: 3px; font-weight: 600; font-size: 12px; display: inline-block;">AT RISK</span>
+                                            <span t-else=""
+                                                  style="background-color: #6c757d; color: white; padding: 5px 12px; border-radius: 3px; font-weight: 600; font-size: 12px; display: inline-block;">DORMANT</span>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td style="color: #555; font-size: 11px;">Projected Annual Profit Potential</td>
+                                        <td style="text-align: right; font-weight: bold; font-size: 11px;"
+                                            t-att-style="'color: ' + ('#4CAF50' if (o.x_studio_projected_annual_profit or o.x_studio_clv_estimate or 0.0) > 0 else '#F44336')">
+                                            <t t-set="proj_val" t-value="(o.x_studio_projected_annual_profit or o.x_studio_clv_estimate or 0.0)"/>
+                                            <t t-esc="'{:,.2f}'.format(proj_val)"/> AED
+                                        </td>
+                                    </tr>
+                                </table>
+                            </div>
+                        </div>
+
+                    </div>
+
+                    <!-- ═══════════════════════════════════════════════
+                         PRODUCT PROFITABILITY TABLE
+                    ════════════════════════════════════════════════ -->
+                    <div style="page-break-inside: avoid; margin-top: 20px;">
+
+                        <div class="row mb-2">
+                            <div class="col-12">
+                                <h5 style="color: #495057; border-bottom: 2px solid #dee2e6; padding-bottom: 5px; margin-bottom: 10px; font-size: 14px;">
+                                    Product Profitability Summary (Current FY)
+                                </h5>
+                            </div>
+                        </div>
+
+                        <t t-set="raw_products_json" t-value="o and (o.x_studio_products_data_json or '[]')"/>
+                        <t t-set="product_data"      t-value="json.loads(raw_products_json) if raw_products_json else []"/>
+
+                        <t t-if="product_data">
+
+                            <!-- Pre-compute totals for summary row -->
+                            <t t-set="total_qty_all"       t-value="sum([p.get('total_qty', 0.0) for p in product_data])"/>
+                            <t t-set="total_revenue_all"   t-value="sum([p.get('total_revenue', 0.0) for p in product_data])"/>
+                            <t t-set="avg_price_all"       t-value="total_revenue_all / total_qty_all if total_qty_all > 0 else 0.0"/>
+                            <t t-set="total_cost_weighted" t-value="sum([p.get('unit_cost', 0.0) * p.get('total_qty', 0.0) for p in product_data])"/>
+                            <t t-set="avg_cost_all"        t-value="total_cost_weighted / total_qty_all if total_qty_all > 0 else 0.0"/>
+                            <t t-set="total_profit_unit"   t-value="avg_price_all - avg_cost_all"/>
+                            <t t-set="total_profit_perc"   t-value="(total_profit_unit / avg_price_all * 100.0) if avg_price_all > 0 else 0.0"/>
+
+                            <table style="width: 100%; font-size: 11px; border-collapse: collapse; border: 1px solid #dee2e6;">
+                                <thead>
+                                    <tr style="background-color: #0d6efd; color: white;">
+                                        <th style="padding: 8px; text-align: left;   border: 1px solid #0d6efd;">PRODUCT NAME</th>
+                                        <th style="padding: 8px; text-align: right;  border: 1px solid #0d6efd;">TOTAL QTY</th>
+                                        <th style="padding: 8px; text-align: right;  border: 1px solid #0d6efd;">AVG. MONTHLY</th>
+                                        <th style="padding: 8px; text-align: right;  border: 1px solid #0d6efd;">TOTAL REVENUE</th>
+                                        <th style="padding: 8px; text-align: right;  border: 1px solid #0d6efd;">AVG. PRICE</th>
+                                        <th style="padding: 8px; text-align: right;  border: 1px solid #0d6efd;">UNIT COST</th>
+                                        <th style="padding: 8px; text-align: right;  border: 1px solid #0d6efd;">NET PROFIT/UNIT</th>
+                                        <th style="padding: 8px; text-align: right;  border: 1px solid #0d6efd;">PROFIT %</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <t t-foreach="product_data" t-as="p">
+
+                                        <!-- Row background logic -->
+                                        <t t-set="qty"         t-value="p.get('total_qty', 0.0)"/>
+                                        <t t-set="unit_profit" t-value="p.get('unit_net_profit', 0.0)"/>
+                                        <t t-set="row_bg"      t-value="'#ffffff' if p_index % 2 == 0 else '#f8f9fa'"/>
+                                        <t t-if="qty &lt;= 0.0">
+                                            <t t-set="row_bg" t-value="'#fff0f0'"/>
+                                        </t>
+                                        <t t-if="unit_profit &lt; 0 and qty &gt; 0">
+                                            <t t-set="row_bg" t-value="'#fff8e1'"/>
+                                        </t>
+
+                                        <tr t-attf-style="background-color: #{row_bg};">
+                                            <td style="padding: 6px; border: 1px solid #dee2e6; text-align: left;">
+                                                <strong><t t-esc="p.get('product_name', 'N/A')"/></strong>
+                                            </td>
+                                            <td style="padding: 6px; text-align: right; border: 1px solid #dee2e6; font-weight: bold;">
+                                                <span t-attf-style="color: #{'dc3545' if qty &lt;= 0 else '343a40'};">
+                                                    <t t-esc="'%.2f' % qty"/>
+                                                </span>
+                                            </td>
+                                            <td style="padding: 6px; text-align: right; border: 1px solid #dee2e6;">
+                                                <t t-esc="'%.2f' % p.get('avg_monthly_qty', 0.0)"/>
+                                            </td>
+                                            <td style="padding: 6px; text-align: right; border: 1px solid #dee2e6;">
+                                                <t t-esc="'{:,.2f}'.format(p.get('total_revenue', 0.0))"/> AED
+                                            </td>
+                                            <td style="padding: 6px; text-align: right; border: 1px solid #dee2e6;">
+                                                <t t-esc="'{:,.2f}'.format(p.get('avg_unit_price', 0.0))"/> AED
+                                            </td>
+                                            <td style="padding: 6px; text-align: right; border: 1px solid #dee2e6;">
+                                                <t t-esc="'{:,.2f}'.format(p.get('unit_cost', 0.0))"/> AED
+                                            </td>
+                                            <td style="padding: 6px; text-align: right; border: 1px solid #dee2e6; font-weight: bold;">
+                                                <span t-attf-style="color: #{'ffc107' if unit_profit == 0 else ('dc3545' if unit_profit &lt; 0 else '198754')};">
+                                                    <t t-esc="'{:,.2f}'.format(unit_profit)"/> AED
+                                                </span>
+                                            </td>
+                                            <td style="padding: 6px; text-align: right; border: 1px solid #dee2e6; font-weight: bold;">
+                                                <t t-set="profit_perc" t-value="p.get('profit_percentage', 0.0)"/>
+                                                <span t-attf-style="color: #{'ffc107' if profit_perc == 0 else ('dc3545' if profit_perc &lt; 0 else '198754')};">
+                                                    <t t-esc="'%.2f' % profit_perc"/>%
+                                                </span>
+                                            </td>
+                                        </tr>
+                                    </t>
+
+                                    <!-- TOTAL SUMMARY ROW -->
+                                    <tr style="background-color: #e3f2fd; border-top: 3px solid #1976d2; font-weight: bold;">
+                                        <td style="padding: 8px; border: 1px solid #dee2e6; text-align: left;">📊 TOTAL SUMMARY</td>
+                                        <td style="padding: 8px; text-align: right; border: 1px solid #dee2e6;">
+                                            <t t-esc="'%.2f' % total_qty_all"/>
+                                        </td>
+                                        <td style="padding: 8px; text-align: right; border: 1px solid #dee2e6;">–</td>
+                                        <td style="padding: 8px; text-align: right; border: 1px solid #dee2e6;">
+                                            <t t-esc="'{:,.2f}'.format(total_revenue_all)"/> AED
+                                        </td>
+                                        <td style="padding: 8px; text-align: right; border: 1px solid #dee2e6;">
+                                            <t t-esc="'{:,.2f}'.format(avg_price_all)"/> AED
+                                        </td>
+                                        <td style="padding: 8px; text-align: right; border: 1px solid #dee2e6;"
+                                            t-att-style="'color: ' + ('#856404' if (o and o.x_studio_is_manual_cost_used) else '#1976d2')">
+                                            <t t-esc="'{:,.2f}'.format(avg_cost_all)"/> AED
+                                        </td>
+                                        <td style="padding: 8px; text-align: right; border: 1px solid #dee2e6;">
+                                            <span t-attf-style="color: #{'ffc107' if total_profit_unit == 0 else ('dc3545' if total_profit_unit &lt; 0 else '198754')};">
+                                                <t t-esc="'{:,.2f}'.format(total_profit_unit)"/> AED
+                                            </span>
+                                        </td>
+                                        <td style="padding: 8px; text-align: right; border: 1px solid #dee2e6;">
+                                            <span t-attf-style="color: #{'ffc107' if total_profit_perc == 0 else ('dc3545' if total_profit_perc &lt; 0 else '198754')};">
+                                                <t t-esc="'%.2f' % total_profit_perc"/>%
+                                            </span>
+                                        </td>
+                                    </tr>
+
+                                    <!-- Manual cost notice row -->
+                                    <t t-if="o and o.x_studio_is_manual_cost_used">
+                                        <tr style="background-color: #fff3cd; border-top: 2px solid #ffc107; font-weight: bold;">
+                                            <td colspan="8" style="padding: 8px; border: 1px solid #dee2e6; text-align: center; color: #856404; font-size: 11px;">
+                                                ⚠️ Manual Average Cost Applied:
+                                                <t t-esc="'{:,.2f}'.format(g_avg_cost_overall)"/> AED per unit
+                                            </td>
+                                        </tr>
+                                    </t>
+
+                                </tbody>
+                            </table>
+                        </t>
+
+                        <!-- No product data fallback -->
+                        <t t-else="">
+                            <div style="text-align: center; padding: 20px; background-color: #fff3cd; border: 1px solid #ffc107; border-radius: 4px;">
+                                No detailed product data available.
+                            </div>
+                        </t>
+
+                    </div>
+
+                    <!-- ═══════════════════════════════════════════════
+                         FOOTER
+                    ════════════════════════════════════════════════ -->
+                    <div class="row" style="margin-top: 15px;">
+                        <div class="col-12" style="font-size: 9px; color: #6c757d; text-align: center;">
+                            Report generated on: <t t-esc="datetime.datetime.now().strftime('%Y-%m-%d %H:%M')"/> |
+                            Last Analysis Update: <t t-esc="o and (o.x_studio_sales_analysis_updated or 'N/A')"/>
+                        </div>
+                    </div>
+
+                </div>
+            </t>
+        </t>
+    </template>
+</odoo>
