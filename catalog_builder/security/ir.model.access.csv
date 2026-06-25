@@ -1,0 +1,5 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_catalog_builder_user,catalog.builder.user,model_catalog_builder,,1,1,1,1
+access_catalog_line_user,catalog.line.user,model_catalog_line,,1,1,1,1
+access_catalog_builder_wizard_user,catalog.builder.wizard.user,model_catalog_builder_wizard,,1,1,1,1
+access_catalog_config_user,catalog.config.user,model_catalog_config,,1,1,1,1
