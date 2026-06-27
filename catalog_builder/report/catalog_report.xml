@@ -79,23 +79,27 @@
                         .grid-sub  { font-size:13px; letter-spacing:4px; color:#c2a25a; margin-top:10px; }
                         .grid-logo-img { position:absolute; top:30px; right:54px; width:84px; height:auto; }
 
-                        .cards { padding:30px 44px 0; font-size:0; }
-                        .cards-last { padding-bottom:130px; }
-                        .card  { display:inline-block; width:47%; margin:1.5%; vertical-align:top;
+                        .cards { padding:22px 44px 0; font-size:0; }
+                        .cards-last { padding-bottom:120px; }
+                        .card  { display:inline-block; width:47%; margin:1.2%; vertical-align:top;
                         background-color:#fbf7ee; border-radius:12px; overflow:hidden; }
-                        .card-img { height:160px; background-color:#2c0e16; width:100%;
+                        .card-img { height:118px; background-color:#2c0e16; width:100%;
                         display:table; table-layout:fixed; overflow:hidden; }
                         .card-img-cell { display:table-cell; vertical-align:middle; text-align:center;
                         color:#6f535b; font-size:12px; letter-spacing:5px; }
-                        .card-img img { max-width:100%; max-height:160px; height:auto; width:auto;
+                        .card-img img { max-width:100%; max-height:118px; height:auto; width:auto;
                         display:inline-block; vertical-align:middle; }
-                        .card-strip { background-color:#e7decb; padding:7px 14px; font-size:12px; color:#5c1a2b; }
-                        .card-body { padding:14px 16px 18px; }
-                        .card-name { font-size:19px; font-weight:700; color:#3d1320; line-height:1.1; }
+                        .card-origin { background-color:#efe8d8; padding:13px 18px;
+                        font-size:15px; color:#2e2a26; font-weight:400;
+                        letter-spacing:.3px; border-bottom:1px solid #e0d8c4; }
+                        .card-origin .flag { width:30px; height:20px; vertical-align:middle;
+                        margin-right:13px; border-radius:4px;
+                        border:.5px solid #d2c8b2; }
+                        .card-origin span { vertical-align:middle; }
+                        .card-body { padding:10px 14px 12px; }
+                        .card-name { font-size:15px; font-weight:700; color:#3d1320; line-height:1.1; }
                         .card-desc { font-size:12px; color:#94785f; letter-spacing:1px; margin-top:5px; }
-                        .price-btn { display:inline-block; background-color:#5c1a2b; color:#f0e6d2;
-                        font-weight:700; font-size:15px; letter-spacing:2px;
-                        padding:9px 18px; border-radius:8px; margin-top:14px; }
+                        .price-btn { display:inline-block; background-color:#5c1a2b; color:#f0e6d2; font-weight:700; font-size:13px; letter-spacing:2px; padding:6px 14px; border-radius:8px; margin-top:9px; }
 
                         .badges-band { position:absolute; bottom:0; left:0; right:0;
                         background-color:#5c1a2b; padding:24px 30px; text-align:center; }
@@ -140,21 +144,32 @@
                             </div>
                         </div>
 
-                        <div class="cover-title">PRODUCT<br/>CATALOG</div>
+                        <div class="cover-title">
+                            <t t-set="ctitle" t-value="cfg.cover_title or 'PRODUCT CATALOG'"/>
+                            <t t-foreach="ctitle.splitlines() or [ctitle]" t-as="cl">
+                                <span t-esc="cl"/><br t-if="not cl_last"/>
+                            </t>
+                        </div>
                         <div class="cover-rule"></div>
-                        <div class="cover-tag">PREMIUM SELECTION <span class="sep"/> 2026</div>
+                        <div class="cover-tag">
+                            <t t-set="tag_parts" t-value="[p.strip() for p in (cfg.cover_tagline or 'PREMIUM SELECTION ' + chr(8226) + ' 2026').replace(chr(8226), '|').split('|') if p.strip()]"/>
+                            <t t-foreach="tag_parts" t-as="tp"><span t-esc="tp"/><span t-if="not tp_last" class="sep"/></t>
+                        </div>
                     </div>
 
                     <!-- ===== PRODUCT GRID (paginated) ===== -->
-                    <t t-set="per_page" t-value="4"/>
+                    <t t-set="per_page" t-value="6"/>
                     <t t-set="all_lines" t-value="doc.line_ids"/>
                     <t t-set="chunks" t-value="[all_lines[i:i + per_page] for i in range(0, len(all_lines), per_page)] or [all_lines]"/>
                     <t t-foreach="chunks" t-as="chunk">
                         <t t-set="is_last_grid" t-value="chunk_index == len(chunks) - 1"/>
                         <div class="page grid-page">
                             <div class="grid-band">
-                                <div class="grid-head">PREMIUM COLLECTION</div>
-                                <div class="grid-sub">SELECTED CUTS <span class="sep"/> GRASS-FED</div>
+                                <div class="grid-head" t-esc="cfg.grid_title or 'PREMIUM COLLECTION'"/>
+                                <div class="grid-sub">
+                                    <t t-set="sub_parts" t-value="[p.strip() for p in (cfg.grid_subtitle or 'SELECTED CUTS ' + chr(8226) + ' GRASS-FED').replace(chr(8226), '|').split('|') if p.strip()]"/>
+                                    <t t-foreach="sub_parts" t-as="sp"><span t-esc="sp"/><span t-if="not sp_last" class="sep"/></t>
+                                </div>
                                 <img t-if="cfg.logo" class="grid-logo-img" t-att-src="image_data_uri(cfg.logo)"/>
                             </div>
 
@@ -167,8 +182,9 @@
                                                 <t t-else="">IMAGE</t>
                                             </div>
                                         </div>
-                                        <div class="card-strip" t-if="line.origin">
-                                            <span t-esc="line.origin"/>
+                                        <div class="card-origin" t-if="line.flag_image or line.origin_text">
+                                            <img t-if="line.flag_image" class="flag" t-att-src="image_data_uri(line.flag_image)"/>
+                                            <span t-if="line.origin_text" t-esc="line.origin_text"/>
                                         </div>
                                         <div class="card-body">
                                             <div class="card-name"><span t-esc="line.name.split(']')[-1].strip() if (line.name and ']' in line.name) else (line.name or '')"/></div>
@@ -200,7 +216,12 @@
                     <!-- ===== PAGE 3: THANK YOU ===== -->
                     <div class="page thanks">
                         <img t-if="cfg.logo" class="logo-img" t-att-src="image_data_uri(cfg.logo)"/>
-                        <div class="thanks-title">WE'D BE GLAD<br/>TO SERVE YOU</div>
+                        <div class="thanks-title">
+                            <t t-set="ttitle" t-value="cfg.thanks_title or &quot;WE'D BE GLAD TO SERVE YOU&quot;"/>
+                            <t t-foreach="ttitle.splitlines() or [ttitle]" t-as="tl">
+                                <span t-esc="tl"/><br t-if="not tl_last"/>
+                            </t>
+                        </div>
                         <div class="thanks-rule"></div>
                         <div class="addr">
                             <span t-if="cfg.company_address" t-esc="cfg.company_address"/><br t-if="cfg.company_address"/>
@@ -212,7 +233,10 @@
                         <div class="qr" t-if="cfg.qr_image">
                             <img t-att-src="image_data_uri(cfg.qr_image)"/>
                         </div>
-                        <div class="delivery" t-if="cfg.delivery_note" t-esc="cfg.delivery_note"/>
+                        <div class="delivery" t-if="cfg.delivery_note">
+                            <t t-set="del_parts" t-value="[p.strip() for p in cfg.delivery_note.replace(chr(8226), '|').split('|') if p.strip()]"/>
+                            <t t-foreach="del_parts" t-as="dp"><span t-esc="dp"/><span t-if="not dp_last" class="sep"/></t>
+                        </div>
                         <div class="thanks-foot">
                             No. <span t-field="doc.name"/> <span class="sep"/> <span t-field="doc.date"/>
                         </div>

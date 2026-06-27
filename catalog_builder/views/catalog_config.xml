@@ -12,6 +12,17 @@
                         <label for="name"/>
                         <h1><field name="name" placeholder="e.g. The Cut – Premium 2026"/></h1>
                     </div>
+                    <group string="Page Text">
+                        <group>
+                            <field name="cover_title"/>
+                            <field name="cover_tagline"/>
+                            <field name="thanks_title"/>
+                        </group>
+                        <group>
+                            <field name="grid_title"/>
+                            <field name="grid_subtitle"/>
+                        </group>
+                    </group>
                     <group>
                         <group string="Branding">
                             <field name="logo" widget="image" options="{'size': [120, 120]}"/>

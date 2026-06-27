@@ -17,6 +17,19 @@ class CatalogConfig(models.Model):
     name = fields.Char(string="Configuration Name", required=True, default="Catalog Settings")
     active = fields.Boolean(default=True)
 
+    # --- Cover page text ---
+    cover_title = fields.Text(string="Cover Title", default="PRODUCT\nCATALOG",
+                              help="Big title on the cover. Press Enter for a new line.")
+    cover_tagline = fields.Char(string="Cover Tagline", default="PREMIUM SELECTION • 2026")
+
+    # --- Grid page heading ---
+    grid_title = fields.Char(string="Collection Title", default="PREMIUM COLLECTION")
+    grid_subtitle = fields.Char(string="Collection Subtitle", default="SELECTED CUTS • GRASS-FED")
+
+    # --- Thank-you page ---
+    thanks_title = fields.Text(string="Thank-You Message", default="WE'D BE GLAD\nTO SERVE YOU",
+                               help="Closing message. Press Enter for a new line.")
+
     # --- Branding / images (per record) ---
     logo = fields.Binary(string="Logo")
     cover_image = fields.Binary(string="Cover / Hero Image")
@@ -30,7 +43,7 @@ class CatalogConfig(models.Model):
     whatsapp = fields.Char(string="WhatsApp", default="0507179729")
     website = fields.Char(string="Website", default="ExcellenceMeats.com")
     instagram = fields.Char(string="Instagram", default="@thecut_by_em")
-    delivery_note = fields.Char(string="Delivery Note", default="FREE DELIVERY   MIN AED 300")
+    delivery_note = fields.Char(string="Delivery Note", default="FREE DELIVERY • MIN AED 300")
     badges = fields.Text(
         string="Badges (one per line)",
         default="GRASS-FED\nNO HORMONES\nNO ANTIBIOTICS\nOMEGA-3",

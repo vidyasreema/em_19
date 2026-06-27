@@ -1,7 +1,23 @@
 # -*- coding: utf-8 -*-
 import base64
+import io
+import logging
+
 from odoo import models, fields, api, _
 from odoo.exceptions import UserError
+
+_logger = logging.getLogger(__name__)
+
+# Optional offline flag-image dependencies. If missing, flag rendering is
+# skipped gracefully (the catalog still prints, just without flag images).
+try:
+    import flagpy as _flagpy
+except Exception:  # pragma: no cover
+    _flagpy = None
+try:
+    import pycountry as _pycountry
+except Exception:  # pragma: no cover
+    _pycountry = None
 
 
 class CatalogBuilder(models.Model):
@@ -21,7 +37,7 @@ class CatalogBuilder(models.Model):
         string='Status', default='draft', required=True,
     )
     template = fields.Selection(
-        [('the_cut', 'The Cut — Premium')],
+        [('the_cut', 'The Cut - Premium')],
         string='Template', default='the_cut', required=True,
     )
     customer_id = fields.Many2one(
@@ -109,7 +125,55 @@ class CatalogLine(models.Model):
     image = fields.Binary(string='Display Image')
     description = fields.Char(string='Description')
     origin = fields.Char(string='Origin')
+    # Clean origin text (emoji removed) and the matching flag image, both
+    # derived from whatever the user types in `origin` (e.g. "🇦🇺 Australia").
+    origin_text = fields.Char(
+        string='Origin (text)', compute='_compute_origin_flag', store=True,
+    )
+    flag_image = fields.Binary(
+        string='Flag', compute='_compute_origin_flag', store=True,
+    )
     is_modified = fields.Boolean(string='Modified', default=False, readonly=True)
+
+    @staticmethod
+    def _emoji_to_code(text):
+        """Decode a flag emoji (regional indicator pair) to an ISO alpha-2 code."""
+        codes = [ord(c) - 0x1F1E6 + ord('A') for c in (text or '')
+                 if 0x1F1E6 <= ord(c) <= 0x1F1FF]
+        if len(codes) >= 2:
+            return chr(codes[0]) + chr(codes[1])
+        return None
+
+    @staticmethod
+    def _strip_emoji(text):
+        """Remove emoji / symbol characters, keep normal text."""
+        return ''.join(ch for ch in (text or '') if ord(ch) < 0x2190).strip()
+
+    @api.depends('origin')
+    def _compute_origin_flag(self):
+        for line in self:
+            raw = line.origin or ''
+            typed_text = self._strip_emoji(raw)
+            flag_b64 = False
+            country_name = False
+            code = self._emoji_to_code(raw)
+            if code and _pycountry:
+                try:
+                    country = _pycountry.countries.get(alpha_2=code)
+                    if country:
+                        country_name = country.name
+                        if _flagpy:
+                            pil = _flagpy.get_flag_img(country.name)
+                            buf = io.BytesIO()
+                            pil.save(buf, format='PNG')
+                            flag_b64 = base64.b64encode(buf.getvalue())
+                except Exception as exc:  # pragma: no cover
+                    _logger.warning("Catalog flag render failed for %r: %s", code, exc)
+                    flag_b64 = False
+                    country_name = False
+            # Prefer text the user typed; otherwise use the decoded country name.
+            line.origin_text = typed_text or country_name or False
+            line.flag_image = flag_b64
 
     @api.onchange('product_id')
     def _onchange_product_id(self):
