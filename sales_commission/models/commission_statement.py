@@ -258,9 +258,9 @@ class CommissionStatement(models.Model):
             rec.target_amount = target.target_amount if target else 0.0
             rec.commission_rate = target.commission_rate if target else 0.0
 
-    # ═════════════════════════════════════════════════════════
+    # ?????????????????????????????????????????????????????????
     # STEP 2: Calculate metrics from invoices
-    # ═════════════════════════════════════════════════════════
+    # ?????????????????????????????????????????????????????????
     @api.depends('employee_id', 'month',
                  'employee_id.min_collection_rate',
                  'employee_id.target_achievement_required')
@@ -273,28 +273,29 @@ class CommissionStatement(models.Model):
             date_from = rec.month
             date_to = rec.month + relativedelta(months=1, days=-1)
 
+            # ✅ Use snapshot field instead of live partner lookup
+            salesman_domain = ('commission_salesman_id', '=', rec.employee_id.id)
+
             invoices = self.env['account.move'].search([
                 ('move_type', '=', 'out_invoice'),
                 ('state', '=', 'posted'),
                 ('invoice_date', '>=', date_from),
                 ('invoice_date', '<=', date_to),
-                ('partner_id.sales_man', '=', rec.employee_id.id),
+                salesman_domain,  # ✅ changed
             ])
-
             credit_notes = self.env['account.move'].search([
                 ('move_type', '=', 'out_refund'),
                 ('state', '=', 'posted'),
                 ('invoice_date', '>=', date_from),
                 ('invoice_date', '<=', date_to),
-                ('partner_id.sales_man', '=', rec.employee_id.id),
+                salesman_domain,  # ✅ changed
             ])
-
             cancelled = self.env['account.move'].search([
                 ('move_type', '=', 'out_invoice'),
                 ('state', '=', 'cancel'),
                 ('invoice_date', '>=', date_from),
                 ('invoice_date', '<=', date_to),
-                ('partner_id.sales_man', '=', rec.employee_id.id),
+                salesman_domain,  # ✅ changed
             ])
 
             rec.invoice_count = len(invoices)
@@ -335,7 +336,6 @@ class CommissionStatement(models.Model):
                 (collected_sales / total_sales * 100)
                 if total_sales > 0 else 0.0
             )
-
             rec.cfg_min_collection_rate = rec.employee_id.min_collection_rate or 80.0
             rec.cfg_target_required = rec.employee_id.target_achievement_required
 

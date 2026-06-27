@@ -35,7 +35,9 @@
         "views/commission_config_views.xml",
         "views/commission_target_views.xml",
         "views/commission_statement_views.xml",
-        "reports/commission_report.xml"
+        "reports/commission_report.xml",
+        "views/account_move_inherit.xml",
+        "views/backfill_commission_sales_man.xml"
 
     ],
     'assets': {

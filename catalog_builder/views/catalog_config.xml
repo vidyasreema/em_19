@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- FORM -->
+    <record id="view_catalog_config_form" model="ir.ui.view">
+        <field name="name">catalog.config.form</field>
+        <field name="model">catalog.config</field>
+        <field name="arch" type="xml">
+            <form string="Catalog Configuration">
+                <sheet>
+                    <div class="oe_title">
+                        <label for="name"/>
+                        <h1><field name="name" placeholder="e.g. The Cut – Premium 2026"/></h1>
+                    </div>
+                    <group string="Page Text">
+                        <group>
+                            <field name="cover_title"/>
+                            <field name="cover_tagline"/>
+                            <field name="thanks_title"/>
+                        </group>
+                        <group>
+                            <field name="grid_title"/>
+                            <field name="grid_subtitle"/>
+                        </group>
+                    </group>
+                    <group>
+                        <group string="Branding">
+                            <field name="logo" widget="image" options="{'size': [120, 120]}"/>
+                            <field name="cover_image" widget="image" options="{'size': [220, 150]}"/>
+                        </group>
+                        <group string="QR Code">
+                            <field name="qr_url"/>
+                            <field name="qr_image" widget="image" options="{'size': [120, 120]}" readonly="1"/>
+                        </group>
+                    </group>
+                    <group string="Contact Details">
+                        <group>
+                            <field name="company_address"/>
+                            <field name="phone"/>
+                            <field name="whatsapp"/>
+                        </group>
+                        <group>
+                            <field name="website"/>
+                            <field name="instagram"/>
+                            <field name="delivery_note"/>
+                            <field name="badges" placeholder="One badge per line"/>
+                            <field name="active"/>
+                        </group>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- LIST -->
+    <record id="view_catalog_config_list" model="ir.ui.view">
+        <field name="name">catalog.config.list</field>
+        <field name="model">catalog.config</field>
+        <field name="arch" type="xml">
+            <list string="Catalog Configurations">
+                <field name="name"/>
+                <field name="website"/>
+                <field name="phone"/>
+                <field name="qr_url"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- ACTION -->
+    <record id="action_catalog_config" model="ir.actions.act_window">
+        <field name="name">Catalog Configuration</field>
+        <field name="res_model">catalog.config</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+    <!-- MENU (adjust parent to your existing root menu id if you have one) -->
+    <menuitem id="menu_catalog_config_root"
+              name="Catalog Builder"
+              sequence="50"/>
+    <menuitem id="menu_catalog_config"
+              name="Configuration"
+              parent="menu_catalog_builder_root"
+              action="action_catalog_config"
+              sequence="20"/>
+
+</odoo>
