@@ -20,7 +20,9 @@
     ],
     'data': [
         'views/unreconciled_activity_cron.xml',
-        'views/sale_order_inherit.xml'
+        'views/sale_order_inherit.xml',
+        'views/hr_employee_inherit.xml',
+        'views/res_partner_inherit.xml'
     ],
     'installable': True,
     'application': False,

@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_partner_form_security_cheque" model="ir.ui.view">
+        <field name="name">res.partner.form.security.cheque</field>
+        <field name="model">res.partner</field>
+        <field name="inherit_id" ref="account.view_partner_property_form"/>
+        <field name="arch" type="xml">
+            <!-- Add fields inside the Accounting page -->
+            <xpath expr="//page[@name='accounting']//group" position="inside">
+                <group string="Security Cheque" colspan="2">
+                    <field name="has_security_cheque"/>
+                    <field name="security_cheque_amount"
+                           invisible="not has_security_cheque"/>
+                    <field name="security_cheque_file"
+                           filename="security_cheque_filename"
+                           invisible="not has_security_cheque"/>
+                    <field name="security_cheque_filename" invisible="1"/>
+                </group>
+            </xpath>
+        </field>
+    </record>
+</odoo>
