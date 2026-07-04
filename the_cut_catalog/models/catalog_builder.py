@@ -83,7 +83,11 @@ class CatalogBuilder(models.Model):
                 "product_id": product.id,
                 "name": product.display_name,
                 "price": product.list_price,
-                "image": product.image_1920,
+                # NOTE: switched from image_1920 -> image_256.
+                # The report only ever displays this at ~150px height via CSS,
+                # so storing/encoding the full 1920px image was pure overhead
+                # (this was the main cause of slow PDF generation on large catalogs).
+                "image": product.image_256,
                 "description": product.description_sale or "",
             }))
         if new_lines:
@@ -339,5 +343,7 @@ class CatalogLine(models.Model):
             if line.product_id:
                 line.name = line.product_id.display_name
                 line.price = line.product_id.list_price
-                line.image = line.product_id.image_1920
+                # NOTE: switched from image_1920 -> image_256 (see _append_products
+                # above for why: the report only displays this at ~150px height).
+                line.image = line.product_id.image_256
                 line.description = line.product_id.description_sale or ""
