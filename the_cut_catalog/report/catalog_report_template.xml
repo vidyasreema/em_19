@@ -1,0 +1,236 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <template id="report_catalog_document">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="doc">
+                <t t-set="cfg" t-value="doc.config_id or doc.env['catalog.config'].search([('active','=',True)], limit=1)"/>
+                <t t-set="sections" t-value="doc.get_report_sections()"/>
+
+                <div class="catalog-root">
+                    <style>
+                        @page { size: A4 portrait; margin: 0; }
+                        * { margin:0; padding:0; box-sizing:border-box; }
+                        html, body { margin:0; padding:0; width:100%; height:100%; background-color:#5c1a2b; }
+                        .page { width:100%; height:297mm; position:relative; overflow:hidden;
+                        page-break-after:always; font-family:'Arial Narrow','Oswald',sans-serif;
+                        color:#f0e6d2; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+                        .page:last-child { page-break-after:auto; }
+                        .sep { display:inline-block; width:4px; height:4px; border-radius:50%;
+                        background-color:currentColor; vertical-align:middle; margin:0 7px; opacity:.75; }
+
+                        /* COVER */
+                        .cover { background-color:#5c1a2b; padding:70px 58px 0; }
+                        .cover-top { position:relative; height:120px; }
+                        .cover-top .logo-img { width:120px; height:auto; }
+                        .cover-meta { position:absolute; top:18px; right:0; text-align:right; }
+                        .cover-meta .no { font-size:15px; font-weight:700; letter-spacing:3px; color:#f0e6d2; }
+                        .cover-meta .dt { font-size:14px; letter-spacing:3px; color:#c2a25a; margin-top:7px; }
+                        .hero { margin-top:30px; height:355px; background-color:#2c0e16; border-radius:16px;
+                        overflow:hidden; display:table; table-layout:fixed; width:100%; }
+                        .hero-cell { display:table-cell; vertical-align:middle; text-align:center;
+                        color:#6f535b; font-size:13px; letter-spacing:5px; }
+                        .hero img { max-width:100%; max-height:355px; height:auto; width:auto;
+                        display:inline-block; vertical-align:middle; border-radius:14px; }
+                        .cover-title { font-size:74px; font-weight:700; line-height:.9; letter-spacing:1px;
+                        color:#f3ead7; margin-top:50px; }
+                        .cover-rule { width:92px; height:3px; background-color:#c2a25a; margin:24px 0 16px; }
+                        .cover-tag { font-size:15px; letter-spacing:6px; color:#e7dcc2; }
+
+                        /* DIVIDER */
+                        .divider { background-color:#5c1a2b; padding:44px 58px 0; }
+                        .divider-top { position:relative; height:70px; }
+                        .divider-logo { position:absolute; top:0; left:0; width:120px; height:74px;
+                        text-align:left; }
+                        .divider-logo img { max-width:120px; max-height:74px; }
+                        .divider-logo .txt { font-size:11px; font-weight:700; color:#f0e6d2; line-height:70px; }
+                        .divider-tag { position:absolute; top:24px; right:0; font-size:14px;
+                        letter-spacing:6px; color:#c2a25a; white-space:nowrap; }
+                        .divider-hero { margin-top:26px; height:360px; background-color:#2c0e16;
+                        overflow:hidden; display:table; table-layout:fixed; width:100%; }
+                        .divider-hero-cell { display:table-cell; vertical-align:middle; text-align:center;
+                        color:#6f535b; font-size:13px; letter-spacing:5px; }
+                        .divider-hero img { width:100%; height:360px; object-fit:cover; display:inline-block; }
+                        .divider-name { font-size:96px; font-weight:700; line-height:.9; letter-spacing:2px;
+                        color:#f3ead7; margin-top:90px; }
+                        .divider-rule { width:180px; height:3px; background-color:#c2a25a; margin:26px 0 22px; }
+                        .divider-sub { font-size:19px; letter-spacing:5px; color:#e7dcc2; }
+                        .divider-foot { position:absolute; bottom:26px; left:0; right:0; text-align:center;
+                        font-size:11px; letter-spacing:2px; color:#9c7782; }
+
+                        /* GRID */
+                        .grid-page { background-color:#efe5d0; color:#5c1a2b; }
+                        .grid-band { background-color:#5c1a2b; color:#f0e6d2; padding:36px 58px; position:relative; }
+                        .grid-head { font-size:34px; font-weight:700; letter-spacing:1px; line-height:1; }
+                        .grid-logo-img { position:absolute; top:28px; right:54px; width:80px; height:auto; }
+                        .origin-bar { margin:24px 40px 0; background-color:#7a1f33; border-radius:12px;
+                        padding:15px 22px; color:#f0e6d2; }
+                        .origin-bar .flag { width:32px; height:21px; vertical-align:middle; margin-right:14px;
+                        border-radius:4px; border:.5px solid #d2c8b2; }
+                        .origin-bar .oname { font-size:21px; font-weight:700; vertical-align:middle; }
+                        .origin-bar .ocount { display:inline-block; vertical-align:middle; background-color:#efe5d0;
+                        color:#5c1a2b; font-size:13px; font-weight:700; border-radius:12px; padding:2px 12px; margin-left:16px; }
+                        .cards { padding:22px 40px 0; font-size:0; }
+                        .card { display:inline-block; width:48%; min-height:266px; margin:1.3% 0.8%; vertical-align:top;
+                        background-color:#fbf7ee; border-radius:12px; overflow:hidden; padding-bottom:6px; }
+                        .card-img { height:150px; background-color:#2c0e16; width:100%; display:table;
+                        table-layout:fixed; overflow:hidden; }
+                        .card-img-cell { display:table-cell; vertical-align:middle; text-align:center;
+                        color:#6f535b; font-size:12px; letter-spacing:5px; }
+                        .card-img img { max-width:100%; max-height:150px; height:auto; width:auto;
+                        display:inline-block; vertical-align:middle; }
+                        .card-origin { background-color:#efe8d8; padding:7px 16px; font-size:13px; color:#2e2a26;
+                        border-bottom:1px solid #e0d8c4; }
+                        .card-origin .flag { width:26px; height:17px; vertical-align:middle; margin-right:11px;
+                        border-radius:4px; border:.5px solid #d2c8b2; }
+                        .card-origin span { vertical-align:middle; }
+                        .card-body { padding:10px 16px 12px; }
+                        .card-name { font-size:16px; font-weight:700; color:#3d1320; line-height:1.15; }
+                        .card-desc { font-size:11px; color:#94785f; letter-spacing:1px; margin-top:4px; }
+                        .price-btn { display:inline-block; background-color:#5c1a2b; color:#f0e6d2; font-weight:700;
+                        font-size:13px; letter-spacing:2px; padding:7px 15px; border-radius:8px; margin-top:12px; }
+
+                        /* THANKS */
+                        .thanks { background-color:#5c1a2b; text-align:center; padding-top:60px; }
+                        .thanks .logo-img { width:132px; height:auto; margin:0 auto; }
+                        .thanks-title { font-size:46px; font-weight:700; line-height:1.0; letter-spacing:1px;
+                        color:#f3ead7; margin-top:30px; }
+                        .thanks-rule { width:64px; height:3px; background-color:#c2a25a; margin:24px auto; }
+                        .addr { font-size:17px; line-height:2.05; color:#e7dcc2; letter-spacing:.5px; }
+                        .qr { width:122px; height:122px; background-color:#f0e6d2; border-radius:14px;
+                        padding:10px; margin:32px auto; }
+                        .qr img { width:100%; height:100%; }
+                        .delivery { font-size:14px; letter-spacing:5px; color:#c2a25a; margin-top:6px; }
+                        .thanks-foot { position:absolute; bottom:30px; left:0; right:0; font-size:11px;
+                        letter-spacing:2px; color:#9c7782; }
+                    </style>
+
+                    <!-- ===== COVER ===== -->
+                    <div class="page cover">
+                        <div class="cover-top">
+                            <img t-if="cfg and cfg.logo" class="logo-img" t-att-src="image_data_uri(cfg.logo)"/>
+                            <div class="cover-meta">
+                                <div class="no">No. <span t-field="doc.name"/></div>
+                                <div class="dt"><span t-field="doc.date"/></div>
+                            </div>
+                        </div>
+                        <t t-set="hero_img" t-value="(cfg.cover_image if cfg else False) or (doc.line_ids[0].image if doc.line_ids else False)"/>
+                        <div class="hero">
+                            <div class="hero-cell">
+                                <img t-if="hero_img" t-att-src="image_data_uri(hero_img)"/>
+                                <t t-else="">PRODUCT HERO IMAGE</t>
+                            </div>
+                        </div>
+                        <div class="cover-title">
+                            <t t-set="ctitle" t-value="(cfg.cover_title if cfg else False) or 'PRODUCT CATALOG'"/>
+                            <t t-foreach="ctitle.splitlines() or [ctitle]" t-as="cl">
+                                <span t-esc="cl"/><br t-if="not cl_last"/>
+                            </t>
+                        </div>
+                        <div class="cover-rule"></div>
+                        <div class="cover-tag" t-esc="((cfg.cover_tagline if cfg else False) or 'PREMIUM SELECTION').replace('\u00e2\u20ac\u00a2', '-').replace(chr(8226), '-')"/>
+                    </div>
+
+                    <!-- ===== PER ANIMAL ===== -->
+                    <t t-foreach="sections" t-as="section">
+
+                        <!-- Divider page -->
+                        <div class="page divider">
+                            <div class="divider-top">
+                                <div class="divider-logo">
+                                    <img t-if="cfg and cfg.logo" t-att-src="image_data_uri(cfg.logo)"/>
+                                    <span t-else="" class="txt">THE CUT</span>
+                                </div>
+                                <div class="divider-tag">SECTION</div>
+                            </div>
+                            <div class="divider-hero">
+                                <div class="divider-hero-cell">
+                                    <img t-if="section['hero_image']" t-att-src="image_data_uri(section['hero_image'])"/>
+                                    <t t-else="">SECTION IMAGE</t>
+                                </div>
+                            </div>
+                            <div class="divider-name" t-esc="section['title']"/>
+                            <div class="divider-rule"></div>
+                            <div class="divider-sub">
+                                <t t-esc="section['count']"/> cuts - arranged by origin
+                            </div>
+                            <div class="divider-foot">
+                                No. <span t-field="doc.name"/> - <span t-field="doc.date"/>
+                            </div>
+                        </div>
+
+                        <!-- Origin groups: 6 cards per page, paginate all -->
+                        <t t-foreach="section['groups']" t-as="grp">
+                            <t t-set="grp_lines" t-value="grp['lines']"/>
+                            <t t-set="chunks" t-value="[grp_lines[i:i+6] for i in range(0, len(grp_lines), 6)] or [grp_lines]"/>
+                            <t t-foreach="chunks" t-as="chunk">
+                                <div class="page grid-page">
+                                    <div class="grid-band">
+                                        <div class="grid-head" t-esc="section['title'] + ' - BY ORIGIN'"/>
+                                        <img t-if="cfg and cfg.logo" class="grid-logo-img" t-att-src="image_data_uri(cfg.logo)"/>
+                                    </div>
+                                    <div class="origin-bar">
+                                        <img t-if="grp['flag_image']" class="flag" t-att-src="'data:image/png;base64,%s' % (grp['flag_image'].decode() if grp['flag_image'] else '')"/>
+                                        <span class="oname" t-esc="grp['name']"/>
+                                        <span class="ocount" t-esc="grp['count']"/>
+                                    </div>
+                                    <div class="cards">
+                                        <t t-foreach="chunk" t-as="line">
+                                            <div class="card">
+                                                <div class="card-img">
+                                                    <div class="card-img-cell">
+                                                        <img t-if="line.image" t-att-src="image_data_uri(line.image)"/>
+                                                        <t t-else="">IMAGE</t>
+                                                    </div>
+                                                </div>
+                                                <div class="card-origin" t-if="line.flag_image or line.origin_text">
+                                                    <img t-if="line.flag_image" class="flag" t-att-src="'data:image/png;base64,%s' % (line.flag_image.decode() if line.flag_image else '')"/>
+                                                    <span t-if="line.origin_text" t-esc="line.origin_text"/>
+                                                </div>
+                                                <div class="card-body">
+                                                    <div class="card-name">
+                                                        <span t-esc="line.name.split(']')[-1].strip() if (line.name and ']' in line.name) else (line.name or '')"/>
+                                                    </div>
+                                                    <div class="card-desc" t-esc="line.description or ''"/>
+                                                    <div class="price-btn">AED <span t-esc="'%.0f' % (line.price or 0)"/></div>
+                                                </div>
+                                            </div>
+                                        </t>
+                                    </div>
+                                </div>
+                            </t>
+                        </t>
+                    </t>
+
+                    <!-- ===== THANK YOU ===== -->
+                    <div class="page thanks">
+                        <img t-if="cfg and cfg.logo" class="logo-img" t-att-src="image_data_uri(cfg.logo)"/>
+                        <div class="thanks-title">
+                            <t t-set="ttitle" t-value="(cfg.thanks_title if cfg else False) or &quot;WE'D BE GLAD TO SERVE YOU&quot;"/>
+                            <t t-foreach="ttitle.splitlines() or [ttitle]" t-as="tl">
+                                <span t-esc="tl"/><br t-if="not tl_last"/>
+                            </t>
+                        </div>
+                        <div class="thanks-rule"></div>
+                        <div class="addr" t-if="cfg">
+                            <span t-if="cfg.company_address" t-esc="cfg.company_address"/><br t-if="cfg.company_address"/>
+                            <t t-if="cfg.phone">Tel <span t-esc="cfg.phone"/></t>
+                            <t t-if="cfg.whatsapp"> <span class="sep"/> WhatsApp <span t-esc="cfg.whatsapp"/></t><br/>
+                            <span t-if="cfg.website" t-esc="cfg.website"/>
+                            <t t-if="cfg.instagram"> <span class="sep"/> <span t-esc="cfg.instagram"/></t>
+                        </div>
+                        <div class="qr" t-if="cfg and cfg.qr_image">
+                            <img t-att-src="image_data_uri(cfg.qr_image)"/>
+                        </div>
+                        <div class="delivery" t-if="cfg and cfg.delivery_note" t-esc="cfg.delivery_note.replace('\u00e2\u20ac\u00a2', '-').replace(chr(8226), '-')"/>
+                        <div class="thanks-foot">
+                            No. <span t-field="doc.name"/> - <span t-field="doc.date"/>
+                        </div>
+                    </div>
+
+                </div>
+            </t>
+        </t>
+    </template>
+
+</odoo>

@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="view_catalog_config_form" model="ir.ui.view">
+        <field name="name">catalog.config.form</field>
+        <field name="model">catalog.config</field>
+        <field name="arch" type="xml">
+            <form string="Catalog Settings">
+                <sheet>
+                    <group>
+                        <group string="Cover Page">
+                            <field name="cover_title"/>
+                            <field name="cover_tagline"/>
+                            <field name="thanks_title"/>
+                        </group>
+                        <group string="Collection Heading">
+                            <field name="grid_title"/>
+                            <field name="grid_subtitle"/>
+                        </group>
+                    </group>
+                    <group>
+                        <group string="Branding">
+                            <field name="logo" widget="image" class="oe_avatar"/>
+                            <field name="cover_image" widget="image"/>
+                        </group>
+                        <group string="QR Code">
+                            <field name="qr_url"/>
+                            <field name="qr_image" widget="image"/>
+                        </group>
+                    </group>
+                    <group string="Contact Details">
+                        <group>
+                            <field name="company_address"/>
+                            <field name="phone"/>
+                            <field name="whatsapp"/>
+                        </group>
+                        <group>
+                            <field name="website"/>
+                            <field name="instagram"/>
+                            <field name="delivery_note"/>
+                            <field name="badges"/>
+                            <field name="active"/>
+                        </group>
+                    </group>
+                    <field name="name" invisible="1"/>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_catalog_config_list" model="ir.ui.view">
+        <field name="name">catalog.config.list</field>
+        <field name="model">catalog.config</field>
+        <field name="arch" type="xml">
+            <list string="Catalog Settings">
+                <field name="name"/>
+                <field name="website"/>
+                <field name="active"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="action_catalog_config" model="ir.actions.act_window">
+        <field name="name">Catalog Configuration</field>
+        <field name="res_model">catalog.config</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+    <menuitem id="menu_catalog_root" name="Catalog Builder" sequence="50"/>
+    <menuitem id="menu_catalog_config" name="Configuration"
+              parent="menu_catalog_root" action="action_catalog_config"
+              sequence="20"/>
+
+</odoo>
