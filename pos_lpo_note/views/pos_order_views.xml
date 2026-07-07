@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="view_pos_order_form_lpo" model="ir.ui.view">
+        <field name="name">pos.order.form.lpo</field>
+        <field name="model">pos.order</field>
+        <field name="inherit_id" ref="point_of_sale.view_pos_pos_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='partner_id']" position="after">
+                <field name="lpo_number"/>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="view_move_form_lpo" model="ir.ui.view">
+        <field name="name">account.move.form.lpo</field>
+        <field name="model">account.move</field>
+        <field name="inherit_id" ref="account.view_move_form"/>
+        <field name="arch" type="xml">
+            <field name="invoice_origin" position="after">
+                <field name="lpo_number" invisible="move_type not in ('out_invoice', 'out_refund')"/>
+            </field>
+        </field>
+    </record>
+
+</odoo>
