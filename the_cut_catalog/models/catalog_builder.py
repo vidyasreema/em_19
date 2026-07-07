@@ -211,24 +211,34 @@ class CatalogBuilder(models.Model):
 
             origins = sec_lines.mapped("origin_value_id").sorted(
                 lambda v: (v.sequence, v.id))
-            groups = []
+
+            # Build a flat, ordered list of blocks: an origin-header block
+            # followed by one card block per product line in that origin.
+            blocks = []
             for origin in origins:
                 grp = sec_lines.filtered(lambda l: l.origin_value_id == origin)
                 flag = next((l.flag_image for l in grp if l.flag_image), False)
-                groups.append({
+                blocks.append({
+                    "type": "header",
                     "name": origin.name,
                     "count": len(grp),
-                    "lines": grp,
                     "flag_image": flag,
                 })
+                for line in grp:
+                    blocks.append({"type": "card", "line": line})
+
             unspecified = sec_lines.filtered(lambda l: not l.origin_value_id)
             if unspecified:
-                groups.append({
+                blocks.append({
+                    "type": "header",
                     "name": "Unspecified origin",
                     "count": len(unspecified),
-                    "lines": unspecified,
                     "flag_image": False,
                 })
+                for line in unspecified:
+                    blocks.append({"type": "card", "line": line})
+
+            pages = self._paginate_blocks(blocks)
 
             # Category image first, then fall back to a product image.
             hero = False
@@ -241,9 +251,62 @@ class CatalogBuilder(models.Model):
                 "title": self._leaf_category_name(categ),
                 "count": len(sec_lines),
                 "hero_image": hero,
-                "groups": groups,
+                "pages": pages,
             })
         return sections
+
+    @staticmethod
+    def _merge_card_blocks(page_blocks):
+        """Collapse consecutive 'card' blocks on a page into a single
+        'cards' block holding a list of lines, so the template can wrap
+        consecutive cards in one shared grid container (side-by-side)
+        while origin-header blocks stay separate on their own row."""
+        merged = []
+        current_lines = []
+        for block in page_blocks:
+            if block["type"] == "card":
+                current_lines.append(block["line"])
+            else:
+                if current_lines:
+                    merged.append({"type": "cards", "lines": current_lines})
+                    current_lines = []
+                merged.append(block)
+        if current_lines:
+            merged.append({"type": "cards", "lines": current_lines})
+        return merged
+
+    def _paginate_blocks(self, blocks, cards_per_page=12):
+        """Pack a flat list of blocks (origin headers + product cards) into
+        pages, capping each page at `cards_per_page` cards (matches the
+        3-column x 4-row = 12 cards/page grid in the report template).
+
+        Headers flow inline with the cards that follow them and do NOT
+        force a page break by themselves - they only get pushed to a new
+        page if the current page has already hit its card limit. This
+        keeps pages tightly packed: if one origin group ends partway
+        through a page, the next origin's cards continue filling that
+        same page instead of jumping to a fresh page and leaving the
+        rest of the previous page blank."""
+        pages = []
+        page = []
+        card_count = 0
+        for block in blocks:
+            if block["type"] == "card":
+                if card_count == cards_per_page:
+                    pages.append(self._merge_card_blocks(page))
+                    page = []
+                    card_count = 0
+                page.append(block)
+                card_count += 1
+            else:  # header block
+                if card_count == cards_per_page:
+                    pages.append(self._merge_card_blocks(page))
+                    page = []
+                    card_count = 0
+                page.append(block)
+        if page:
+            pages.append(self._merge_card_blocks(page))
+        return pages
 
 
 class CatalogLine(models.Model):
@@ -304,14 +367,20 @@ class CatalogLine(models.Model):
             line.origin_text = (line.origin
                                 or (origin_val.name if origin_val else False)
                                 or False)
-            line.flag_image = line._flag_for_value(origin_val)
+            # FIX: the flag must follow whatever text is actually being
+            # displayed (origin_text - which already respects the manual
+            # "origin" override), not the product's raw attribute value.
+            # Previously this always used origin_val, so typing a manual
+            # override changed the visible text but left the old flag
+            # showing the product's original country.
+            line.flag_image = line._flag_for_name(line.origin_text)
 
     @staticmethod
-    def _flag_for_value(origin_val):
-        """Render a PNG flag from the origin's NAME, if possible."""
-        if not (_flagpy and _pycountry and origin_val):
+    def _flag_for_name(country_raw):
+        """Render a PNG flag from a country name/adjective string."""
+        if not (_flagpy and _pycountry and country_raw):
             return False
-        raw = (origin_val.name or "").strip()
+        raw = (country_raw or "").strip()
         if not raw:
             return False
 
