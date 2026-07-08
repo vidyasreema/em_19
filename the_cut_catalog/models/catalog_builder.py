@@ -263,15 +263,20 @@ class CatalogBuilder(models.Model):
             })
         return sections
 
-    # Report grid is tuned for 3 columns x 4 rows = 12 cards per page, with
-    # one origin-header bar also fitting on that same page (confirmed
-    # working in the single-origin-per-page layout). Modeled as "budget
-    # units": a header costs 1 unit, each row of up to 3 cards costs 1
-    # unit, and a full page holds exactly 5 units (1 header + 4 rows).
-    # This lets multiple small origin groups safely share a page - unlike
-    # counting raw cards alone, this accounts for header height too, so
-    # nothing overflows past the fixed page height and gets clipped.
-    _PAGE_BUDGET_UNITS = 5
+    # Report grid is tuned for 3 columns x 4 rows = 12 cards per page.
+    # Modeled as "budget units" based on the actual CSS pixel heights:
+    #   - a card row (incl. margins) is ~213px tall -> costs 1.0 unit
+    #   - an origin-header bar (incl. margins/padding) is ~46px, plus the
+    #     ~10px top padding added each time a new .cards block starts, for
+    #     a combined ~56px -> costs ~0.27 units (56/213)
+    # A full single-origin page (1 header + 4 rows) then costs
+    # 0.27 + 4 = 4.27 units; the budget below (4.2) keeps a small safety
+    # margin under that so nothing sits right at the edge. This lets
+    # several small origin groups safely share a page - unlike counting
+    # raw cards alone, this accounts for header height too, so nothing
+    # overflows past the fixed page height and gets clipped.
+    _PAGE_BUDGET_UNITS = 4.2
+    _HEADER_COST_UNITS = 0.27
     _PAGE_MAX_CARDS = 12  # 4 rows x 3 columns, the largest a single page holds
 
     @staticmethod
@@ -291,7 +296,7 @@ class CatalogBuilder(models.Model):
         other groups' cards, so large groups behave exactly as before."""
         pages = []
         current_page = []
-        current_cost = 0
+        current_cost = 0.0
 
         def header_block(grp):
             return {
@@ -306,11 +311,11 @@ class CatalogBuilder(models.Model):
             if current_page:
                 pages.append(current_page)
             current_page = []
-            current_cost = 0
+            current_cost = 0.0
 
         for grp in groups:
             rows = self._rows_for_count(grp["count"])
-            cost = 1 + rows  # 1 header unit + N row units
+            cost = self._HEADER_COST_UNITS + rows
 
             if cost <= self._PAGE_BUDGET_UNITS:
                 # Whole group fits on a single page - pack it in with
