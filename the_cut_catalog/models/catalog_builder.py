@@ -203,15 +203,10 @@ class CatalogBuilder(models.Model):
             return "OTHER"
         return (categ.name or "").upper()
 
-    def get_report_pages(self):
-        """Build ONE flat, packed sequence of pages spanning the entire
-        catalog - categories flow together on shared pages instead of
-        each getting a dedicated divider page. A category change shows
-        as an inline "category band" within the packed content (same
-        idea as an origin-header bar, just one level up), so a page can
-        contain the tail of one animal's products and the start of the
-        next animal's, with no forced page break and no wasted blank
-        space at a category boundary."""
+    def get_report_sections(self):
+        """Group lines: animal (category) -> country (origin) -> lines,
+        then pack origin groups into pages using a row-budget model.
+        Returns a list ready for the QWeb template."""
         self.ensure_one()
         lines = self.line_ids
 
@@ -220,7 +215,7 @@ class CatalogBuilder(models.Model):
         if lines.filtered(lambda l: not l.category_id):
             ordered.append(self.env["product.category"])  # empty -> "OTHER"
 
-        blocks = []
+        sections = []
         for categ in ordered:
             if categ:
                 sec_lines = lines.filtered(lambda l: l.category_id == categ)
@@ -229,34 +224,44 @@ class CatalogBuilder(models.Model):
             if not sec_lines:
                 continue
 
-            blocks.append({
-                "kind": "category",
-                "name": self._leaf_category_name(categ),
-            })
-
             origins = sec_lines.mapped("origin_value_id").sorted(
                 lambda v: (v.sequence, v.id))
+
+            groups = []
             for origin in origins:
                 grp = sec_lines.filtered(lambda l: l.origin_value_id == origin)
                 flag = next((l.flag_image for l in grp if l.flag_image), False)
-                blocks.append({
-                    "kind": "origin",
+                groups.append({
                     "name": origin.name,
                     "count": len(grp),
-                    "flag_image": flag,
                     "lines": grp,
+                    "flag_image": flag,
                 })
             unspecified = sec_lines.filtered(lambda l: not l.origin_value_id)
             if unspecified:
-                blocks.append({
-                    "kind": "origin",
+                groups.append({
                     "name": "Unspecified origin",
                     "count": len(unspecified),
-                    "flag_image": False,
                     "lines": unspecified,
+                    "flag_image": False,
                 })
 
-        return self._pack_blocks_into_pages(blocks)
+            pages = self._pack_groups_into_pages(groups)
+
+            # Category image first, then fall back to a product image.
+            hero = False
+            if categ and categ.catalog_image:
+                hero = categ.catalog_image
+            if not hero:
+                hero = next((l.image for l in sec_lines if l.image), False)
+
+            sections.append({
+                "title": self._leaf_category_name(categ),
+                "count": len(sec_lines),
+                "hero_image": hero,
+                "pages": pages,
+            })
+        return sections
 
     # Report grid is tuned for 3 columns x 4 rows = 12 cards per page.
     # Modeled as "budget units" based on the actual CSS pixel heights:
@@ -264,18 +269,14 @@ class CatalogBuilder(models.Model):
     #   - an origin-header bar (incl. margins/padding) is ~46px, plus the
     #     ~10px top padding added each time a new .cards block starts, for
     #     a combined ~56px -> costs ~0.27 units (56/213)
-    #   - a category band is a bit taller/bolder than an origin header
-    #     (~68px incl. its own margin) -> costs ~0.32 units (68/213)
     # A full single-origin page (1 header + 4 rows) then costs
     # 0.27 + 4 = 4.27 units; the budget below (4.2) keeps a small safety
     # margin under that so nothing sits right at the edge. This lets
-    # several small origin groups AND category boundaries safely share a
-    # page - unlike counting raw cards alone, this accounts for header/
-    # band height too, so nothing overflows past the fixed page height
-    # and gets clipped.
+    # several small origin groups safely share a page - unlike counting
+    # raw cards alone, this accounts for header height too, so nothing
+    # overflows past the fixed page height and gets clipped.
     _PAGE_BUDGET_UNITS = 4.2
     _HEADER_COST_UNITS = 0.27
-    _CATEGORY_COST_UNITS = 0.32
     _PAGE_MAX_CARDS = 12  # 4 rows x 3 columns, the largest a single page holds
 
     @staticmethod
@@ -283,16 +284,16 @@ class CatalogBuilder(models.Model):
         """3 cards per row, rounded up."""
         return -(-count // 3)  # ceil division without importing math
 
-    def _pack_blocks_into_pages(self, blocks):
-        """Pack a flat sequence of category-band and origin (header+cards)
-        blocks into pages using the row-budget model above. A block that
-        fits within the remaining budget on the current page is appended
-        there instead of starting a fresh page. An origin group too large
-        for one page alone (more than 12 products) gets its own dedicated
-        full page(s), never mixed with other blocks. A category band is
-        never left orphaned alone at the bottom of a page with none of
-        its own products following it - it's paired with at least its
-        first origin group when checking whether it fits."""
+    def _pack_groups_into_pages(self, groups):
+        """Pack origin groups (each with a header + its product lines) into
+        pages using the row-budget model above. A group that fits within
+        the remaining budget on the current page is appended there instead
+        of starting a fresh page - so small groups (like a single Spanish
+        product, or a handful of "Unspecified origin" items) don't each
+        waste a mostly-blank page. A group too large to fit on one page by
+        itself (more than 12 products) is split into its own dedicated,
+        full pages (12 cards each, header repeated), never mixed with
+        other groups' cards, so large groups behave exactly as before."""
         pages = []
         current_page = []
         current_cost = 0.0
@@ -305,9 +306,6 @@ class CatalogBuilder(models.Model):
                 "flag_image": grp["flag_image"],
             }
 
-        def category_block(cat):
-            return {"type": "category", "name": cat["name"]}
-
         def flush():
             nonlocal current_page, current_cost
             if current_page:
@@ -315,73 +313,30 @@ class CatalogBuilder(models.Model):
             current_page = []
             current_cost = 0.0
 
-        i = 0
-        n = len(blocks)
-        while i < n:
-            b = blocks[i]
+        for grp in groups:
+            rows = self._rows_for_count(grp["count"])
+            cost = self._HEADER_COST_UNITS + rows
 
-            if b["kind"] == "category":
-                nxt = blocks[i + 1] if i + 1 < n else None
-                cat_cost = self._CATEGORY_COST_UNITS
-
-                if nxt and nxt["kind"] == "origin":
-                    nxt_rows = self._rows_for_count(nxt["count"])
-                    nxt_cost = self._HEADER_COST_UNITS + nxt_rows
-                    if nxt_cost <= self._PAGE_BUDGET_UNITS:
-                        # Pair the category band with its first origin
-                        # group so the band is never left alone with
-                        # nothing under it.
-                        combined = cat_cost + nxt_cost
-                        if current_cost + combined > self._PAGE_BUDGET_UNITS:
-                            flush()
-                        current_page.append(category_block(b))
-                        current_page.append(header_block(nxt))
-                        current_page.append(
-                            {"type": "cards", "lines": nxt["lines"]})
-                        current_cost += combined
-                        i += 2
-                        continue
-                    else:
-                        # First origin itself needs its own dedicated
-                        # page(s) - place the category band alone first
-                        # (starting a new page if needed), then let the
-                        # big-origin branch below handle the chunking.
-                        if current_cost + cat_cost > self._PAGE_BUDGET_UNITS:
-                            flush()
-                        current_page.append(category_block(b))
-                        current_cost += cat_cost
-                        i += 1
-                        continue
-                else:
-                    # No following origin (shouldn't normally happen,
-                    # since a category is only added when it has lines).
-                    if current_cost + cat_cost > self._PAGE_BUDGET_UNITS:
-                        flush()
-                    current_page.append(category_block(b))
-                    current_cost += cat_cost
-                    i += 1
-                    continue
-
-            else:  # origin block
-                rows = self._rows_for_count(b["count"])
-                cost = self._HEADER_COST_UNITS + rows
-
-                if cost <= self._PAGE_BUDGET_UNITS:
-                    if current_cost + cost > self._PAGE_BUDGET_UNITS:
-                        flush()
-                    current_page.append(header_block(b))
-                    current_page.append({"type": "cards", "lines": b["lines"]})
-                    current_cost += cost
-                else:
-                    # Too big for one page alone (>12 products) - its own
-                    # dedicated, full page(s), header repeated each time.
+            if cost <= self._PAGE_BUDGET_UNITS:
+                # Whole group fits on a single page - pack it in with
+                # whatever's already on the current page if there's room,
+                # otherwise start a fresh page for it.
+                if current_cost + cost > self._PAGE_BUDGET_UNITS:
                     flush()
-                    grp_lines = b["lines"]
-                    for j in range(0, len(grp_lines), self._PAGE_MAX_CARDS):
-                        chunk = grp_lines[j:j + self._PAGE_MAX_CARDS]
-                        pages.append([header_block(b),
-                                      {"type": "cards", "lines": chunk}])
-                i += 1
+                current_page.append(header_block(grp))
+                current_page.append({"type": "cards", "lines": grp["lines"]})
+                current_cost += cost
+            else:
+                # Group is too big for one page alone (>12 products) -
+                # give it its own dedicated, full page(s), never mixed
+                # with other groups, exactly like the original per-group
+                # chunking behaviour.
+                flush()
+                grp_lines = grp["lines"]
+                for i in range(0, len(grp_lines), self._PAGE_MAX_CARDS):
+                    chunk = grp_lines[i:i + self._PAGE_MAX_CARDS]
+                    pages.append([header_block(grp),
+                                  {"type": "cards", "lines": chunk}])
 
         flush()
         return pages

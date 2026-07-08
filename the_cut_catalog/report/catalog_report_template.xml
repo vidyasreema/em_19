@@ -5,6 +5,7 @@
         <t t-call="web.html_container">
             <t t-foreach="docs" t-as="doc">
                 <t t-set="cfg" t-value="doc.config_id or doc.env['catalog.config'].search([('active','=',True)], limit=1)"/>
+                <t t-set="sections" t-value="doc.get_report_sections()"/>
 
                 <div class="catalog-root">
                     <style>
@@ -36,19 +37,32 @@
                         .cover-rule { width:92px; height:3px; background-color:#c2a25a; margin:24px 0 16px; }
                         .cover-tag { font-size:15px; letter-spacing:6px; color:#e7dcc2; }
 
+                        /* DIVIDER */
+                        .divider { background-color:#5c1a2b; padding:44px 58px 0; }
+                        .divider-top { position:relative; height:70px; }
+                        .divider-logo { position:absolute; top:0; left:0; width:120px; height:74px;
+                        text-align:left; }
+                        .divider-logo img { max-width:120px; max-height:74px; }
+                        .divider-logo .txt { font-size:11px; font-weight:700; color:#f0e6d2; line-height:70px; }
+                        .divider-tag { position:absolute; top:24px; right:0; font-size:14px;
+                        letter-spacing:6px; color:#c2a25a; white-space:nowrap; }
+                        .divider-hero { margin-top:26px; height:360px; background-color:#2c0e16;
+                        overflow:hidden; display:table; table-layout:fixed; width:100%; }
+                        .divider-hero-cell { display:table-cell; vertical-align:middle; text-align:center;
+                        color:#6f535b; font-size:13px; letter-spacing:5px; }
+                        .divider-hero img { width:100%; height:360px; object-fit:cover; display:inline-block; }
+                        .divider-name { font-size:96px; font-weight:700; line-height:.9; letter-spacing:2px;
+                        color:#f3ead7; margin-top:90px; }
+                        .divider-rule { width:180px; height:3px; background-color:#c2a25a; margin:26px 0 22px; }
+                        .divider-sub { font-size:19px; letter-spacing:5px; color:#e7dcc2; }
+                        .divider-foot { position:absolute; bottom:26px; left:0; right:0; text-align:center;
+                        font-size:11px; letter-spacing:2px; color:#9c7782; }
+
                         /* GRID */
                         .grid-page { background-color:#efe5d0; color:#5c1a2b; }
                         .grid-band { background-color:#5c1a2b; color:#f0e6d2; padding:18px 58px; position:relative; }
                         .grid-head { font-size:28px; font-weight:700; letter-spacing:1px; line-height:1; }
                         .grid-logo-img { position:absolute; top:16px; right:54px; width:56px; height:auto; }
-                        /* Inline category marker (replaces the old full-page divider).
-                        Shown wherever the animal/category changes within the packed
-                        card flow, so a page can contain the tail of one category's
-                        products and the start of the next one's, with no forced
-                        page break and no wasted blank space at the boundary. */
-                        .category-band { margin:14px 40px 0; background-color:#2c0e16; color:#f3ead7;
-                        border-radius:12px; padding:10px 20px; font-size:20px; font-weight:700;
-                        letter-spacing:2px; }
                         .origin-bar { margin:10px 40px 0; background-color:#7a1f33; border-radius:12px;
                         padding:8px 20px; color:#f0e6d2; }
                         .origin-bar .flag { width:26px; height:18px; vertical-align:middle; margin-right:12px;
@@ -71,7 +85,7 @@
                         .card-origin .flag { width:20px; height:14px; vertical-align:middle; margin-right:8px;
                         border-radius:4px; border:.5px solid #d2c8b2; }
                         /* Grey placeholder box shown instead of a flag when the origin
-                        has no matching flag image (e.g. "Unspecified origin"). */
+                           has no matching flag image (e.g. "Unspecified origin"). */
                         .card-origin .flag-placeholder { display:inline-block; width:20px; height:14px;
                         vertical-align:middle; margin-right:8px; border-radius:4px;
                         background-color:#b9ab97; border:.5px solid #d2c8b2; }
@@ -89,8 +103,8 @@
 
                         /* THANKS */
                         /* FIX: centering made explicit on every element below (instead
-                        of relying on inherited text-align from .thanks) since the
-                        inherited version was rendering left-aligned in the PDF. */
+                           of relying on inherited text-align from .thanks) since the
+                           inherited version was rendering left-aligned in the PDF. */
                         .thanks { background-color:#5c1a2b; text-align:center; padding-top:60px; }
                         .thanks .logo-img { display:block; width:132px; height:auto; margin:0 auto; }
                         .thanks-title { display:block; width:100%; text-align:center; font-size:46px; font-weight:700;
@@ -133,52 +147,76 @@
                         <div class="cover-tag" t-esc="((cfg.cover_tagline if cfg else False) or 'PREMIUM SELECTION').replace('\u00e2\u20ac\u00a2', '-').replace(chr(8226), '-')"/>
                     </div>
 
-                    <!-- ===== PRODUCT GRID (all categories flow together) =====
-                         Category, origin, and card blocks are packed using a
-                         row-budget model (see _pack_blocks_into_pages in the
-                         model) so a page can hold the tail of one animal's
-                         products and the start of the next animal's, instead
-                         of always starting a fresh page per category. -->
-                    <t t-set="report_pages" t-value="doc.get_report_pages()"/>
-                    <t t-foreach="report_pages" t-as="page">
-                        <div class="page grid-page">
-                            <div class="grid-band">
-                                <div class="grid-head">CATALOG</div>
-                                <img t-if="cfg and cfg.logo" class="grid-logo-img" t-att-src="image_data_uri(cfg.logo)"/>
+                    <!-- ===== PER ANIMAL ===== -->
+                    <t t-foreach="sections" t-as="section">
+
+                        <!-- Divider page -->
+                        <div class="page divider">
+                            <div class="divider-top">
+                                <div class="divider-logo">
+                                    <img t-if="cfg and cfg.logo" t-att-src="image_data_uri(cfg.logo)"/>
+                                    <span t-else="" class="txt">THE CUT</span>
+                                </div>
+                                <div class="divider-tag">SECTION</div>
                             </div>
-                            <t t-foreach="page" t-as="block">
-                                <div t-if="block['type'] == 'category'" class="category-band">
-                                    <span t-esc="block['name']"/>
+                            <div class="divider-hero">
+                                <div class="divider-hero-cell">
+                                    <img t-if="section['hero_image']" t-att-src="image_data_uri(section['hero_image'])"/>
+                                    <t t-else="">SECTION IMAGE</t>
                                 </div>
-                                <div t-if="block['type'] == 'header'" class="origin-bar">
-                                    <img t-if="block['flag_image']" class="flag" t-att-src="'data:image/png;base64,%s' % (block['flag_image'].decode() if block['flag_image'] else '')"/>
-                                    <span class="oname" t-esc="block['name']"/>
-                                    <span class="ocount" t-esc="block['count']"/>
-                                </div>
-                                <div t-if="block['type'] == 'cards'" class="cards">
-                                    <t t-foreach="block['lines']" t-as="line">
-                                        <div class="card">
-                                            <div class="card-img">
-                                                <div class="card-img-cell">
-                                                    <img t-if="line.image" t-att-src="image_data_uri(line.image)"/>
-                                                    <t t-else="">IMAGE</t>
-                                                </div>
-                                            </div>
-                                            <div class="card-origin" t-if="line.flag_image or line.origin_text">
-                                                <img t-if="line.flag_image" class="flag" t-att-src="'data:image/png;base64,%s' % (line.flag_image.decode() if line.flag_image else '')"/>
-                                                <span t-if="line.origin_text" t-esc="line.origin_text"/>
-                                            </div>
-                                            <div class="card-body">
-                                                <div class="card-name">
-                                                    <span t-esc="line.name.split(']')[-1].strip() if (line.name and ']' in line.name) else (line.name or '')"/>
-                                                </div>
-                                                <div class="card-desc" t-esc="line.description or ''"/>
-                                            </div>
-                                        </div>
-                                    </t>
-                                </div>
-                            </t>
+                            </div>
+                            <div class="divider-name" t-esc="section['title']"/>
+                            <div class="divider-rule"></div>
+                            <div class="divider-sub">
+                                <t t-esc="section['count']"/> cuts - arranged by origin
+                            </div>
+                            <div class="divider-foot">
+                                No. <span t-field="doc.name"/> - <span t-field="doc.date"/>
+                            </div>
                         </div>
+
+                        <!-- Grid pages: origin groups are packed using a row-budget
+                             model (see _pack_groups_into_pages in the model), so a
+                             small group can safely share a page with the next one
+                             instead of always starting a fresh page. Large groups
+                             (>12 products) still get their own dedicated page(s). -->
+                        <t t-foreach="section['pages']" t-as="page">
+                            <div class="page grid-page">
+                                <div class="grid-band">
+                                    <div class="grid-head" t-esc="section['title'] + ' - BY ORIGIN'"/>
+                                    <img t-if="cfg and cfg.logo" class="grid-logo-img" t-att-src="image_data_uri(cfg.logo)"/>
+                                </div>
+                                <t t-foreach="page" t-as="block">
+                                    <div t-if="block['type'] == 'header'" class="origin-bar">
+                                        <img t-if="block['flag_image']" class="flag" t-att-src="'data:image/png;base64,%s' % (block['flag_image'].decode() if block['flag_image'] else '')"/>
+                                        <span class="oname" t-esc="block['name']"/>
+                                        <span class="ocount" t-esc="block['count']"/>
+                                    </div>
+                                    <div t-if="block['type'] == 'cards'" class="cards">
+                                        <t t-foreach="block['lines']" t-as="line">
+                                            <div class="card">
+                                                <div class="card-img">
+                                                    <div class="card-img-cell">
+                                                        <img t-if="line.image" t-att-src="image_data_uri(line.image)"/>
+                                                        <t t-else="">IMAGE</t>
+                                                    </div>
+                                                </div>
+                                                <div class="card-origin" t-if="line.flag_image or line.origin_text">
+                                                    <img t-if="line.flag_image" class="flag" t-att-src="'data:image/png;base64,%s' % (line.flag_image.decode() if line.flag_image else '')"/>
+                                                    <span t-if="line.origin_text" t-esc="line.origin_text"/>
+                                                </div>
+                                                <div class="card-body">
+                                                    <div class="card-name">
+                                                        <span t-esc="line.name.split(']')[-1].strip() if (line.name and ']' in line.name) else (line.name or '')"/>
+                                                    </div>
+                                                    <div class="card-desc" t-esc="line.description or ''"/>
+                                                </div>
+                                            </div>
+                                        </t>
+                                    </div>
+                                </t>
+                            </div>
+                        </t>
                     </t>
 
                     <!-- ===== THANK YOU ===== -->
