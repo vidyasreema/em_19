@@ -44,13 +44,17 @@ class CatalogBuilder(models.Model):
         "product.category", "catalog_builder_categ_rel",
         "catalog_id", "categ_id",
         string="Animals (Categories)",
-        help="Beef, Lamb, Venison... Leave empty to include all categories.")
+        help="Beef, Lamb, Venison... Leave empty to include all categories. "
+             "Select MULTIPLE categories here if you want them all in one "
+             "catalog - Load Products includes every one of them at once.")
     origin_value_ids = fields.Many2many(
         "product.attribute.value", "catalog_builder_origin_rel",
         "catalog_id", "value_id",
         string="Countries of Origin",
         domain=[("attribute_id.name", "=", ORIGIN_ATTR_NAME)],
-        help="Australian, New Zealand... Leave empty to include all origins.")
+        help="Australian, New Zealand... Leave empty to include all origins. "
+             "Select MULTIPLE countries here if you want them all in one "
+             "catalog - Load Products includes every one of them at once.")
 
     @api.depends("line_ids")
     def _compute_line_count(self):
@@ -97,7 +101,21 @@ class CatalogBuilder(models.Model):
     def action_load_products(self):
         """Pick Category + Country -> list matching products as lines.
         Empty filters = all products. Filters combine with AND
-        (and OR across multiple countries). Appends; no duplicates."""
+        (and OR across multiple countries, and OR across multiple
+        categories - both fields are many2many). Want Deer AND Lamb in
+        one catalog? Select both categories before clicking this button.
+
+        IMPORTANT: this REPLACES the current catalog lines with exactly
+        what matches the filters right now, rather than accumulating
+        across separate clicks. Previously this method only ever
+        appended, so clicking Load Products again with a different
+        category/country selection left every earlier selection's
+        products still sitting in the catalog (e.g. filtering to
+        Deer + New Zealand still showed Lamb and Angus products left
+        over from an earlier click on this same record). Replacing
+        keeps what's on screen always equal to the current filter
+        selection - no stale leftovers, no confusion about what will
+        actually print."""
         self.ensure_one()
         domain = []
         if self.category_ids:
@@ -109,14 +127,19 @@ class CatalogBuilder(models.Model):
         products = self.env["product.product"].search(domain)
         if not products:
             raise UserError(_("No products match the selected filters."))
+
+        # Replace, don't accumulate: wipe whatever was here before, then
+        # add exactly the current filter's matches.
+        self.line_ids.unlink()
         added = self._append_products(products)
+
         return {
             "type": "ir.actions.client",
             "tag": "display_notification",
             "params": {
                 "title": _("Load Products"),
-                "message": (_("Added %s product(s).") % added if added
-                            else _("Nothing new to add.")),
+                "message": _("Catalog now has %s product(s) matching your "
+                             "filters.") % added,
                 "type": "success",
                 "sticky": False,
                 "next": {
@@ -350,7 +373,8 @@ class CatalogLine(models.Model):
         "uae": "United Arab Emirates",
     }
 
-    @api.depends("product_id", "origin")
+    @api.depends("product_id", "product_id.categ_id",
+                 "product_id.product_template_attribute_value_ids", "origin")
     def _compute_from_product(self):
         for line in self:
             product = line.product_id
