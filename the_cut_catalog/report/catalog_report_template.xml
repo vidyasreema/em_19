@@ -175,10 +175,11 @@
                             </div>
                         </div>
 
-                        <!-- Grid pages: packed tightly, up to 12 cards per page (3x4).
-                             Origin headers flow inline with cards instead of always
-                             starting a fresh page, so a page doesn't end with a big
-                             blank gap when a group's count isn't a clean multiple of 12. -->
+                        <!-- Grid pages: origin groups are packed using a row-budget
+                             model (see _pack_groups_into_pages in the model), so a
+                             small group can safely share a page with the next one
+                             instead of always starting a fresh page. Large groups
+                             (>12 products) still get their own dedicated page(s). -->
                         <t t-foreach="section['pages']" t-as="page">
                             <div class="page grid-page">
                                 <div class="grid-band">

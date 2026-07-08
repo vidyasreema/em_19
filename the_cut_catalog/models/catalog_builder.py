@@ -44,17 +44,13 @@ class CatalogBuilder(models.Model):
         "product.category", "catalog_builder_categ_rel",
         "catalog_id", "categ_id",
         string="Animals (Categories)",
-        help="Beef, Lamb, Venison... Leave empty to include all categories. "
-             "Select MULTIPLE categories here if you want them all in one "
-             "catalog - Load Products includes every one of them at once.")
+        help="Beef, Lamb, Venison... Leave empty to include all categories.")
     origin_value_ids = fields.Many2many(
         "product.attribute.value", "catalog_builder_origin_rel",
         "catalog_id", "value_id",
         string="Countries of Origin",
         domain=[("attribute_id.name", "=", ORIGIN_ATTR_NAME)],
-        help="Australian, New Zealand... Leave empty to include all origins. "
-             "Select MULTIPLE countries here if you want them all in one "
-             "catalog - Load Products includes every one of them at once.")
+        help="Australian, New Zealand... Leave empty to include all origins.")
 
     @api.depends("line_ids")
     def _compute_line_count(self):
@@ -102,20 +98,15 @@ class CatalogBuilder(models.Model):
         """Pick Category + Country -> list matching products as lines.
         Empty filters = all products. Filters combine with AND
         (and OR across multiple countries, and OR across multiple
-        categories - both fields are many2many). Want Deer AND Lamb in
-        one catalog? Select both categories before clicking this button.
+        categories - both fields are many2many).
 
         IMPORTANT: this REPLACES the current catalog lines with exactly
         what matches the filters right now, rather than accumulating
-        across separate clicks. Previously this method only ever
-        appended, so clicking Load Products again with a different
-        category/country selection left every earlier selection's
-        products still sitting in the catalog (e.g. filtering to
-        Deer + New Zealand still showed Lamb and Angus products left
-        over from an earlier click on this same record). Replacing
-        keeps what's on screen always equal to the current filter
-        selection - no stale leftovers, no confusion about what will
-        actually print."""
+        across separate clicks. Previously this only ever appended, so
+        clicking Load Products again with a different category/country
+        selection left every earlier selection's products still sitting
+        in the catalog. Replacing keeps what's on screen always equal
+        to the current filter selection - no stale leftovers."""
         self.ensure_one()
         domain = []
         if self.category_ids:
@@ -213,7 +204,8 @@ class CatalogBuilder(models.Model):
         return (categ.name or "").upper()
 
     def get_report_sections(self):
-        """Group lines: animal (category) -> country (origin) -> lines.
+        """Group lines: animal (category) -> country (origin) -> lines,
+        then pack origin groups into pages using a row-budget model.
         Returns a list ready for the QWeb template."""
         self.ensure_one()
         lines = self.line_ids
@@ -235,33 +227,26 @@ class CatalogBuilder(models.Model):
             origins = sec_lines.mapped("origin_value_id").sorted(
                 lambda v: (v.sequence, v.id))
 
-            # Build a flat, ordered list of blocks: an origin-header block
-            # followed by one card block per product line in that origin.
-            blocks = []
+            groups = []
             for origin in origins:
                 grp = sec_lines.filtered(lambda l: l.origin_value_id == origin)
                 flag = next((l.flag_image for l in grp if l.flag_image), False)
-                blocks.append({
-                    "type": "header",
+                groups.append({
                     "name": origin.name,
                     "count": len(grp),
+                    "lines": grp,
                     "flag_image": flag,
                 })
-                for line in grp:
-                    blocks.append({"type": "card", "line": line})
-
             unspecified = sec_lines.filtered(lambda l: not l.origin_value_id)
             if unspecified:
-                blocks.append({
-                    "type": "header",
+                groups.append({
                     "name": "Unspecified origin",
                     "count": len(unspecified),
+                    "lines": unspecified,
                     "flag_image": False,
                 })
-                for line in unspecified:
-                    blocks.append({"type": "card", "line": line})
 
-            pages = self._paginate_blocks(blocks)
+            pages = self._pack_groups_into_pages(groups)
 
             # Category image first, then fall back to a product image.
             hero = False
@@ -278,57 +263,77 @@ class CatalogBuilder(models.Model):
             })
         return sections
 
+    # Report grid is tuned for 3 columns x 4 rows = 12 cards per page, with
+    # one origin-header bar also fitting on that same page (confirmed
+    # working in the single-origin-per-page layout). Modeled as "budget
+    # units": a header costs 1 unit, each row of up to 3 cards costs 1
+    # unit, and a full page holds exactly 5 units (1 header + 4 rows).
+    # This lets multiple small origin groups safely share a page - unlike
+    # counting raw cards alone, this accounts for header height too, so
+    # nothing overflows past the fixed page height and gets clipped.
+    _PAGE_BUDGET_UNITS = 5
+    _PAGE_MAX_CARDS = 12  # 4 rows x 3 columns, the largest a single page holds
+
     @staticmethod
-    def _merge_card_blocks(page_blocks):
-        """Collapse consecutive 'card' blocks on a page into a single
-        'cards' block holding a list of lines, so the template can wrap
-        consecutive cards in one shared grid container (side-by-side)
-        while origin-header blocks stay separate on their own row."""
-        merged = []
-        current_lines = []
-        for block in page_blocks:
-            if block["type"] == "card":
-                current_lines.append(block["line"])
-            else:
-                if current_lines:
-                    merged.append({"type": "cards", "lines": current_lines})
-                    current_lines = []
-                merged.append(block)
-        if current_lines:
-            merged.append({"type": "cards", "lines": current_lines})
-        return merged
+    def _rows_for_count(count):
+        """3 cards per row, rounded up."""
+        return -(-count // 3)  # ceil division without importing math
 
-    def _paginate_blocks(self, blocks, cards_per_page=12):
-        """Pack a flat list of blocks (origin headers + product cards) into
-        pages, capping each page at `cards_per_page` cards (matches the
-        3-column x 4-row = 12 cards/page grid in the report template).
-
-        Headers flow inline with the cards that follow them and do NOT
-        force a page break by themselves - they only get pushed to a new
-        page if the current page has already hit its card limit. This
-        keeps pages tightly packed: if one origin group ends partway
-        through a page, the next origin's cards continue filling that
-        same page instead of jumping to a fresh page and leaving the
-        rest of the previous page blank."""
+    def _pack_groups_into_pages(self, groups):
+        """Pack origin groups (each with a header + its product lines) into
+        pages using the row-budget model above. A group that fits within
+        the remaining budget on the current page is appended there instead
+        of starting a fresh page - so small groups (like a single Spanish
+        product, or a handful of "Unspecified origin" items) don't each
+        waste a mostly-blank page. A group too large to fit on one page by
+        itself (more than 12 products) is split into its own dedicated,
+        full pages (12 cards each, header repeated), never mixed with
+        other groups' cards, so large groups behave exactly as before."""
         pages = []
-        page = []
-        card_count = 0
-        for block in blocks:
-            if block["type"] == "card":
-                if card_count == cards_per_page:
-                    pages.append(self._merge_card_blocks(page))
-                    page = []
-                    card_count = 0
-                page.append(block)
-                card_count += 1
-            else:  # header block
-                if card_count == cards_per_page:
-                    pages.append(self._merge_card_blocks(page))
-                    page = []
-                    card_count = 0
-                page.append(block)
-        if page:
-            pages.append(self._merge_card_blocks(page))
+        current_page = []
+        current_cost = 0
+
+        def header_block(grp):
+            return {
+                "type": "header",
+                "name": grp["name"],
+                "count": grp["count"],
+                "flag_image": grp["flag_image"],
+            }
+
+        def flush():
+            nonlocal current_page, current_cost
+            if current_page:
+                pages.append(current_page)
+            current_page = []
+            current_cost = 0
+
+        for grp in groups:
+            rows = self._rows_for_count(grp["count"])
+            cost = 1 + rows  # 1 header unit + N row units
+
+            if cost <= self._PAGE_BUDGET_UNITS:
+                # Whole group fits on a single page - pack it in with
+                # whatever's already on the current page if there's room,
+                # otherwise start a fresh page for it.
+                if current_cost + cost > self._PAGE_BUDGET_UNITS:
+                    flush()
+                current_page.append(header_block(grp))
+                current_page.append({"type": "cards", "lines": grp["lines"]})
+                current_cost += cost
+            else:
+                # Group is too big for one page alone (>12 products) -
+                # give it its own dedicated, full page(s), never mixed
+                # with other groups, exactly like the original per-group
+                # chunking behaviour.
+                flush()
+                grp_lines = grp["lines"]
+                for i in range(0, len(grp_lines), self._PAGE_MAX_CARDS):
+                    chunk = grp_lines[i:i + self._PAGE_MAX_CARDS]
+                    pages.append([header_block(grp),
+                                  {"type": "cards", "lines": chunk}])
+
+        flush()
         return pages
 
 
