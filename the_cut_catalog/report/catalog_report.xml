@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="paperformat_catalog" model="report.paperformat">
+        <field name="name">The Cut Catalog Full Bleed A4</field>
+        <field name="default" eval="False"/>
+        <field name="format">A4</field>
+        <field name="orientation">Portrait</field>
+        <field name="margin_top">0</field>
+        <field name="margin_bottom">0</field>
+        <field name="margin_left">0</field>
+        <field name="margin_right">0</field>
+        <field name="header_line" eval="False"/>
+        <field name="header_spacing">0</field>
+        <field name="disable_shrinking" eval="True"/>
+        <field name="dpi">96</field>
+    </record>
+
+    <record id="action_report_catalog" model="ir.actions.report">
+        <field name="name">Catalog</field>
+        <field name="model">catalog.builder</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">the_cut_catalog.report_catalog_document</field>
+        <field name="report_file">the_cut_catalog.report_catalog_document</field>
+        <field name="paperformat_id" ref="the_cut_catalog.paperformat_catalog"/>
+        <field name="binding_model_id" ref="model_catalog_builder"/>
+        <field name="binding_type">report</field>
+    </record>
+
+    <!-- Placeholder template (replaced by the real one in Part C) -->
+    <template id="report_catalog_document">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="doc">
+                <div class="page">
+                    <h2 style="padding:40px;">Catalog <span t-field="doc.name"/></h2>
+                    <p style="padding:0 40px;">Report template coming soon.</p>
+                </div>
+            </t>
+        </t>
+    </template>
+
+</odoo>

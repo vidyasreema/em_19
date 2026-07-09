@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <template id="report_invoice_document_lpo" inherit_id="account.report_invoice_document">
+        <xpath expr="//div[@id='informations']" position="inside">
+            <div t-if="o.lpo_number" name="lpo_number">
+                <strong>LPO:</strong>
+                <span t-field="o.lpo_number"/>
+            </div>
+        </xpath>
+    </template>
+
+</odoo>
