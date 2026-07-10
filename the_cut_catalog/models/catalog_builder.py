@@ -272,13 +272,15 @@ class CatalogBuilder(models.Model):
     #   - an origin-header bar (incl. margins/padding) is ~46px, plus the
     #     ~10px top padding added each time a new .cards block starts, for
     #     a combined ~56px -> costs ~0.27 units (56/213)
-    # A full single-origin page (1 header + 4 rows) then costs
-    # 0.27 + 4 = 4.27 units; the budget below (4.2) keeps a small safety
-    # margin under that so nothing sits right at the edge. This lets
-    # several small origin groups safely share a page - unlike counting
-    # raw cards alone, this accounts for header height too, so nothing
-    # overflows past the fixed page height and gets clipped.
-    _PAGE_BUDGET_UNITS = 4.2
+    # A full single-origin page (1 header + 4 rows) costs 0.27 + 4 = 4.27
+    # units, which is known to fit (that's the proven original layout),
+    # so the budget must be AT LEAST 4.27 - previously it was set to 4.2
+    # as a "safety margin", which backfired: on a fresh page the header
+    # left only int(4.2 - 0.27) = 3 whole rows, capping pages at 9 cards
+    # instead of 12. 4.3 allows the full 4 rows with one header, while
+    # still correctly rejecting layouts that don't physically fit (e.g.
+    # 2 headers + 4 rows = 4.54 > 4.3).
+    _PAGE_BUDGET_UNITS = 4.3
     _HEADER_COST_UNITS = 0.27
     _PAGE_MAX_CARDS = 12  # 4 rows x 3 columns, the largest a single page holds
 
