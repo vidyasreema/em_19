@@ -5,7 +5,6 @@
         <t t-call="web.html_container">
             <t t-foreach="docs" t-as="doc">
                 <t t-set="cfg" t-value="doc.config_id or doc.env['catalog.config'].search([('active','=',True)], limit=1)"/>
-                <t t-set="sections" t-value="doc.get_report_sections()"/>
 
                 <div class="catalog-root">
                     <style>
@@ -148,6 +147,7 @@
                     </div>
 
                     <!-- ===== PER ANIMAL ===== -->
+                    <t t-set="sections" t-value="doc.get_report_sections()"/>
                     <t t-foreach="sections" t-as="section">
 
                         <!-- Divider page -->
@@ -175,11 +175,11 @@
                             </div>
                         </div>
 
-                        <!-- Grid pages: origin groups are packed using a row-budget
-                             model (see _pack_groups_into_pages in the model), so a
-                             small group can safely share a page with the next one
-                             instead of always starting a fresh page. Large groups
-                             (>12 products) still get their own dedicated page(s). -->
+                        <!-- Grid pages: origin groups pack tightly using the
+                             split-fill row-budget model - a group's cards can
+                             split across pages so leftover space is always
+                             filled by the next group's cards, regardless of
+                             origin. Headers repeat when a group continues. -->
                         <t t-foreach="section['pages']" t-as="page">
                             <div class="page grid-page">
                                 <div class="grid-band">

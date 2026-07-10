@@ -205,8 +205,11 @@ class CatalogBuilder(models.Model):
 
     def get_report_sections(self):
         """Group lines: animal (category) -> country (origin) -> lines,
-        then pack origin groups into pages using a row-budget model.
-        Returns a list ready for the QWeb template."""
+        then pack each category's origin groups into pages using the
+        split-fill row-budget model. Each category keeps its own divider
+        page and titled grid pages (as before); within a category, cards
+        pack tightly - a group can split across pages so leftover space
+        is always used, regardless of origin."""
         self.ensure_one()
         lines = self.line_ids
 
@@ -285,15 +288,14 @@ class CatalogBuilder(models.Model):
         return -(-count // 3)  # ceil division without importing math
 
     def _pack_groups_into_pages(self, groups):
-        """Pack origin groups (each with a header + its product lines) into
-        pages using the row-budget model above. A group that fits within
-        the remaining budget on the current page is appended there instead
-        of starting a fresh page - so small groups (like a single Spanish
-        product, or a handful of "Unspecified origin" items) don't each
-        waste a mostly-blank page. A group too large to fit on one page by
-        itself (more than 12 products) is split into its own dedicated,
-        full pages (12 cards each, header repeated), never mixed with
-        other groups' cards, so large groups behave exactly as before."""
+        """Pack origin groups (header + cards each) into pages using the
+        row-budget model above. An origin group's cards can be SPLIT
+        across pages: if only part of a group fits in the space left on
+        the current page, that part is placed there (with its header)
+        and the rest continues on the next page (header repeated). This
+        fills every bit of available space - e.g. if Spanish is on a
+        page with room left over, some Unspecified-origin cards fill
+        that room instead of the whole group jumping to a fresh page."""
         pages = []
         current_page = []
         current_cost = 0.0
@@ -314,29 +316,24 @@ class CatalogBuilder(models.Model):
             current_cost = 0.0
 
         for grp in groups:
-            rows = self._rows_for_count(grp["count"])
-            cost = self._HEADER_COST_UNITS + rows
-
-            if cost <= self._PAGE_BUDGET_UNITS:
-                # Whole group fits on a single page - pack it in with
-                # whatever's already on the current page if there's room,
-                # otherwise start a fresh page for it.
-                if current_cost + cost > self._PAGE_BUDGET_UNITS:
+            remaining = list(grp["lines"])
+            while remaining:
+                available = self._PAGE_BUDGET_UNITS - current_cost
+                rows_avail = int(available - self._HEADER_COST_UNITS)
+                if rows_avail < 1:
+                    # Not enough room for the header plus at least one
+                    # row of cards - start a fresh page.
                     flush()
+                    available = self._PAGE_BUDGET_UNITS
+                    rows_avail = int(available - self._HEADER_COST_UNITS)
+                cards_avail = rows_avail * 3
+                take = min(cards_avail, len(remaining))
+                chunk = remaining[:take]
+                remaining = remaining[take:]
+                rows_used = self._rows_for_count(len(chunk))
                 current_page.append(header_block(grp))
-                current_page.append({"type": "cards", "lines": grp["lines"]})
-                current_cost += cost
-            else:
-                # Group is too big for one page alone (>12 products) -
-                # give it its own dedicated, full page(s), never mixed
-                # with other groups, exactly like the original per-group
-                # chunking behaviour.
-                flush()
-                grp_lines = grp["lines"]
-                for i in range(0, len(grp_lines), self._PAGE_MAX_CARDS):
-                    chunk = grp_lines[i:i + self._PAGE_MAX_CARDS]
-                    pages.append([header_block(grp),
-                                  {"type": "cards", "lines": chunk}])
+                current_page.append({"type": "cards", "lines": chunk})
+                current_cost += self._HEADER_COST_UNITS + rows_used
 
         flush()
         return pages
