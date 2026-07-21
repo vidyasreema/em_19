@@ -5,7 +5,8 @@
     'summary': 'Record incoming money that has no order behind it',
     'author': 'Vidyasree',
     'depends': ['point_of_sale'],
-    'data': ['views/res_config_settings.xml'],
+    'data': ['views/res_config_settings.xml',
+             'views/pos_session_view.xml'],
     'assets': {
         'point_of_sale._assets_pos': [
             'pos_payment_link_in/static/src/app/*.js',

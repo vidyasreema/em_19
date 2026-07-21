@@ -7,18 +7,37 @@ from odoo.tools.translate import _
 class PosSession(models.Model):
     _inherit = 'pos.session'
 
-    def _payment_link_in_lines(self):
-        """Statement lines of this session that belong to the Payment Link In journal."""
+    payment_link_in_line_ids = fields.One2many(
+        'account.bank.statement.line',
+        'pli_session_id',
+        string="Payment Link In Movements",
+        readonly=True,
+    )
+
+    payment_link_in_count = fields.Integer(
+        compute='_compute_payment_link_in_count',
+    )
+
+    def _compute_payment_link_in_count(self):
+        for session in self:
+            session.payment_link_in_count = len(session.payment_link_in_line_ids)
+
+    def action_view_payment_link_in(self):
         self.ensure_one()
-        journal = self.config_id.payment_link_in_journal_id
-        if not journal:
-            return self.env['account.bank.statement.line']
-        return self.sudo().statement_line_ids.filtered(
-            lambda l: l.journal_id == journal
-        )
+        return {
+            'type': 'ir.actions.act_window',
+            'name': _("Payment Link In"),
+            'res_model': 'account.bank.statement.line',
+            'view_mode': 'list,form',
+            'domain': [('pli_session_id', '=', self.id)],
+        }
 
     def try_payment_link_in(self, amount, reason, partner_id=False):
-        """Record incoming money on the configured non-cash journal."""
+        """Record incoming money on the configured non-cash journal.
+
+        The line is linked through pli_session_id, never pos_session_id, so it
+        can never affect the expected cash balance or the cash difference.
+        """
         self.ensure_one()
 
         if self.state != 'opened':
@@ -45,45 +64,29 @@ class PosSession(models.Model):
             'date': fields.Date.context_today(self),
             'payment_ref': '%s - %s' % (self.name, reason.strip()),
             'partner_id': partner_id or False,
-            'pos_session_id': self.id,
+            'pli_session_id': self.id,
         })
-        # AC-04: hold the entry in draft until the session is closed.
+        # AC-04: hold in draft until the session is closed.
         if line.move_id and line.move_id.state == 'posted':
             line.move_id.sudo().button_draft()
         return line.id
 
     def _post_payment_link_in_moves(self):
-        """Post the Payment Link In entries held in draft during the session."""
         for session in self:
-            moves = session._payment_link_in_lines().mapped('move_id').filtered(
+            moves = session.payment_link_in_line_ids.mapped('move_id').filtered(
                 lambda m: m.state == 'draft'
             )
             if moves:
                 moves.sudo()._post()
 
-    def get_cash_in_out_list(self):
-        """Exclude Payment Link In movements from the cash in/out list."""
-        result = super().get_cash_in_out_list()
-        pli_lines = self._payment_link_in_lines()
-        if not pli_lines:
-            return result
-        pli_ids = set(pli_lines.ids)
-        return [m for m in result if m.get('id') not in pli_ids]
-
     def get_closing_control_data(self):
-        """Keep Payment Link In out of expected cash, and expose it as information."""
+        """Expose the Payment Link In total as information only."""
         data = super().get_closing_control_data()
-
-        pli_lines = self._payment_link_in_lines()
-        pli_total = sum(pli_lines.mapped('amount'))
-
-        if data.get('default_cash_details') and pli_total:
-            data['default_cash_details']['amount'] -= pli_total
-
+        lines = self.sudo().payment_link_in_line_ids
         data['payment_link_in_details'] = {
             'name': self.config_id.payment_link_in_journal_id.name or _("Payment Link In"),
-            'amount': pli_total,
-            'number': len(pli_lines),
+            'amount': sum(lines.mapped('amount')),
+            'number': len(lines),
         }
         return data
 
