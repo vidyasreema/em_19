@@ -19,6 +19,7 @@
         'mail',
     ],
     'data': [
+        'security/data.xml',
         'views/unreconciled_activity_cron.xml',
         'views/sale_order_inherit.xml',
         'views/hr_employee_inherit.xml',
