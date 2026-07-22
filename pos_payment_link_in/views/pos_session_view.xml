@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_pos_session_form_pli" model="ir.ui.view">
+        <field name="name">pos.session.form.payment.link.in</field>
+        <field name="model">pos.session</field>
+        <field name="inherit_id" ref="point_of_sale.view_pos_session_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//div[@name='button_box']" position="inside">
+                <button class="oe_stat_button"
+                        type="object"
+                        name="action_view_payment_link_in"
+                        icon="fa-link"
+                        invisible="payment_link_in_count == 0">
+                    <field name="payment_link_in_count" widget="statinfo" string="Payment Link In"/>
+                </button>
+            </xpath>
+        </field>
+    </record>
+</odoo>

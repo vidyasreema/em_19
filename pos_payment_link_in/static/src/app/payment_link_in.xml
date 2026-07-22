@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates id="template" xml:space="preserve">
+
+    <t t-name="pos_payment_link_in.PaymentLinkInPopup">
+        <Dialog title="'Payment Link In'">
+            <div class="mb-3">
+                <label class="form-label">Amount</label>
+                <input type="number" step="0.01" class="form-control"
+                       t-model="state.amount" autofocus="autofocus"/>
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Note</label>
+                <textarea class="form-control" rows="3"
+                          placeholder="Who paid and what for"
+                          t-model="state.reason"/>
+            </div>
+            <div t-if="state.error" class="alert alert-danger" t-esc="state.error"/>
+            <t t-set-slot="footer">
+                <button class="btn btn-primary" t-on-click="() => this.confirm()">Confirm</button>
+                <button class="btn btn-secondary" t-on-click="() => this.props.close()">Discard</button>
+            </t>
+        </Dialog>
+    </t>
+
+    <t t-name="pos_payment_link_in.NavbarPLI"
+       t-inherit="point_of_sale.Navbar"
+       t-inherit-mode="extension">
+        <xpath expr="//DropdownItem[@onSelected='() =&gt; this.pos.cashMove()']" position="after">
+            <DropdownItem t-if="showCashMoveButton and this.pos.cashier._role != 'minimal'"
+                          onSelected="() => this.onClickPaymentLinkIn()">
+                Payment Link In
+            </DropdownItem>
+        </xpath>
+    </t>
+
+</templates>
