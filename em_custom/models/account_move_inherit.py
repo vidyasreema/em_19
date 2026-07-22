@@ -2,7 +2,7 @@ from odoo import models,fields, _
 from odoo.exceptions import UserError
 from datetime import timedelta
 
-POS_RESET_LOCK_HOURS = 24
+POS_RESET_LOCK_HOURS = 30
 
 
 class AccountMove(models.Model):
