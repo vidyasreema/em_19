@@ -62,7 +62,7 @@ class PosSession(models.Model):
             'journal_id': journal.id,
             'amount': amount,
             'date': fields.Date.context_today(self),
-            'payment_ref': '%s - %s' % (self.name, reason.strip()),
+            'payment_ref': '%s-in-%s' % (self.name, reason.strip()),
             'partner_id': partner_id or False,
             'pli_session_id': self.id,
         })
