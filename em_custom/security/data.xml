@@ -14,4 +14,8 @@
     <record id="group_unreconcile_locked" model="res.groups">
         <field name="name">Unreconcile After Lock Period</field>
     </record>
+
+    <record id="group_pos_invoice_reset_draft" model="res.groups">
+        <field name="name">Reset POS Invoices After Lock Period</field>
+    </record>
 </odoo>
