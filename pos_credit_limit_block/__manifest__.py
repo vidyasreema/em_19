@@ -4,6 +4,9 @@
     "category": "Point of Sale",
     "summary": "Block the Customer Account payment method when a customer exceeds their credit limit",
     "depends": ["point_of_sale", "account"],
+    "data": [
+        "views/res_partner_inherit.xml",
+    ],
     "assets": {
         "point_of_sale._assets_pos": [
             "pos_credit_limit_block/static/src/overrides/payment_screen.js",
