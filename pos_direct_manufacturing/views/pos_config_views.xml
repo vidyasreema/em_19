@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="pos_config_view_form_raw_material_mfg" model="ir.ui.view">
+        <field name="name">pos.config.form.raw.material.mfg</field>
+        <field name="model">pos.config</field>
+        <field name="inherit_id" ref="point_of_sale.pos_config_view_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//page[1]" position="inside">
+                <group string="Raw Material / Manufacturing">
+                    <field name="raw_material_enforcement" widget="radio"/>
+                </group>
+            </xpath>
+        </field>
+    </record>
+</odoo>
