@@ -1,5 +1,4 @@
 /** @odoo-module **/
-
 import { Component, useState } from "@odoo/owl";
 import { Dialog } from "@web/core/dialog/dialog";
 import { useService } from "@web/core/utils/hooks";
@@ -28,13 +27,25 @@ export class RawMaterialPopup extends Component {
             qty: m.qty,
         }));
 
+        // The actual set of lines the popup starts with, whether that's
+        // the existing materials or the empty-state placeholder row.
+        const lines = initialLines.length
+            ? initialLines
+            : [{ id: 1, productId: null, productName: "", qty: 0 }];
+
         this.state = useState({
-            lines: initialLines.length
-                ? initialLines
-                : [{ id: 1, productId: null, productName: "", qty: 0 }],
+            lines,
             errorMessage: "",
         });
-        this.nextLineId = initialLines.length + 1;
+
+        // Base nextLineId on the ids actually present in `lines`, not on
+        // `initialLines` (which can be empty even though `lines` isn't).
+        // Using initialLines.length here was the bug: it produced
+        // nextLineId = 1 whenever existingMaterials was empty, colliding
+        // with the placeholder line's id of 1 as soon as a line was added.
+        this.nextLineId = lines.length
+            ? Math.max(...lines.map((l) => l.id)) + 1
+            : 1;
     }
 
     getSources(line) {
@@ -94,7 +105,6 @@ export class RawMaterialPopup extends Component {
         const validLines = this.state.lines.filter(
             (l) => l.productId && l.qty > 0
         );
-
         if (validLines.length === 0) {
             this.state.errorMessage =
                 "Please select at least one raw material with a quantity.";
