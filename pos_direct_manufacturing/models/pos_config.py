@@ -17,6 +17,14 @@ class PosConfig(models.Model):
              'POS order.',
     )
 
+    mfg_review_user_id = fields.Many2one(
+        'res.users',
+        string='Manufacturing Review Responsible',
+        help="User who receives the To-Do activity when a POS refund affects "
+             "a Manufacturing Order that cannot be reversed automatically. "
+             "Falls back to the Manufacturing Order's responsible if empty.",
+    )
+
     @api.model
     def _load_pos_data_fields(self, config):
         fields_list = super()._load_pos_data_fields(config)

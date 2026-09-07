@@ -11,6 +11,13 @@ class PosOrderLine(models.Model):
         help="Raw materials and quantities selected for this order line "
              "at the point of sale. Populated from the POS popup.",
     )
+    manufacturing_order_ids = fields.One2many(
+        'mrp.production',
+        'pos_order_line_id',
+        string='Manufacturing Orders',
+        help="Manufacturing Order(s) created from this specific order "
+             "line, used to trace refunds back to the correct MO.",
+    )
 
     def _load_pos_data_fields(self, config):
         fields_list = super()._load_pos_data_fields(config)

@@ -43,8 +43,8 @@ class PosOrderLineRawMaterial(models.Model):
     )
 
     @api.model
-    def _load_pos_data_fields(self, config_id):
-        return ['id', 'order_line_id', 'product_id', 'qty', 'uom_id']
+    def _load_pos_data_fields(self, config):
+        return ['id', 'order_line_id', 'product_id', 'qty', 'uom_id', 'write_date']
 
     @api.model
     def _load_pos_data_domain(self, data, config):

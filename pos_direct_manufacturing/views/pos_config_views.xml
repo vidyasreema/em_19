@@ -8,6 +8,7 @@
             <xpath expr="//page[1]" position="inside">
                 <group string="Raw Material / Manufacturing">
                     <field name="raw_material_enforcement" widget="radio"/>
+                    <field name="mfg_review_user_id"/>
                 </group>
             </xpath>
         </field>
