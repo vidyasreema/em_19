@@ -1,4 +1,5 @@
 from odoo import fields, models, _
+from odoo.exceptions import UserError, ValidationError
 import json
 
 
@@ -213,9 +214,8 @@ class PosOrder(models.Model):
           partly consumed, so nothing is changed automatically — an
           activity is created for manual review instead.
         - Done (raw materials already consumed, finished good already in
-          stock): a draft Unbuild Order is created to reverse it. It is
-          left unconfirmed, mirroring BR-4, so the manufacturing manager
-          verifies actual quantities before stock is touched.
+          stock): an Unbuild Order is created and validated automatically,
+          returning the raw materials to stock.
 
         Guarded so it can never break a normal checkout even if
         'refunded_orderline_id' doesn't exist on this Odoo version.
@@ -285,8 +285,10 @@ class PosOrder(models.Model):
         return consumed
 
     def _reverse_done_manufacturing_order(self, mo, refunded_qty):
-        """Creates a draft Unbuild Order for a completed MO. Returns the
-        quantity actually absorbed from `refunded_qty`."""
+        """Creates an Unbuild Order for a completed MO and validates it
+        immediately, returning the raw materials to stock without manual
+        intervention. If validation fails the unbuild is left in draft and
+        the activity explains why."""
         # Unbuilds already raised against this MO (draft ones included)
         # must be deducted, otherwise a re-synced refund would propose
         # unbuilding the same production twice.
@@ -311,12 +313,40 @@ class PosOrder(models.Model):
             unbuild_vals['lot_id'] = mo.lot_producing_ids.id
 
         unbuild = self.env['mrp.unbuild'].sudo().create(unbuild_vals)
-        note = _(
-            "Draft Unbuild Order %(unbuild)s created automatically: POS "
-            "order %(order)s refunded %(qty)s unit(s) of a completed "
-            "Manufacturing Order. Please verify actual quantities and "
-            "validate it to return raw materials to stock."
-        ) % {'unbuild': unbuild.name, 'order': self.name, 'qty': consumed}
+
+        validated = False
+        failure_reason = False
+        try:
+            # action_validate() refuses when on-hand is short and returns the
+            # insufficient-quantity wizard instead of unbuilding. Confirming
+            # that wizard in the UI simply calls action_unbuild(), so we call
+            # it directly: these products are sold at POS before their
+            # Manufacturing Order is produced, so on-hand is routinely
+            # negative and the availability check would block every refund.
+            unbuild.action_unbuild()
+            validated = unbuild.state == 'done'
+        except (UserError, ValidationError) as error:
+            failure_reason = str(error)
+
+        if validated:
+            note = _(
+                "Unbuild Order %(unbuild)s created and validated automatically: "
+                "POS order %(order)s refunded %(qty)s unit(s) of a completed "
+                "Manufacturing Order. Raw materials have been returned to stock."
+            ) % {'unbuild': unbuild.name, 'order': self.name, 'qty': consumed}
+        else:
+            note = _(
+                "Unbuild Order %(unbuild)s was created for POS order %(order)s "
+                "(%(qty)s unit(s) refunded) but could not be validated "
+                "automatically: %(reason)s. It has been left in draft — please "
+                "review and validate it manually."
+            ) % {
+                'unbuild': unbuild.name,
+                'order': self.name,
+                'qty': consumed,
+                'reason': failure_reason or _("unknown error"),
+            }
+
         self._post_manufacturing_message(mo, note)
         self._create_manufacturing_review_activity(unbuild, note)
         return consumed
