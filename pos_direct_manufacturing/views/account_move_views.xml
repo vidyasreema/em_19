@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_move_form_pos_manufacturing" model="ir.ui.view">
+        <field name="name">account.move.form.inherit.pos.manufacturing</field>
+        <field name="model">account.move</field>
+        <!-- The POS Orders smart button lives in this view. Its record id
+             is view_account_journal_pos_user_form despite the name looking
+             like a journal view. -->
+        <field name="inherit_id" ref="point_of_sale.view_account_journal_pos_user_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//button[@name='action_view_source_pos_orders']" position="after">
+                <button class="oe_stat_button"
+                        name="action_view_pos_manufacturing_orders"
+                        type="object"
+                        icon="fa-flask"
+                        invisible="pos_manufacturing_order_count == 0">
+                    <field string="Manufacturing Orders"
+                           name="pos_manufacturing_order_count"
+                           widget="statinfo"/>
+                </button>
+            </xpath>
+        </field>
+    </record>
+</odoo>

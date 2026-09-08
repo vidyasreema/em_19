@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="res_config_settings_view_form_pos_manufacturing" model="ir.ui.view">
+        <field name="name">res.config.settings.view.form.inherit.pos.manufacturing</field>
+        <field name="model">res.config.settings</field>
+        <field name="inherit_id" ref="point_of_sale.res_config_settings_view_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//block[@id='pos_inventory_section']" position="after">
+                <block title="Raw Material / Manufacturing" id="pos_raw_material_section">
+                    <setting string="Raw Material Enforcement"
+                             help="Controls whether the cashier must specify raw materials for manufactured products before completing a POS order.">
+                        <field name="pos_raw_material_enforcement" widget="radio"/>
+                    </setting>
+                    <setting string="Manufacturing Review Responsible"
+                             help="User who receives the To-Do activity when a POS refund affects a Manufacturing Order that cannot be reversed automatically.">
+                        <field name="pos_mfg_review_user_id" options="{'no_create': True}"/>
+                    </setting>
+                </block>
+            </xpath>
+        </field>
+    </record>
+</odoo>
