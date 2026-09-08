@@ -28,10 +28,16 @@ patch(Orderline.prototype, {
             productId: m.product_id.id,
             productName: m.product_id.display_name,
             qty: m.qty,
+            // uom_id is a loaded relation, but fall back to a raw id in case
+            // the uom record itself is not in the POS cache.
+            uomId: m.uom_id?.id || m.uom_id || null,
         }));
         this.dialog.add(RawMaterialPopup, {
             existingMaterials,
             productQty: line.qty,
+            // The finished product's unit: the popup converts raw material
+            // quantities into this before comparing totals.
+            productUomId: line.product_id?.uom_id?.id || null,
             getPayload: (materialLines) => {
                 this.saveRawMaterials(materialLines);
             },

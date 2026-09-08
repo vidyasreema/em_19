@@ -11,8 +11,17 @@
                              help="Controls whether the cashier must specify raw materials for manufactured products before completing a POS order.">
                         <field name="pos_raw_material_enforcement" widget="radio"/>
                     </setting>
+                    <setting string="Raw Material Tolerance"
+                             help="How far the raw material total may differ from the quantity sold, in the finished product's unit (0.1 = 100 g for products sold by the kilo). Over the tolerance the order is blocked; under it the cashier is warned but may continue. Skipped when the units are not convertible.">
+                        <field name="pos_raw_material_tolerance"/>
+                    </setting>
+                    <setting string="Create Review Activity"
+                             help="Whether a POS refund that affects a Manufacturing Order raises a To-Do activity. Choose Always to also get one for refunds handled automatically. Every action is written to the chatter regardless.">
+                        <field name="pos_mfg_activity_creation" widget="radio"/>
+                    </setting>
                     <setting string="Manufacturing Review Responsible"
-                             help="User who receives the To-Do activity when a POS refund affects a Manufacturing Order that cannot be reversed automatically.">
+                             help="User who receives the To-Do activity. Falls back to the Manufacturing Order's responsible, then to the cashier, if left empty."
+                             invisible="pos_mfg_activity_creation == 'never'">
                         <field name="pos_mfg_review_user_id" options="{'no_create': True}"/>
                     </setting>
                 </block>

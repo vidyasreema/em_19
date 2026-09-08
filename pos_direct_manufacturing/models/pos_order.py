@@ -207,15 +207,17 @@ class PosOrder(models.Model):
         """Reacts to refunded lines by reversing their linked Manufacturing
         Order, differently depending on how far that MO has progressed:
 
-        - Draft (not yet reviewed by the manufacturing manager): reduce the
-          quantity, or cancel outright if the whole line was refunded.
-          Nothing has been consumed yet, so this is safe to automate.
-        - Confirmed / In Progress: components may already be reserved or
-          partly consumed, so nothing is changed automatically — an
-          activity is created for manual review instead.
-        - Done (raw materials already consumed, finished good already in
-          stock): an Unbuild Order is created and validated automatically,
+        - Draft: reduce the quantity, or cancel outright if the whole line
+          was refunded. Nothing has been reserved or consumed yet.
+        - Confirmed: components are reserved but not consumed, so a full
+          refund cancels the MO and releases the reservation. Partial
+          refunds, and anything already started, are flagged for manual
+          review instead.
+        - Done: an Unbuild Order is created and validated automatically,
           returning the raw materials to stock.
+
+        Whether each of these also raises a To-Do activity is controlled by
+        the POS config's 'Create Review Activity' setting.
 
         Guarded so it can never break a normal checkout even if
         'refunded_orderline_id' doesn't exist on this Odoo version.
@@ -248,11 +250,9 @@ class PosOrder(models.Model):
                         mo, remaining_to_refund
                     )
                 else:
-                    self._flag_manufacturing_order_for_review(mo, remaining_to_refund)
-                    # A confirmed MO absorbs the whole refund: it is left
-                    # untouched for manual review, so there is nothing left
-                    # for any further MO on this line to reverse.
-                    remaining_to_refund = 0
+                    remaining_to_refund -= self._reverse_confirmed_manufacturing_order(
+                        mo, remaining_to_refund
+                    )
 
     def _reverse_draft_manufacturing_order(self, mo, refunded_qty):
         """Cancels or shrinks a not-yet-reviewed MO. Returns the quantity
@@ -262,17 +262,17 @@ class PosOrder(models.Model):
         remaining_qty = original_qty - consumed
 
         if remaining_qty <= 0:
-            self._post_manufacturing_message(mo, _(
+            note = _(
                 "Cancelled automatically: linked POS order %s was refunded "
                 "before this Manufacturing Order was reviewed."
-            ) % self.name)
+            ) % self.name
             mo.action_cancel()
         else:
             ratio = remaining_qty / original_qty if original_qty else 0
             mo.product_qty = remaining_qty
             for move in mo.move_raw_ids:
                 move.product_uom_qty = move.product_uom_qty * ratio
-            self._post_manufacturing_message(mo, _(
+            note = _(
                 "Quantity reduced from %(old)s to %(new)s: POS order "
                 "%(order)s refunded %(qty)s unit(s) before this "
                 "Manufacturing Order was reviewed."
@@ -281,7 +281,47 @@ class PosOrder(models.Model):
                 'new': remaining_qty,
                 'order': self.name,
                 'qty': consumed,
-            })
+            }
+
+        self._post_manufacturing_message(mo, note)
+        self._create_manufacturing_review_activity(mo, note, automated=True)
+        return consumed
+
+    def _reverse_confirmed_manufacturing_order(self, mo, refunded_qty):
+        """Cancels a confirmed MO when the whole line was refunded and
+        production has not physically started. Confirming an MO only
+        reserves components, so cancelling releases the reservation
+        without moving any stock.
+
+        Anything already started or partially consumed is left alone and
+        flagged for manual review instead: a worker may have taken the
+        components to the bench already.
+        """
+        started = (
+            mo.state == 'progress'
+            or mo.qty_producing
+            or any(move.picked for move in mo.move_raw_ids)
+        )
+        if started:
+            self._flag_manufacturing_order_for_review(mo, refunded_qty)
+            return refunded_qty
+
+        # Partial refunds would need the reserved component quantities
+        # rescaled, which Odoo does not do automatically once an MO is
+        # confirmed. Those stay manual.
+        if refunded_qty < mo.product_qty:
+            self._flag_manufacturing_order_for_review(mo, refunded_qty)
+            return refunded_qty
+
+        consumed = min(refunded_qty, mo.product_qty)
+        note = _(
+            "Cancelled automatically: linked POS order %s was refunded in "
+            "full. No components had been consumed, so the reservation has "
+            "been released."
+        ) % self.name
+        mo.action_cancel()
+        self._post_manufacturing_message(mo, note)
+        self._create_manufacturing_review_activity(mo, note, automated=True)
         return consumed
 
     def _reverse_done_manufacturing_order(self, mo, refunded_qty):
@@ -348,28 +388,42 @@ class PosOrder(models.Model):
             }
 
         self._post_manufacturing_message(mo, note)
-        self._create_manufacturing_review_activity(unbuild, note)
+        # A validated unbuild needed no human input; a failed one does.
+        self._create_manufacturing_review_activity(
+            unbuild, note, automated=validated
+        )
         return consumed
 
     def _flag_manufacturing_order_for_review(self, mo, refunded_qty):
         note = _(
             "POS order %(order)s refunded %(qty)s unit(s) of a "
             "manufactured product whose Manufacturing Order is already "
-            "%(state)s. No automatic changes were made since components "
-            "may already be reserved or partially consumed — please "
+            "%(state)s and cannot be reversed automatically — production "
+            "has started, or only part of the line was refunded. Please "
             "review manually."
         ) % {'order': self.name, 'qty': refunded_qty, 'state': mo.state}
         self._post_manufacturing_message(mo, note)
         self._create_manufacturing_review_activity(mo, note)
 
-    def _create_manufacturing_review_activity(self, record, note):
-        """Picks who gets the To-Do, in order of preference:
-        the POS config's reviewer, then the record's own responsible, then
-        the MO behind an unbuild, then the cashier who triggered the sync.
-        Odoo's activity_schedule has no fallback of its own — leave user_id
-        out and the activity is created with no assignee, so it never shows
-        up in anyone's activity list.
+    def _create_manufacturing_review_activity(self, record, note, automated=False):
+        """Raises the To-Do activity, subject to the POS config setting.
+
+        `automated` marks cases the module already handled by itself — a
+        cancelled Manufacturing Order, a validated Unbuild Order — which
+        only produce an activity when the setting is 'always'.
+
+        Assignee, in order of preference: the POS config's reviewer, the
+        record's own responsible, the MO behind an unbuild, then the
+        cashier. Odoo's activity_schedule has no fallback of its own —
+        leave user_id out and the activity is created with no assignee, so
+        it never shows up in anyone's activity list.
         """
+        mode = self.config_id.mfg_activity_creation or 'review_only'
+        if mode == 'never':
+            return
+        if mode == 'review_only' and automated:
+            return
+
         responsible = self.config_id.mfg_review_user_id
 
         if not responsible and 'user_id' in record._fields:
