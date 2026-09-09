@@ -104,6 +104,28 @@ export class RawMaterialPopup extends Component {
     }
 
     /**
+     * The unit of a popup line.
+     *
+     * Raw material records created earlier in this session have no uom_id:
+     * it is a related field filled in on the server, so it only appears
+     * after a round trip. Falling back to the product's own unit keeps the
+     * quantity check alive when the popup is reopened — without it, every
+     * reopened line looked "not comparable" and the check was skipped
+     * entirely, accepting any quantity.
+     */
+    _resolveUomId(line) {
+        if (line.uomId) {
+            return line.uomId;
+        }
+        const product = this.pos.models["product.product"]?.get(line.productId);
+        return (
+            product?.uom_id?.id ||
+            product?.product_tmpl_id?.uom_id?.id ||
+            null
+        );
+    }
+
+    /**
      * Two units can be compared only when they share a reference unit.
      * Odoo 19 keeps units in a tree and stores the path on each record, so
      * a shared root is what makes a conversion possible. kg and g convert;
@@ -134,10 +156,11 @@ export class RawMaterialPopup extends Component {
 
         let total = 0;
         for (const line of validLines) {
-            if (!line.uomId) {
+            const uomId = this._resolveUomId(line);
+            if (!uomId) {
                 return null;
             }
-            const lineUom = uomModel.get(line.uomId);
+            const lineUom = uomModel.get(uomId);
             if (!lineUom || !this._uomsAreComparable(lineUom, targetUom)) {
                 return null;
             }
