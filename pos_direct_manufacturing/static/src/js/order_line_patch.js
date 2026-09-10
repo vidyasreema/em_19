@@ -17,7 +17,26 @@ patch(Orderline.prototype, {
         if (this.props.mode !== "display") {
             return false;
         }
-        const product = this.line.product_id;
+        const line = this.line;
+        const order = line.order_id;
+
+        // The ticket screen renders this same component for past orders so
+        // the cashier can pick refund quantities. Those orders are already
+        // synced and paid: their raw materials are a historical record and
+        // editing them changes nothing on the server.
+        if (order?.finalized) {
+            return false;
+        }
+
+        // Refund lines carry a negative quantity and their raw materials
+        // are never read: the server skips Manufacturing Order creation
+        // for them, and the refund reverses the original sale's MO
+        // instead.
+        if (line.qty <= 0 || line.refunded_orderline_id) {
+            return false;
+        }
+
+        const product = line.product_id;
         return Boolean(product && product.is_manufacture_route);
     },
 

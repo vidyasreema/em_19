@@ -1,6 +1,9 @@
 from odoo import fields, models, _
 from odoo.exceptions import UserError, ValidationError
 import json
+import logging
+
+_logger = logging.getLogger(__name__)
 
 
 class PosOrder(models.Model):
@@ -209,10 +212,10 @@ class PosOrder(models.Model):
 
         - Draft: reduce the quantity, or cancel outright if the whole line
           was refunded. Nothing has been reserved or consumed yet.
-        - Confirmed: components are reserved but not consumed, so a full
-          refund cancels the MO and releases the reservation. Partial
-          refunds, and anything already started, are flagged for manual
-          review instead.
+        - Confirmed: components are reserved but not consumed. A full
+          refund cancels the MO; a partial refund shrinks it
+          proportionally and releases the surplus reservation. Anything
+          already started is flagged for manual review instead.
         - Done: an Unbuild Order is created and validated automatically,
           returning the raw materials to stock.
 
@@ -254,6 +257,18 @@ class PosOrder(models.Model):
                         mo, remaining_to_refund
                     )
 
+    def _describe_components(self, mo):
+        """Component demand as a readable list, for the chatter record."""
+        return ", ".join(
+            "%s %s %s" % (
+                move.product_id.display_name,
+                round(move.product_uom_qty, 3),
+                move.product_uom.name,
+            )
+            for move in mo.move_raw_ids
+            if move.state not in ('done', 'cancel')
+        ) or _("none")
+
     def _reverse_draft_manufacturing_order(self, mo, refunded_qty):
         """Cancels or shrinks a not-yet-reviewed MO. Returns the quantity
         actually absorbed from `refunded_qty`."""
@@ -275,12 +290,14 @@ class PosOrder(models.Model):
             note = _(
                 "Quantity reduced from %(old)s to %(new)s: POS order "
                 "%(order)s refunded %(qty)s unit(s) before this "
-                "Manufacturing Order was reviewed."
+                "Manufacturing Order was reviewed. Components now: "
+                "%(components)s."
             ) % {
                 'old': original_qty,
                 'new': remaining_qty,
                 'order': self.name,
                 'qty': consumed,
+                'components': self._describe_components(mo),
             }
 
         self._post_manufacturing_message(mo, note)
@@ -288,14 +305,13 @@ class PosOrder(models.Model):
         return consumed
 
     def _reverse_confirmed_manufacturing_order(self, mo, refunded_qty):
-        """Cancels a confirmed MO when the whole line was refunded and
-        production has not physically started. Confirming an MO only
-        reserves components, so cancelling releases the reservation
-        without moving any stock.
+        """Handles a refund against a confirmed MO.
 
-        Anything already started or partially consumed is left alone and
-        flagged for manual review instead: a worker may have taken the
-        components to the bench already.
+        Confirming an MO reserves components but consumes nothing, so a
+        full refund cancels it and a partial refund shrinks it. Production
+        that has physically started is left alone: a worker may already
+        have the components at the bench, and unreserving underneath them
+        would be worse than a stale Manufacturing Order.
         """
         started = (
             mo.state == 'progress'
@@ -306,20 +322,86 @@ class PosOrder(models.Model):
             self._flag_manufacturing_order_for_review(mo, refunded_qty)
             return refunded_qty
 
-        # Partial refunds would need the reserved component quantities
-        # rescaled, which Odoo does not do automatically once an MO is
-        # confirmed. Those stay manual.
-        if refunded_qty < mo.product_qty:
-            self._flag_manufacturing_order_for_review(mo, refunded_qty)
-            return refunded_qty
+        original_qty = mo.product_qty
+        consumed = min(refunded_qty, original_qty)
+        remaining_qty = original_qty - consumed
 
-        consumed = min(refunded_qty, mo.product_qty)
+        # A remainder rounded away by the product's own precision is not a
+        # remainder: treat it as a full refund rather than shrinking the MO
+        # to a sliver that can never be produced.
+        if mo.product_uom_id.compare(remaining_qty, 0) <= 0:
+            note = _(
+                "Cancelled automatically: linked POS order %s was refunded in "
+                "full. No components had been consumed, so the reservation has "
+                "been released."
+            ) % self.name
+            mo.action_cancel()
+            self._post_manufacturing_message(mo, note)
+            self._create_manufacturing_review_activity(mo, note, automated=True)
+            return consumed
+
+        return self._reduce_confirmed_manufacturing_order(
+            mo, consumed, remaining_qty
+        )
+
+    def _reduce_confirmed_manufacturing_order(self, mo, consumed, remaining_qty):
+        """Shrinks a confirmed MO proportionally through Odoo's own
+        change.production.qty wizard.
+
+        The wizard is what the 'Update quantity' button on a Manufacturing
+        Order uses: it rescales every component move by the new/old ratio,
+        adjusts the finished move, re-reserves, and logs an exception where
+        a component cannot follow. Writing product_qty directly would leave
+        the original reservations untouched, which is why the draft-state
+        shortcut used elsewhere is not safe once an MO is confirmed.
+
+        Scaling proportionally is the correct answer for a blended product:
+        3 kg of mix made from 2 kg chop and 1 kg shank is homogeneous, so
+        1 kg returned is one third of each component, not a specific one.
+        """
+        original_qty = mo.product_qty
+        before = self._describe_components(mo)
+
+        try:
+            self.env['change.production.qty'].sudo().create({
+                'mo_id': mo.id,
+                'product_qty': remaining_qty,
+            }).change_prod_qty()
+        except (UserError, ValidationError) as error:
+            # Leave the MO exactly as it was and let a human deal with it,
+            # rather than half-applying a quantity change.
+            _logger.warning(
+                "POS %s: could not reduce MO %s to %s: %s",
+                self.name, mo.name, remaining_qty, error,
+            )
+            note = _(
+                "POS order %(order)s refunded %(qty)s unit(s), but this "
+                "Manufacturing Order could not be reduced automatically: "
+                "%(reason)s. It is unchanged at %(old)s — please adjust or "
+                "cancel it manually."
+            ) % {
+                'order': self.name,
+                'qty': consumed,
+                'reason': str(error),
+                'old': original_qty,
+            }
+            self._post_manufacturing_message(mo, note)
+            self._create_manufacturing_review_activity(mo, note)
+            return consumed
+
         note = _(
-            "Cancelled automatically: linked POS order %s was refunded in "
-            "full. No components had been consumed, so the reservation has "
-            "been released."
-        ) % self.name
-        mo.action_cancel()
+            "Quantity reduced from %(old)s to %(new)s: POS order %(order)s "
+            "refunded %(qty)s unit(s). Components were rescaled "
+            "proportionally and the surplus reservation released.<br/>"
+            "Before: %(before)s<br/>After: %(after)s"
+        ) % {
+            'old': original_qty,
+            'new': remaining_qty,
+            'order': self.name,
+            'qty': consumed,
+            'before': before,
+            'after': self._describe_components(mo),
+        }
         self._post_manufacturing_message(mo, note)
         self._create_manufacturing_review_activity(mo, note, automated=True)
         return consumed
@@ -398,9 +480,9 @@ class PosOrder(models.Model):
         note = _(
             "POS order %(order)s refunded %(qty)s unit(s) of a "
             "manufactured product whose Manufacturing Order is already "
-            "%(state)s and cannot be reversed automatically — production "
-            "has started, or only part of the line was refunded. Please "
-            "review manually."
+            "%(state)s and production has started, so nothing was changed "
+            "automatically — components may already be at the bench. "
+            "Please review manually."
         ) % {'order': self.name, 'qty': refunded_qty, 'state': mo.state}
         self._post_manufacturing_message(mo, note)
         self._create_manufacturing_review_activity(mo, note)
@@ -409,8 +491,9 @@ class PosOrder(models.Model):
         """Raises the To-Do activity, subject to the POS config setting.
 
         `automated` marks cases the module already handled by itself — a
-        cancelled Manufacturing Order, a validated Unbuild Order — which
-        only produce an activity when the setting is 'always'.
+        cancelled or rescaled Manufacturing Order, a validated Unbuild
+        Order — which only produce an activity when the setting is
+        'always'.
 
         Assignee, in order of preference: the POS config's reviewer, the
         record's own responsible, the MO behind an unbuild, then the
