@@ -38,10 +38,6 @@ export class RawMaterialPopup extends Component {
         this.state = useState({
             lines,
             errorMessage: "",
-            // Set once a below-tolerance total has been shown to the cashier.
-            // The next Confirm goes through: too little raw material is a
-            // warning, not a block, because trim and bone loss are real.
-            lowTotalAcknowledged: false,
         });
 
         // Base nextLineId on the ids actually present in `lines`, not on
@@ -76,7 +72,6 @@ export class RawMaterialPopup extends Component {
                 line.productName = p.display_name;
                 line.uomId = p.uom_id || null;
                 this.state.errorMessage = "";
-                this.state.lowTotalAcknowledged = false;
             },
         }));
     }
@@ -84,7 +79,6 @@ export class RawMaterialPopup extends Component {
     onQtyChange(line, ev) {
         line.qty = parseFloat(ev.target.value) || 0;
         this.state.errorMessage = "";
-        this.state.lowTotalAcknowledged = false;
     }
 
     onAddLine() {
@@ -100,7 +94,6 @@ export class RawMaterialPopup extends Component {
     onRemoveLine(lineId) {
         this.state.lines = this.state.lines.filter((l) => l.id !== lineId);
         this.state.errorMessage = "";
-        this.state.lowTotalAcknowledged = false;
     }
 
     /**
@@ -193,6 +186,12 @@ export class RawMaterialPopup extends Component {
         // totalQty is null when the units are not convertible: comparing
         // kilos of meat against a count of burgers has no correct answer,
         // so the check is skipped rather than guessed at.
+        //
+        // Only the upper bound is enforced. Consuming less raw material
+        // than the finished quantity is normal — trim, bone and cooking
+        // loss all show up that way — so a low total passes silently.
+        // Consuming more would build a Manufacturing Order that pulls
+        // more stock than it produces, which is a real inventory error.
         if (totalQty !== null && this.props.productQty) {
             const tolerance = this.pos.config.raw_material_tolerance || 0;
             const rounded = Math.round(totalQty * 1000) / 1000;
@@ -200,16 +199,6 @@ export class RawMaterialPopup extends Component {
             if (rounded > this.props.productQty + tolerance) {
                 this.state.errorMessage =
                     `Total raw material quantity (${rounded}) cannot exceed the product quantity (${this.props.productQty}) by more than ${tolerance}.`;
-                return;
-            }
-
-            if (
-                rounded < this.props.productQty - tolerance &&
-                !this.state.lowTotalAcknowledged
-            ) {
-                this.state.errorMessage =
-                    `Total raw material quantity (${rounded}) is well below the product quantity (${this.props.productQty}). Press Confirm again to continue anyway.`;
-                this.state.lowTotalAcknowledged = true;
                 return;
             }
         }
