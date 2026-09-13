@@ -10,6 +10,8 @@ publicWidget.registry.MapAddressCheckout = publicWidget.Widget.extend({
         defaultLng: 55.2708,
         defaultZoom: 12,
         googleApiKey: "AIzaSyDPWub_dzNyAs7-56kyNKd3TrEvKBiVG6w",
+        // Set to false until the /shop/address/map_update controller exists.
+        enableSessionSave: false,
     },
 
     start: function () {
@@ -39,7 +41,7 @@ publicWidget.registry.MapAddressCheckout = publicWidget.Widget.extend({
 
         var callbackName = "initGoogleMapAddressCheckout";
         var script = document.createElement("script");
-        script.src = `https://maps.googleapis.com/maps/api/js?key=${self.config.googleApiKey}&libraries=places&callback=${callbackName}`;
+        script.src = `https://maps.googleapis.com/maps/api/js?key=${self.config.googleApiKey}&libraries=places&loading=async&callback=${callbackName}`;
         script.async = true;
         script.defer = true;
 
@@ -53,6 +55,27 @@ publicWidget.registry.MapAddressCheckout = publicWidget.Widget.extend({
 
     _showError: function (message) {
         $('#o_delivery_map').html('<div class="alert alert-danger">' + message + '</div>');
+    },
+
+    // ---------------------------------------------------------------
+    // Set a form field so that Odoo 19 (OWL) actually notices.
+    //
+    // jQuery's .trigger('change') only fires jQuery-bound handlers. Odoo 19's
+    // checkout form listens with addEventListener, so a jQuery trigger is
+    // invisible to it: the value appears on screen but the framework never
+    // updates its own state. That is why the country changed visually while
+    // the state select stayed empty and Confirm reported missing fields.
+    // ---------------------------------------------------------------
+    _setNative: function (selector, value) {
+        const el = document.querySelector(selector);
+        if (!el) {
+            console.warn('⚠️ missing field:', selector);
+            return null;
+        }
+        el.value = value;
+        el.dispatchEvent(new Event('input', { bubbles: true }));
+        el.dispatchEvent(new Event('change', { bubbles: true }));
+        return el;
     },
 
     _initializeMap: function () {
@@ -93,11 +116,6 @@ publicWidget.registry.MapAddressCheckout = publicWidget.Widget.extend({
 
             this._bindMapEvents();
 
-            // ✅ NO form submit interception — Odoo 19 handles the save button
-            // natively via its own fetch → reads {"redirectUrl":"..."} → redirects.
-            // We must NOT touch that flow. Coordinates are saved to server session
-            // immediately when the user picks a location on the map instead.
-
             console.log("✅ Map initialized!");
 
         } catch (error) {
@@ -106,37 +124,45 @@ publicWidget.registry.MapAddressCheckout = publicWidget.Widget.extend({
         }
     },
 
-    // ⭐ KEY: Save coordinates to server session THE MOMENT user picks a location.
-    // This is called before the user ever touches the save button, so Odoo's
-    // native save flow can proceed completely untouched.
+    // ---------------------------------------------------------------
+    // Save coordinates to the server session.
+    //
+    // NOTE: /shop/address/map_update currently returns 404 — the controller
+    // does not exist. Until it is added, this is disabled via
+    // config.enableSessionSave so it stops throwing a JSON parse error on the
+    // 404 HTML page. Coordinates are NOT being persisted anywhere right now.
+    // ---------------------------------------------------------------
     _saveCoordinatesToSession: function (lat, lng) {
-        var self = this;
+        if (!this.config.enableSessionSave) {
+            console.log("ℹ️ Session save disabled (map_update route missing):", lat, lng);
+            return;
+        }
 
         fetch('/shop/address/map_update', {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 jsonrpc: '2.0',
                 method: 'call',
                 id: 1,
-                params: {
-                    latitude: lat,
-                    longitude: lng,
-                }
-            })
+                params: { latitude: lat, longitude: lng },
+            }),
         })
-        .then(function (res) { return res.json(); })
+        .then(function (res) {
+            if (!res.ok) {
+                throw new Error('map_update returned HTTP ' + res.status);
+            }
+            return res.json();
+        })
         .then(function (data) {
             if (data.result && data.result.success) {
                 console.log("✅ Coordinates saved to session:", lat, lng);
             } else {
-                console.error("❌ Failed to save coordinates to session:", data);
+                console.error("❌ map_update rejected the request:", data);
             }
         })
         .catch(function (err) {
-            console.error("❌ Fetch error:", err);
+            console.error("❌ Could not save coordinates:", err.message);
         });
     },
 
@@ -147,9 +173,6 @@ publicWidget.registry.MapAddressCheckout = publicWidget.Widget.extend({
             self._selectLocation(event.latLng.lat(), event.latLng.lng());
         });
 
-        // ✅ FIXED: use event.latLng directly instead of event.target.getPosition()
-        // Google Maps dragend events expose coordinates via event.latLng,
-        // not via event.target (which is a DOM convention and is undefined here).
         google.maps.event.addListener(this.marker, "dragend", function (event) {
             self._selectLocation(event.latLng.lat(), event.latLng.lng());
         });
@@ -171,6 +194,26 @@ publicWidget.registry.MapAddressCheckout = publicWidget.Widget.extend({
 
         $('#o_map_clear_btn').off('click').on('click', function () {
             self._clearSelection();
+        });
+    },
+
+    // ---------------------------------------------------------------
+    // Block the Confirm button while the address is still being filled in.
+    // Without this the customer can submit during the ~1s gap between picking
+    // a location and the state select finishing its round-trip.
+    // ---------------------------------------------------------------
+    _setFormBusy: function (busy) {
+        const buttons = document.querySelectorAll(
+            'a[name="website_sale_main_button"], button[name="website_sale_main_button"], .oe_website_sale form button[type="submit"]'
+        );
+        buttons.forEach(function (btn) {
+            if (busy) {
+                btn.setAttribute('disabled', 'disabled');
+                btn.classList.add('disabled');
+            } else {
+                btn.removeAttribute('disabled');
+                btn.classList.remove('disabled');
+            }
         });
     },
 
@@ -198,19 +241,40 @@ publicWidget.registry.MapAddressCheckout = publicWidget.Widget.extend({
             .addClass('text-success')
             .css('font-weight', 'bold');
 
-        // ⭐ Save to server session immediately — don't wait for save button
         this._saveCoordinatesToSession(lat, lng);
+
+        this._setFormBusy(true);
 
         this.geocoder.geocode({ location: latLng }, function (results, status) {
             if (status === google.maps.GeocoderStatus.OK && results.length > 0) {
                 $('#o_map_selected_address').text(results[0].formatted_address);
                 self._fillOdooAddressForm(results[0]);
             } else {
+                // No address at this point (sea, desert, unmapped area).
+                // Clear the form so a stale address from the previous pin can
+                // never be submitted alongside these new coordinates.
+                self._clearAddressFields();
                 $('#o_map_selected_address').html(
-                    '<span class="text-warning">Could not get address</span>'
+                    '<span class="text-danger"><strong>No address found here.</strong> ' +
+                    'Please pick a location on land.</span>'
                 );
+                self._setFormBusy(false);
             }
         });
+    },
+
+    // ---------------------------------------------------------------
+    // Blank the address fields. Used when geocoding finds nothing, so the
+    // customer cannot confirm new coordinates with an old address attached.
+    // Country and state are left alone: clearing the country would force
+    // Odoo into another state-list rebuild for no benefit.
+    // ---------------------------------------------------------------
+    _clearAddressFields: function () {
+        this._setNative('#o_street', '');
+        this._setNative('#o_street2', '');
+        this._setNative('#o_city', '');
+        this._setNative('#o_zip', '');
+        console.warn('⚠️ no address at these coordinates — address fields cleared');
     },
 
     _searchLocation: function () {
@@ -274,7 +338,10 @@ publicWidget.registry.MapAddressCheckout = publicWidget.Widget.extend({
     _fillOdooAddressForm: function (geocodeResult) {
         var self = this;
         var components = geocodeResult.address_components;
-        if (!components) return;
+        if (!components) {
+            this._setFormBusy(false);
+            return;
+        }
 
         function getComponent(type) {
             for (var i = 0; i < components.length; i++) {
@@ -306,62 +373,119 @@ publicWidget.registry.MapAddressCheckout = publicWidget.Widget.extend({
         var city = locality ? locality.long_name : '';
         var zip = postalCode ? postalCode.long_name : '';
 
-        $('#o_street').val(street.trim()).trigger('change');
-        $('#o_street2').val(street2).trigger('change');
-        $('#o_city').val(city).trigger('change');
-        $('#o_zip').val(zip || '00000').trigger('change');
+        // Native events so OWL registers the values.
+        this._setNative('#o_street', street.trim());
+        this._setNative('#o_street2', street2);
+        this._setNative('#o_city', city);
+        this._setNative('#o_zip', zip || '00000');
 
-        if (country) {
-            var countryCode = country.short_name.toUpperCase();
-            var $countrySelect = $('#o_country_id');
-            var $countryOption = $countrySelect.find('option').filter(function () {
-                return $(this).attr('code') === countryCode;
-            });
+        if (!country) {
+            this._setFormBusy(false);
+            return;
+        }
 
-            if ($countryOption.length > 0) {
-                $countryOption.prop('selected', true);
-                var stateToSet = state ? state.long_name : null;
-                $countrySelect.trigger('change');
+        var countryCode = country.short_name.toUpperCase();
+        var countrySelect = document.querySelector('#o_country_id');
 
-                if (stateToSet) {
-                    setTimeout(function () {
-                        self._selectStateWhenReady(stateToSet, 0);
-                    }, 800);
-                }
-            }
+        if (!countrySelect) {
+            console.warn('⚠️ country select #o_country_id not found');
+            this._setFormBusy(false);
+            return;
+        }
+
+        var countryOption = Array.from(countrySelect.options).find(function (opt) {
+            return (opt.getAttribute('code') || '').toUpperCase() === countryCode
+                || (opt.dataset && (opt.dataset.code || '').toUpperCase() === countryCode);
+        });
+
+        if (!countryOption) {
+            console.warn('⚠️ no country option matched code:', countryCode);
+            this._setFormBusy(false);
+            return;
+        }
+
+        // Only wait for a rebuild if the country is ACTUALLY changing.
+        // On a second pick within the same country, setting the same value is a
+        // no-op: Odoo never re-fetches, the list never changes, and waiting for
+        // it to differ just times out. In that case the list is already correct,
+        // so match against it immediately.
+        var beforeSelect = document.querySelector('#o_state_id');
+        var countryChanged = (countrySelect.value !== countryOption.value);
+
+        if (countryChanged) {
+            this._stateSignature = beforeSelect
+                ? Array.from(beforeSelect.options).map(function (o) { return o.value; }).join(',')
+                : null;
+            countrySelect.value = countryOption.value;
+            countrySelect.dispatchEvent(new Event('change', { bubbles: true }));
+        } else {
+            this._stateSignature = null;
+        }
+
+        if (state) {
+            this._selectStateWhenReady(state.long_name, 0);
+        } else {
+            this._setFormBusy(false);
         }
     },
 
     _selectStateWhenReady: function (stateName, attempts) {
         var self = this;
-        var maxAttempts = 30;
-        var $stateSelect = $('#o_state_id');
+        var maxAttempts = 25;   // 25 x 200ms = 5s ceiling
+        var stateSelect = document.querySelector('#o_state_id');
 
-        if ($stateSelect.length === 0 && attempts < maxAttempts) {
-            setTimeout(function () {
-                self._selectStateWhenReady(stateName, attempts + 1);
-            }, 200);
+        // Country has no states in Odoo — the select never appears. Not an error.
+        if (!stateSelect) {
+            if (attempts < maxAttempts) {
+                setTimeout(function () {
+                    self._selectStateWhenReady(stateName, attempts + 1);
+                }, 200);
+            } else {
+                console.log('ℹ️ no state select for this country — continuing');
+                self._setFormBusy(false);
+            }
             return;
         }
 
-        var optionCount = $stateSelect.find('option').length;
-        if (optionCount <= 1 && attempts < maxAttempts) {
-            setTimeout(function () {
-                self._selectStateWhenReady(stateName, attempts + 1);
-            }, 200);
+        // The list must have REBUILT, not merely be non-empty. On an edit the
+        // old country's states are still sitting there and look "ready".
+        var signature = Array.from(stateSelect.options).map(function (o) {
+            return o.value;
+        }).join(',');
+
+        var stillOldList = (self._stateSignature !== null && signature === self._stateSignature);
+        var notPopulated = stateSelect.options.length <= 1;
+
+        if (stillOldList || notPopulated) {
+            if (attempts < maxAttempts) {
+                setTimeout(function () {
+                    self._selectStateWhenReady(stateName, attempts + 1);
+                }, 200);
+            } else {
+                console.warn('⚠️ state list never rebuilt for:', stateName);
+                self._setFormBusy(false);
+            }
             return;
         }
 
-        var $option = $stateSelect.find('option').filter(function () {
-            var optionText = $(this).text().trim();
-            return optionText.toLowerCase() === stateName.toLowerCase() ||
-                optionText.toLowerCase().indexOf(stateName.toLowerCase()) !== -1;
+        var wanted = stateName.toLowerCase();
+        var match = Array.from(stateSelect.options).find(function (opt) {
+            return opt.value && opt.text.trim().toLowerCase() === wanted;
+        }) || Array.from(stateSelect.options).find(function (opt) {
+            var t = opt.text.trim().toLowerCase();
+            return opt.value && (t.indexOf(wanted) !== -1 || wanted.indexOf(t) !== -1);
         });
 
-        if ($option.length > 0) {
-            $option.first().prop('selected', true);
-            $stateSelect.val($option.first().val()).trigger('change');
+        if (match) {
+            self._setNative('#o_state_id', match.value);
+            console.log('✅ state set:', match.text);
+        } else {
+            // NO FALLBACK. Guessing an emirate silently ships meat to the wrong
+            // place. Leave it blank and let the customer pick.
+            console.warn('⚠️ no state match for "' + stateName + '" — left blank for the customer');
         }
+
+        self._setFormBusy(false);
     },
 
     _clearSelection: function () {
@@ -370,6 +494,8 @@ publicWidget.registry.MapAddressCheckout = publicWidget.Widget.extend({
 
         $('#o_map_selected_location').addClass('d-none');
         $('#o_map_search_input').val('');
+
+        this._setFormBusy(false);
 
         var defaultLatLng = new google.maps.LatLng(this.config.defaultLat, this.config.defaultLng);
         this.marker.setPosition(defaultLatLng);
