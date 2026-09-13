@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="pos_order_view_form_raw_materials" model="ir.ui.view">
+        <field name="name">pos.order.form.raw.materials</field>
+        <field name="model">pos.order</field>
+        <field name="inherit_id" ref="point_of_sale.view_pos_pos_form"/>
+        <field name="arch" type="xml">
+            <div name="button_box" position="inside">
+                <button name="action_view_manufacturing_orders" type="object"
+                        class="oe_stat_button" icon="fa-flask"
+                        invisible="manufacturing_order_count == 0">
+                    <field name="manufacturing_order_count" widget="statinfo"
+                           string="Manufacturing Orders"/>
+                </button>
+            </div>
+            <notebook position="inside">
+                <page string="Raw Materials Used" name="raw_materials_used">
+                    <field name="all_raw_material_ids" readonly="1">
+                        <list>
+                            <field name="manufactured_product_id"/>
+                            <field name="product_id" string="Raw Material"/>
+                            <field name="qty" string="Quantity Used"/>
+                            <field name="uom_id" string="UoM"/>
+                        </list>
+                    </field>
+                </page>
+            </notebook>
+        </field>
+    </record>
+</odoo>

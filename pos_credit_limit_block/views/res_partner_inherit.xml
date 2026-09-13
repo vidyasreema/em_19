@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="view_partner_form_credit_limit_readonly" model="ir.ui.view">
+        <field name="name">res.partner.form.credit.limit.readonly</field>
+        <field name="model">res.partner</field>
+        <field name="inherit_id" ref="base.view_partner_form"/>
+        <field name="priority">99</field>
+        <field name="arch" type="xml">
+
+            <field name="credit_limit" position="attributes">
+                <attribute name="groups">base.group_system</attribute>
+            </field>
+
+            <field name="use_partner_credit_limit" position="attributes">
+                <attribute name="groups">base.group_system</attribute>
+            </field>
+
+            <field name="credit_limit" position="after">
+                <field name="credit_limit"
+                       readonly="1"
+                       groups="!base.group_system"/>
+            </field>
+
+            <field name="use_partner_credit_limit" position="after">
+                <field name="use_partner_credit_limit"
+                       readonly="1"
+                       groups="!base.group_system"/>
+            </field>
+
+        </field>
+    </record>
+
+</odoo>

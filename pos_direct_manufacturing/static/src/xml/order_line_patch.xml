@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<templates id="template" xml:space="preserve">
+    <t t-name="point_of_sale.Orderline" t-inherit="point_of_sale.Orderline" t-inherit-mode="extension">
+        <xpath expr="//ul[hasclass('info-list')]" position="inside">
+            <li t-if="showRawMaterialButton" class="raw-material-line">
+                <button class="btn btn-sm btn-secondary raw-material-btn"
+                        t-on-click="onClickRawMaterial">
+                    + Raw Material
+                </button>
+            </li>
+        </xpath>
+    </t>
+</templates>

@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<templates id="template" xml:space="preserve">
+    <t t-name="pos_direct_manufacturing.RawMaterialPopup">
+        <Dialog title="'Select Raw Materials'">
+            <div class="raw-material-popup p-2">
+                <div t-foreach="state.lines" t-as="line" t-key="line.id"
+                     class="d-flex align-items-center gap-2 mb-2">
+                    <div class="flex-grow-1">
+                        <AutoComplete
+                            value="line.productName"
+                            sources="getSources(line)"
+                            placeholder="'Search raw material...'"
+                        />
+                    </div>
+                    <input type="number"
+                           class="form-control"
+                           style="width: 100px;"
+                           t-att-value="line.qty"
+                           t-on-change="(ev) => this.onQtyChange(line, ev)"
+                           placeholder="Qty"/>
+                    <button class="btn btn-sm btn-outline-danger"
+                            t-on-click="() => this.onRemoveLine(line.id)">
+                        ×
+                    </button>
+                </div>
+                <button class="btn btn-sm btn-link" t-on-click="onAddLine">
+                    + Add another material
+                </button>
+                <div t-if="state.errorMessage" class="alert alert-danger mt-2 mb-0 py-2">
+                    <t t-esc="state.errorMessage"/>
+                </div>
+            </div>
+            <t t-set-slot="footer">
+                <button class="btn btn-secondary" t-on-click="onCancel">Cancel</button>
+                <button class="btn btn-primary" t-on-click="onConfirm">Confirm</button>
+            </t>
+        </Dialog>
+    </t>
+</templates>
