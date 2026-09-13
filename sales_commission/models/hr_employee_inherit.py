@@ -272,3 +272,22 @@ class HrEmployeeInherit(models.Model):
             'cfg_target_required': self.target_achievement_required,
         })
         return statement.id
+
+
+
+class HrEmployeePublic(models.Model):
+    _inherit = 'hr.employee.public'
+
+    is_sales_man = fields.Boolean(
+        related='employee_id.is_sales_man', readonly=True)
+    min_collection_rate = fields.Float(
+        related='employee_id.min_collection_rate', readonly=True)
+    target_achievement_required = fields.Boolean(
+        related='employee_id.target_achievement_required', readonly=True)
+    currency_id = fields.Many2one(
+        'res.currency', related='employee_id.currency_id', readonly=True)
+    current_target_amount = fields.Monetary(
+        related='employee_id.current_target_amount',
+        currency_field='currency_id', readonly=True)
+    current_commission_rate = fields.Float(
+        related='employee_id.current_commission_rate', readonly=True)
