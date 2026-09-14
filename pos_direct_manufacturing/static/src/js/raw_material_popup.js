@@ -67,13 +67,56 @@ export class RawMaterialPopup extends Component {
         );
         return results.map((p) => ({
             label: p.display_name,
-            onSelect: () => {
+            onSelect: async () => {
                 line.productId = p.id;
                 line.productName = p.display_name;
                 line.uomId = p.uom_id || null;
                 this.state.errorMessage = "";
+
+                // search_pos_raw_materials searches the whole catalogue and
+                // deliberately ignores available_in_pos: a raw material such
+                // as a carcass or a primal is never sold over the counter,
+                // so filtering on it would hide exactly what the cashier
+                // needs to pick. The consequence is that the chosen product
+                // may not be loaded in this POS session.
+                //
+                // It has to be pulled in here. Without a record behind the
+                // id, the relational field on pos.order.line.raw.material
+                // has nothing to point at: it serialises as NULL, the
+                // not-null constraint rejects the INSERT, and the whole
+                // order sync fails at the payment screen.
+                await this._ensureProductLoaded(p.id);
             },
         }));
+    }
+
+    /**
+     * Make sure a product.product record exists in the POS store for the
+     * given id, fetching it from the server if the session did not load it.
+     *
+     * Returns the record, or null if it could not be loaded.
+     */
+    async _ensureProductLoaded(productId) {
+        const productModel = this.pos.models["product.product"];
+        if (!productId || !productModel) {
+            return null;
+        }
+        const existing = productModel.get(productId);
+        if (existing) {
+            return existing;
+        }
+        try {
+            await this.pos.data.read("product.product", [productId]);
+        } catch (error) {
+            console.warn(
+                "[pos_direct_manufacturing] could not load product %s into the " +
+                    "POS session:",
+                productId,
+                error
+            );
+            return null;
+        }
+        return productModel.get(productId) || null;
     }
 
     onQtyChange(line, ev) {
@@ -163,7 +206,7 @@ export class RawMaterialPopup extends Component {
         return total;
     }
 
-    onConfirm() {
+    async onConfirm() {
         const invalidLines = this.state.lines.filter(
             (l) => l.productId && l.qty <= 0
         );
@@ -179,6 +222,24 @@ export class RawMaterialPopup extends Component {
         if (validLines.length === 0) {
             this.state.errorMessage =
                 "Please select at least one raw material with a quantity.";
+            return;
+        }
+
+        // Second chance for anything that slipped past onSelect, such as a
+        // line restored from an order line saved before this fix shipped.
+        // Better to refuse here, in the popup, than to let the cashier
+        // discover the problem at the payment screen.
+        const unresolved = [];
+        for (const line of validLines) {
+            const product = await this._ensureProductLoaded(line.productId);
+            if (!product) {
+                unresolved.push(line.productName || `#${line.productId}`);
+            }
+        }
+        if (unresolved.length > 0) {
+            this.state.errorMessage =
+                `These raw materials could not be loaded and cannot be saved: ` +
+                `${unresolved.join(", ")}. Please remove them and pick a different product.`;
             return;
         }
 
