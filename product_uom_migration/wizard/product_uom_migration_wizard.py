@@ -26,6 +26,14 @@ class ProductUomMigrationWizard(models.TransientModel):
              "Example: if 1 Piece = 0.5 kg, enter 0.5. If the units are "
              "equivalent (e.g. Unit = kg for your business), enter 1."
     )
+    allow_negative_stock = fields.Boolean(
+        string="Allow Negative Stock Migration",
+        default=False,
+        help="If checked, products with negative on-hand quantity will be "
+             "migrated too, carrying the same negative quantity over to the "
+             "new product instead of being skipped. Use with care — this "
+             "means the new product also starts with a stock shortfall."
+    )
 
     # ------------------------------------------------------------------
     # Main entry point
@@ -48,9 +56,10 @@ class ProductUomMigrationWizard(models.TransientModel):
             if product.product_variant_count > 1:
                 skipped.append(_("'%s' has multiple variants — not supported yet.") % product.display_name)
                 continue
-            if product.qty_available < 0:
+            if product.qty_available < 0 and not self.allow_negative_stock:
                 skipped.append(_(
-                    "'%s' has negative stock (%.2f). Correct the stock first, then migrate."
+                    "'%s' has negative stock (%.2f). Correct the stock first, or "
+                    "check 'Allow Negative Stock Migration' to carry it over."
                 ) % (product.display_name, product.qty_available))
                 continue
 
@@ -141,11 +150,12 @@ class ProductUomMigrationWizard(models.TransientModel):
         )
 
     def _transfer_stock(self, old_product, new_product, old_qty, new_qty):
-        """Transfer stock from the old product to the new one via a proper
-        stock.move (through the Inventory Adjustment virtual location), so
-        valuation layers/accounting entries are generated correctly.
+        """Transfer stock from the old product to the new one via proper
+        stock.move records (through the Inventory Adjustment virtual
+        location), so valuation layers/accounting entries are generated
+        correctly. Handles both positive and negative on-hand quantities.
         """
-        if old_qty <= 0:
+        if old_qty == 0:
             return
 
         Move = self.env["stock.move"]
@@ -168,44 +178,65 @@ class ProductUomMigrationWizard(models.TransientModel):
         quants = Quant.search([
             ("product_id", "=", old_variant.id),
             ("location_id.usage", "=", "internal"),
-            ("quantity", ">", 0),
+            ("quantity", "!=", 0),
         ])
 
         total_old = sum(quants.mapped("quantity")) or old_qty
 
         for quant in quants:
-            qty_out = quant.quantity
-            qty_in = new_qty * (qty_out / total_old) if total_old else 0.0
+            qty_signed = quant.quantity
+            qty_in_signed = new_qty * (qty_signed / total_old) if total_old else 0.0
             location = quant.location_id
 
             new_product.write({"standard_price": old_product.standard_price})
 
-            move_out = Move.create({
-                "product_id": old_variant.id,
-                "product_uom_qty": qty_out,
-                "product_uom": old_product.uom_id.id,
-                "location_id": location.id,
-                "location_dest_id": inventory_loc.id,
-            })
-            move_out._action_confirm()
-            move_out._action_assign()
-            move_out.move_line_ids.write({"quantity": qty_out})
-            move_out.picked = True
-            move_out._action_done()
+            if qty_signed > 0:
+                # Normal case: positive stock leaves old, enters new.
+                self._do_move(Move, old_variant.id, old_product.uom_id.id,
+                               abs(qty_signed), location.id, inventory_loc.id)
+                if qty_in_signed > 0:
+                    self._do_move(Move, new_variant.id, new_product.uom_id.id,
+                                   abs(qty_in_signed), inventory_loc.id, location.id)
+            else:
+                # Negative stock case: bring old product back to zero by
+                # receiving the shortfall, then create the same shortfall
+                # on the new product by sending stock out from it.
+                self._do_move(Move, old_variant.id, old_product.uom_id.id,
+                               abs(qty_signed), inventory_loc.id, location.id)
+                if qty_in_signed < 0:
+                    self._do_move(Move, new_variant.id, new_product.uom_id.id,
+                                   abs(qty_in_signed), location.id, inventory_loc.id)
 
-            if qty_in > 0:
-                move_in = Move.create({
-                    "product_id": new_variant.id,
-                    "product_uom_qty": qty_in,
-                    "product_uom": new_product.uom_id.id,
-                    "location_id": inventory_loc.id,
-                    "location_dest_id": location.id,
-                })
-                move_in._action_confirm()
-                move_in._action_assign()
-                move_in.move_line_ids.write({"quantity": qty_in})
-                move_in.picked = True
-                move_in._action_done()
+    def _do_move(self, Move, product_id, uom_id, qty, src_location_id, dest_location_id):
+        move = Move.create({
+            "product_id": product_id,
+            "product_uom_qty": qty,
+            "product_uom": uom_id,
+            "location_id": src_location_id,
+            "location_dest_id": dest_location_id,
+        })
+        move._action_confirm()
+        move._action_assign()
+
+        if not move.move_line_ids:
+            # Nothing was available to reserve (e.g. taking stock out of a
+            # product with 0 or negative on-hand). Create the move line
+            # manually so the quantity actually gets applied instead of
+            # silently doing nothing.
+            self.env["stock.move.line"].create({
+                "move_id": move.id,
+                "product_id": product_id,
+                "product_uom_id": uom_id,
+                "location_id": src_location_id,
+                "location_dest_id": dest_location_id,
+                "quantity": qty,
+            })
+        else:
+            move.move_line_ids.write({"quantity": qty})
+
+        move.picked = True
+        move._action_done()
+        return move
 
     def _archive_old_product(self, old_product):
         old_product.write({

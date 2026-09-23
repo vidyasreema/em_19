@@ -10,6 +10,7 @@
                     <field name="product_ids" widget="many2many_tags"/>
                     <field name="new_uom_id"/>
                     <field name="conversion_factor"/>
+                    <field name="allow_negative_stock"/>
                 </group>
                 <footer>
                     <button name="action_confirm_migration" type="object"
