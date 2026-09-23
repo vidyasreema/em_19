@@ -1,0 +1,1 @@
+from . import product_uom_migration_wizard

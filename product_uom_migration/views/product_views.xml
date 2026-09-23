@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="action_server_product_uom_migration" model="ir.actions.server">
+        <field name="name">Migrate Unit of Measure</field>
+        <field name="model_id" ref="product.model_product_template"/>
+        <field name="binding_model_id" ref="product.model_product_template"/>
+        <field name="binding_view_types">list,form</field>
+        <field name="state">code</field>
+        <field name="code">
+action = {
+    "type": "ir.actions.act_window",
+    "name": "Migrate Unit of Measure",
+    "res_model": "product.uom.migration.wizard",
+    "view_mode": "form",
+    "target": "new",
+    "context": {"default_product_ids": records.ids},
+}
+        </field>
+    </record>
+
+</odoo>
