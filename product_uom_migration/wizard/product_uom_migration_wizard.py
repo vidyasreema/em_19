@@ -126,6 +126,9 @@ class ProductUomMigrationWizard(models.TransientModel):
             "barcode": False,
             "default_code": False,
         })
+        # Copy the cost immediately, regardless of whether there's stock
+        # to transfer — Cost should not depend on quantity being non-zero.
+        new_product.write({"standard_price": product.standard_price})
         return new_product
 
     def _log_old_identifiers(self, new_product, old_product, old_barcode, old_ref):
@@ -188,19 +191,13 @@ class ProductUomMigrationWizard(models.TransientModel):
             qty_in_signed = new_qty * (qty_signed / total_old) if total_old else 0.0
             location = quant.location_id
 
-            new_product.write({"standard_price": old_product.standard_price})
-
             if qty_signed > 0:
-                # Normal case: positive stock leaves old, enters new.
                 self._do_move(Move, old_variant.id, old_product.uom_id.id,
                                abs(qty_signed), location.id, inventory_loc.id)
                 if qty_in_signed > 0:
                     self._do_move(Move, new_variant.id, new_product.uom_id.id,
                                    abs(qty_in_signed), inventory_loc.id, location.id)
             else:
-                # Negative stock case: bring old product back to zero by
-                # receiving the shortfall, then create the same shortfall
-                # on the new product by sending stock out from it.
                 self._do_move(Move, old_variant.id, old_product.uom_id.id,
                                abs(qty_signed), inventory_loc.id, location.id)
                 if qty_in_signed < 0:
@@ -219,10 +216,6 @@ class ProductUomMigrationWizard(models.TransientModel):
         move._action_assign()
 
         if not move.move_line_ids:
-            # Nothing was available to reserve (e.g. taking stock out of a
-            # product with 0 or negative on-hand). Create the move line
-            # manually so the quantity actually gets applied instead of
-            # silently doing nothing.
             self.env["stock.move.line"].create({
                 "move_id": move.id,
                 "product_id": product_id,
@@ -239,8 +232,16 @@ class ProductUomMigrationWizard(models.TransientModel):
         return move
 
     def _archive_old_product(self, old_product):
+        old_variant = old_product.product_variant_ids[:1]
         old_product.write({
             "active": False,
             "sale_ok": False,
             "purchase_ok": False,
+            "barcode": False,
+            "default_code": False,
         })
+        # Barcode sometimes lives on the variant record specifically —
+        # clear it there too, in case the template-level write didn't
+        # propagate (same reasoning as when we read it earlier).
+        if old_variant:
+            old_variant.write({"barcode": False, "default_code": False})
