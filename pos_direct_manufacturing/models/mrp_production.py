@@ -21,3 +21,14 @@ class MrpProduction(models.Model):
              "Order. Used to trace refunds back to the correct MO when an "
              "order has several lines for the same manufactured product.",
     )
+
+    def action_view_pos_order(self):
+        self.ensure_one()
+        return {
+            'type': 'ir.actions.act_window',
+            'name': 'POS Order',
+            'res_model': 'pos.order',
+            'res_id': self.pos_order_id.id,
+            'view_mode': 'form',
+            'target': 'current',
+        }
