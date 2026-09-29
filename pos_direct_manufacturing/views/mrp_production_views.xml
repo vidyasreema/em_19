@@ -16,6 +16,18 @@
                         </span>
                     </div>
                 </button>
+
+                <button name="action_view_pos_invoice" type="object"
+                        class="oe_stat_button" icon="fa-pencil-square-o"
+                        invisible="not pos_invoice_id">
+                    <div class="o_field_widget o_stat_info">
+                        <span class="o_stat_text">Invoice</span>
+                        <span class="o_stat_value">
+                            <field name="pos_invoice_id" readonly="1"
+                                   options="{'no_open': True}"/>
+                        </span>
+                    </div>
+                </button>
             </xpath>
         </field>
     </record>
