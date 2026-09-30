@@ -1,10 +1,27 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <templates xml:space="preserve">
     <t t-name="pos_pack_selection.Orderline" t-inherit="point_of_sale.Orderline" t-inherit-mode="extension">
+        <!-- Quantity on the left: number of packs for pack lines -->
+        <xpath expr="//span[hasclass('qty')]" position="attributes">
+            <attribute name="t-if">!(line.getPackCount and line.getPackCount())</attribute>
+        </xpath>
+        <xpath expr="//span[hasclass('qty')]" position="after">
+            <span t-if="line.getPackCount and line.getPackCount()"
+                  class="qty d-inline-block fw-bolder"
+                  t-attf-class="{{ vals.isReceipt ? 'pe-2' : 'px-1' }}">
+                <t t-esc="line.getPackCount()"/>
+            </span>
+        </xpath>
+        <!-- Hide "qty x price / kg" for pack lines -->
+        <xpath expr="//li[hasclass('price-per-unit')]" position="attributes">
+            <attribute name="t-if">vals.displayPriceUnit and !(line.getPackCount and line.getPackCount())</attribute>
+        </xpath>
+        <!-- Show "N x carton @ pack price" instead -->
         <xpath expr="//li[hasclass('price-per-unit')]" position="before">
-            <li t-if="line.getPackCount and line.getPackCount()" class="pack-info fw-bold">
+            <li t-if="line.getPackCount and line.getPackCount()" class="pack-info">
                 <i class="fa fa-cubes me-1" role="img" aria-label="Pack" title="Pack"/>
                 <t t-esc="line.getPackCount()"/> × <t t-esc="line.pack_uom_id.name"/>
+                @ <t t-esc="env.utils.formatCurrency(line.getPackUnitPrice())"/>
             </li>
         </xpath>
     </t>

@@ -50,6 +50,11 @@ patch(PosOrderline.prototype, {
         return this.isWholePacks() ? Math.round(this.qty / this.getQtyPerPack()) : 0;
     },
 
+    /** Price of one pack as currently on the line (unit price x pack size). */
+    getPackUnitPrice() {
+        return (this.getUnitPrice ? this.getUnitPrice() : this.price_unit) * this.getQtyPerPack();
+    },
+
     /** Normal (loose) price for the current quantity, as Odoo would compute it. */
     setLoosePrice() {
         this.price_type = "original";
