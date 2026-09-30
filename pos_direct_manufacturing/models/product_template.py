@@ -16,6 +16,26 @@ class ProductTemplate(models.Model):
              "any product is selectable there.",
     )
 
+    raw_material_enforcement = fields.Selection(
+        [
+            ('force', 'Mandatory - block payment without raw materials'),
+            ('warning', 'Warning - warn but allow payment'),
+            ('none', 'None - no validation'),
+        ],
+        string='Raw Material Enforcement',
+        default='none',
+        required=True,
+        tracking=True,
+        help="Applies only to manufactured products sold at POS. Decides "
+             "what happens at payment when an order line for this product "
+             "has no raw materials selected.\n\n"
+             "Mandatory: payment is blocked until raw materials are added.\n"
+             "Warning: the cashier is warned but may continue.\n"
+             "None: no check.\n\n"
+             "Each line of an order is checked against its own product's "
+             "level; if any line is blocked, the whole payment waits.",
+    )
+
     @api.depends(
         'route_ids',
         'route_ids.rule_ids.action',
@@ -39,4 +59,5 @@ class ProductTemplate(models.Model):
     def _load_pos_data_fields(self, config):
         fields_list = super()._load_pos_data_fields(config)
         fields_list.append('is_manufacture_route')
+        fields_list.append('raw_material_enforcement')
         return fields_list
