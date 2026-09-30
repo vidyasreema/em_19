@@ -14,22 +14,20 @@ patch(ControlButtons.prototype, {
     },
 
     /**
-     * Packs of the line's product = its product.uom records (loaded by the POS),
-     * with each pack's price for the current customer.
+     * Packs of the line's product = the product's Packagings (Sales tab),
+     * with or without barcode, with each pack's price for the current customer.
      */
     getProductPacks(line) {
         const product = line.getProduct();
         const baseUom = product.product_tmpl_id.uom_id;
-        return this.pos.models["product.uom"]
-            .filter((pack) => pack.product_id?.id === product.id && pack.uom_id)
-            .map((pack) => ({
-                id: pack.id,
-                uomId: pack.uom_id.id,
-                name: pack.uom_id.name,
-                qty: pack.uom_id.factor / baseUom.factor,
-                priceText: this.formatPackPrice(line.getPackPrice(pack.uom_id.id)),
-                isCurrent: line.pack_uom_id?.id === pack.uom_id.id,
-            }));
+        return (product.product_tmpl_id.uom_ids || []).map((uom) => ({
+            id: uom.id,
+            uomId: uom.id,
+            name: uom.name,
+            qty: uom.factor / baseUom.factor,
+            priceText: this.formatPackPrice(line.getPackPrice(uom.id)),
+            isCurrent: line.pack_uom_id?.id === uom.id,
+        }));
     },
 
     onClickPackSelection() {
