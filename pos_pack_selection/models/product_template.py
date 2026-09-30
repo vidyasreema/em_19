@@ -1,4 +1,4 @@
-from odoo import fields, models
+from odoo import api, fields, models
 
 
 class ProductTemplate(models.Model):
@@ -10,3 +10,7 @@ class ProductTemplate(models.Model):
         string='Pack Prices',
         domain=[('pack_uom_id', '!=', False)],
     )
+
+    @api.model
+    def _load_pos_data_fields(self, config):
+        return super()._load_pos_data_fields(config) + ['uom_ids']

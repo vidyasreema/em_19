@@ -18,6 +18,19 @@ class ProductPricelistItem(models.Model):
         string='Product Packagings',
     )
 
+    @api.model
+    def default_get(self, fields_list):
+        """In the Pack Prices screens, new rows default to the POS default pricelist."""
+        res = super().default_get(fields_list)
+        if self.env.context.get('pack_price_mode') and 'pricelist_id' in fields_list:
+            config = self.env['pos.config'].search(
+                [('company_id', '=', self.env.company.id), ('pricelist_id', '!=', False)],
+                limit=1,
+            )
+            if config:
+                res['pricelist_id'] = config.pricelist_id.id
+        return res
+
     @api.constrains('pack_uom_id', 'product_tmpl_id', 'fixed_price')
     def _check_pack_rule(self):
         for rule in self.filtered('pack_uom_id'):

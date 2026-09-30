@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="pos_pack_selection.Orderline" t-inherit="point_of_sale.Orderline" t-inherit-mode="extension">
+        <xpath expr="//li[hasclass('price-per-unit')]" position="before">
+            <li t-if="line.getPackCount and line.getPackCount()" class="pack-info fw-bold">
+                <i class="fa fa-cubes me-1" role="img" aria-label="Pack" title="Pack"/>
+                <t t-esc="line.getPackCount()"/> × <t t-esc="line.pack_uom_id.name"/>
+            </li>
+        </xpath>
+    </t>
+</templates>

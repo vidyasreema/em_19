@@ -2,14 +2,27 @@
 <templates xml:space="preserve">
     <t t-name="pos_pack_selection.PackSelectionPopup">
         <Dialog title="props.title" size="'md'">
+            <div class="d-flex justify-content-between px-3 pb-2 text-muted small fw-bold">
+                <span>Unit</span>
+                <span>Price</span>
+            </div>
             <div class="d-flex flex-column gap-2">
                 <t t-foreach="props.packs" t-as="pack" t-key="pack.id">
-                    <button class="btn btn-light border d-flex justify-content-between py-3 px-3"
+                    <button class="btn border d-flex justify-content-between align-items-center py-3 px-3"
+                            t-att-class="pack.isCurrent ? 'btn-primary' : 'btn-light'"
                             t-on-click="() => this.selectPack(pack)">
-                        <span class="fw-bold" t-esc="pack.name"/>
-                        <span t-esc="pack.qty + ' ' + props.uomName"/>
+                        <span class="text-start">
+                            <span class="fw-bold" t-esc="pack.name"/>
+                            <small class="d-block" t-esc="pack.qty + ' ' + props.uomName"/>
+                        </span>
+                        <span class="fw-bold" t-esc="pack.priceText"/>
                     </button>
                 </t>
+                <button t-if="props.showLoose"
+                        class="btn btn-outline-secondary py-2"
+                        t-on-click="() => this.selectLoose()">
+                    Loose (no pack)
+                </button>
             </div>
             <t t-set-slot="footer">
                 <button class="btn btn-secondary" t-on-click="props.close">Cancel</button>

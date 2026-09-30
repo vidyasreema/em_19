@@ -42,7 +42,7 @@
         <field name="view_id" ref="pack_price_list_view"/>
         <field name="search_view_id" ref="pack_price_search_view"/>
         <field name="domain">[('pack_uom_id', '!=', False)]</field>
-        <field name="context">{'default_applied_on': '1_product', 'default_compute_price': 'fixed'}</field>
+        <field name="context">{'default_applied_on': '1_product', 'default_compute_price': 'fixed', 'pack_price_mode': True}</field>
     </record>
 
     <!-- Menu: Point of Sale > Configuration > Pack Prices -->

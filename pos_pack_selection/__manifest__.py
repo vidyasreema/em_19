@@ -7,7 +7,8 @@
     'depends': ['point_of_sale'],
     'data': ['views/product_pricelist_item_views.xml',
              'views/pack_price_views.xml',
-             'views/product_template_views.xml'],
+             'views/product_template_views.xml',
+             'views/pos_order_views.xml'],
     'assets': {
         'point_of_sale._assets_pos': [
             'pos_pack_selection/static/src/**/*',

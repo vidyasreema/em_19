@@ -9,7 +9,7 @@
             <xpath expr="//notebook" position="inside">
                 <page string="Pack Prices" name="pack_prices">
                     <field name="pack_price_ids"
-                           context="{'default_applied_on': '1_product', 'default_compute_price': 'fixed'}">
+                           context="{'default_applied_on': '1_product', 'default_compute_price': 'fixed', 'pack_price_mode': True}">
                         <list editable="bottom">
                             <field name="pricelist_id" required="1"/>
                             <field name="pack_uom_id" required="1"

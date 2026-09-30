@@ -7,13 +7,20 @@ export class PackSelectionPopup extends Component {
     static props = {
         title: String,
         uomName: String,
-        packs: Array,
+        packs: Array, // [{ id, uomId, name, qty, priceText, isCurrent }]
+        showLoose: { type: Boolean, optional: true },
         onSelect: Function,
+        onLoose: { type: Function, optional: true },
         close: Function,
     };
 
     selectPack(pack) {
         this.props.onSelect(pack);
+        this.props.close();
+    }
+
+    selectLoose() {
+        this.props.onLoose?.();
         this.props.close();
     }
 }
