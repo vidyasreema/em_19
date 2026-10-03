@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_stock_zero_quant_wizard_form" model="ir.ui.view">
+        <field name="name">stock.zero.quant.wizard.form</field>
+        <field name="model">stock.zero.quant.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Zero-Stock Products in Physical Inventory">
+                <group>
+                    <field name="location_ids" widget="many2many_tags"
+                           options="{'no_create': True}"/>
+                </group>
+                <footer>
+                    <button name="action_show" type="object"
+                            string="Show Zero-Stock Products"
+                            class="btn-primary" data-hotkey="q"/>
+                    <button name="action_hide" type="object"
+                            string="Hide Zero-Stock Products"
+                            class="btn-secondary"/>
+                    <button string="Cancel" special="cancel" data-hotkey="x"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_stock_zero_quant_wizard" model="ir.actions.act_window">
+        <field name="name">Zero-Stock Products</field>
+        <field name="res_model">stock.zero.quant.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+
+    <menuitem id="menu_stock_zero_quant_wizard"
+              name="Zero-Stock Products"
+              parent="stock.menu_stock_warehouse_mgmt"
+              action="action_stock_zero_quant_wizard"
+              sequence="35"
+              groups="stock.group_stock_manager"/>
+</odoo>
