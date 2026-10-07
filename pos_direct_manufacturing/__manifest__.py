@@ -1,6 +1,6 @@
 {
     'name': 'POS Direct Manufacturing Integration',
-    'version': '19.0.1.0.0',
+    'version': '19.0.1.1.0',
     'category': 'Point of Sale',
     'summary': 'Create Manufacturing Orders directly from POS for '
                'meat-shop style ad-hoc raw material usage',
@@ -19,7 +19,9 @@
         'views/pos_config_views.xml',
         'views/pos_order_views.xml',
         'views/res_config_settings_views.xml',
-        'views/account_move_views.xml'
+        'views/account_move_views.xml',
+        'views/mrp_production_views.xml',
+        'views/product_template_views.xml',
     ],
     'assets': {
         'point_of_sale._assets_pos': [

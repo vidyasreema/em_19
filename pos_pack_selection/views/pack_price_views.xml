@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- List: one row per pack price, editable directly -->
+    <record id="pack_price_list_view" model="ir.ui.view">
+        <field name="name">pack.price.list</field>
+        <field name="model">product.pricelist.item</field>
+        <field name="arch" type="xml">
+            <list string="Pack Prices" editable="bottom">
+                <field name="pricelist_id" required="1"/>
+                <field name="product_tmpl_id" string="Product" required="1"/>
+                <field name="pack_uom_id" required="1"/>
+                <field name="fixed_price" string="Pack Price"/>
+                <field name="applied_on" column_invisible="1"/>
+                <field name="compute_price" column_invisible="1"/>
+                <field name="product_pack_uom_ids" column_invisible="1"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Search: filters and group by -->
+    <record id="pack_price_search_view" model="ir.ui.view">
+        <field name="name">pack.price.search</field>
+        <field name="model">product.pricelist.item</field>
+        <field name="arch" type="xml">
+            <search string="Pack Prices">
+                <field name="product_tmpl_id" string="Product"/>
+                <field name="pricelist_id"/>
+                <field name="pack_uom_id"/>
+                <group>
+                    <filter name="group_pricelist" string="Pricelist" context="{'group_by': 'pricelist_id'}"/>
+                    <filter name="group_product" string="Product" context="{'group_by': 'product_tmpl_id'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <!-- Action: only pricelist rules that have a Pack -->
+    <record id="action_pack_prices" model="ir.actions.act_window">
+        <field name="name">Pack Prices</field>
+        <field name="res_model">product.pricelist.item</field>
+        <field name="view_mode">list</field>
+        <field name="view_id" ref="pack_price_list_view"/>
+        <field name="search_view_id" ref="pack_price_search_view"/>
+        <field name="domain">[('pack_uom_id', '!=', False)]</field>
+        <field name="context">{'default_applied_on': '1_product', 'default_compute_price': 'fixed', 'pack_price_mode': True}</field>
+    </record>
+
+    <!-- Menu: Point of Sale > Configuration > Pack Prices -->
+    <menuitem id="menu_pack_prices"
+              name="Pack Prices"
+              parent="point_of_sale.menu_point_config_product"
+              action="action_pack_prices"
+              sequence="50"/>
+</odoo>

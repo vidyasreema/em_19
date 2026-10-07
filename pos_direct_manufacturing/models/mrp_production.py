@@ -21,3 +21,36 @@ class MrpProduction(models.Model):
              "Order. Used to trace refunds back to the correct MO when an "
              "order has several lines for the same manufactured product.",
     )
+
+
+    pos_invoice_id = fields.Many2one(
+        'account.move',
+        string='POS Invoice',
+        related='pos_order_id.account_move',
+        readonly=True,
+    )
+
+
+    def action_view_pos_order(self):
+        self.ensure_one()
+        return {
+            'type': 'ir.actions.act_window',
+            'name': 'POS Order',
+            'res_model': 'pos.order',
+            'res_id': self.pos_order_id.id,
+            'view_mode': 'form',
+            'target': 'current',
+        }
+
+
+    def action_view_pos_invoice(self):
+        self.ensure_one()
+        return {
+            'type': 'ir.actions.act_window',
+            'name': 'Invoice',
+            'res_model': 'account.move',
+            'res_id': self.pos_invoice_id.id,
+            'view_mode': 'form',
+            'context': {'default_move_type': 'out_invoice'},
+            'target': 'current',
+        }
