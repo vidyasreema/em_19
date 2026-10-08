@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from odoo import models, fields, api, _
+from odoo import models, fields, _
 from odoo.exceptions import UserError
 from markupsafe import Markup
 
@@ -44,6 +44,8 @@ class ProductUomMigrationWizard(models.TransientModel):
             raise UserError(_("Please select at least one product to migrate."))
         if not self.new_uom_id:
             raise UserError(_("Please select the new Unit of Measure."))
+        if self.conversion_factor <= 0:
+            raise UserError(_("The conversion factor must be greater than zero."))
 
         new_products = self.env["product.template"]
         skipped = []
@@ -53,19 +55,30 @@ class ProductUomMigrationWizard(models.TransientModel):
             if product.uom_id == self.new_uom_id:
                 skipped.append(_("'%s' already uses this Unit of Measure.") % product.display_name)
                 continue
-            if product.product_variant_count > 1:
-                skipped.append(_("'%s' has multiple variants — not supported yet.") % product.display_name)
-                continue
-            if product.qty_available < 0 and not self.allow_negative_stock:
+
+            # Check every variant, not the template total: one variant at -5
+            # and another at +10 would otherwise hide the negative one.
+            negative_variants = product.product_variant_ids.filtered(lambda v: v.qty_available < 0)
+            if negative_variants and not self.allow_negative_stock:
+                details = ", ".join(
+                    "%s (%.2f)" % (v.display_name, v.qty_available) for v in negative_variants
+                )
                 skipped.append(_(
-                    "'%s' has negative stock (%.2f). Correct the stock first, or "
+                    "'%s' has negative stock: %s. Correct the stock first, or "
                     "check 'Allow Negative Stock Migration' to carry it over."
-                ) % (product.display_name, product.qty_available))
+                ) % (product.display_name, details))
+                continue
+
+            open_orders = self._get_open_sale_orders(product)
+            if open_orders:
+                skipped.append(_(
+                    "'%s' has sale orders still to be delivered/invoiced: %s. "
+                    "Deliver and invoice (or cancel) them first, then migrate."
+                ) % (product.display_name, ", ".join(open_orders.mapped("name"))))
                 continue
 
             try:
-                new_product = self._migrate_single_product(product)
-                new_products |= new_product
+                new_products |= self._migrate_single_product(product)
             except UserError as e:
                 failed.append(str(e))
 
@@ -74,21 +87,39 @@ class ProductUomMigrationWizard(models.TransientModel):
             messages.append(_("Skipped:\n%s") % "\n".join(skipped))
         if failed:
             messages.append(_("Failed:\n%s") % "\n".join(failed))
-
-        if messages and new_products:
-            new_products.message_post(body="\n\n".join(messages))
-        elif messages and not new_products:
-            raise UserError("\n\n".join(messages))
+        summary = "\n\n".join(messages)
 
         if not new_products:
-            raise UserError(_("No products were migrated."))
+            raise UserError(summary or _("No products were migrated."))
 
-        return {
+        result_action = {
             "type": "ir.actions.act_window",
             "name": _("Migrated Products"),
             "res_model": "product.template",
             "view_mode": "list,form",
+            "views": [(False, "list"), (False, "form")],
             "domain": [("id", "in", new_products.ids)],
+            "target": "current",
+        }
+
+        if not summary:
+            return result_action
+
+        # message_post() works on ONE record only (it calls ensure_one()).
+        html_summary = Markup("<br/>").join(summary.split("\n"))
+        for new_product in new_products:
+            new_product.message_post(body=html_summary)
+
+        return {
+            "type": "ir.actions.client",
+            "tag": "display_notification",
+            "params": {
+                "title": _("Migration finished with warnings"),
+                "message": summary,
+                "type": "warning",
+                "sticky": True,
+                "next": result_action,
+            },
         }
 
     # ------------------------------------------------------------------
@@ -100,60 +131,241 @@ class ProductUomMigrationWizard(models.TransientModel):
         savepoint_name = "product_uom_migration_%s" % product.id
         cr.execute("SAVEPOINT %s" % savepoint_name)
         try:
-            old_variant = product.product_variant_ids[:1]
-            old_barcode = old_variant.barcode or product.barcode
-            old_ref = old_variant.default_code or product.default_code
-            old_qty = product.qty_available
-            new_qty = old_qty * self.conversion_factor
-
+            pos_flag = product.available_in_pos if "available_in_pos" in product._fields else False
             new_product = self._create_replacement_product(product)
-            self._log_old_identifiers(new_product, product, old_barcode, old_ref)
-            self._transfer_stock(product, new_product, old_qty, new_qty)
+            variant_map = self._map_variants(product, new_product)
+
+            # Read identifiers and quantities BEFORE anything is moved/archived.
+            variant_data = []
+            for old_variant, new_variant in variant_map:
+                variant_data.append({
+                    "old": old_variant,
+                    "new": new_variant,
+                    "barcode": old_variant.barcode,
+                    "ref": old_variant.default_code,
+                    "old_qty": old_variant.qty_available,
+                })
+
+            self._copy_variant_values(variant_map)
+            self._copy_boms(product, new_product, variant_map)
+            self._log_old_identifiers(new_product, product, variant_data)
+            for data in variant_data:
+                self._transfer_stock(
+                    data["old"], data["new"],
+                    data["old_qty"], data["old_qty"] * self.conversion_factor,
+                )
             self._archive_old_product(product)
+
+            # Re-apply the Point of Sale flag LAST: automations or other
+            # modules may switch it on when the new product is created.
+            if "available_in_pos" in product._fields:
+                new_product.write({"available_in_pos": pos_flag})
 
             cr.execute("RELEASE SAVEPOINT %s" % savepoint_name)
             return new_product
         except Exception as exc:
             cr.execute("ROLLBACK TO SAVEPOINT %s" % savepoint_name)
+            # The ORM cache may still hold values written before the rollback.
+            self.env.invalidate_all()
             raise UserError(_(
                 "Migration failed for product '%s' and was rolled back.\n\nError: %s"
             ) % (product.display_name, exc))
 
     def _create_replacement_product(self, product):
-        new_product = product.copy({
+        # copy() also copies the attribute lines (copy=True on
+        # attribute_line_ids), so Odoo regenerates the variants on the copy.
+        vals = {
             "name": product.name,
             "uom_id": self.new_uom_id.id,
             "barcode": False,
             "default_code": False,
-        })
-        # Copy the cost immediately, regardless of whether there's stock
-        # to transfer — Cost should not depend on quantity being non-zero.
-        new_product.write({"standard_price": product.standard_price})
-        return new_product
+        }
+        # Odoo does not copy the Point of Sale flag (it falls back to the
+        # default = ticked), so keep the old product's setting explicitly.
+        if "available_in_pos" in product._fields:
+            vals["available_in_pos"] = product.available_in_pos
+        return product.copy(vals)
 
-    def _log_old_identifiers(self, new_product, old_product, old_barcode, old_ref):
-        body = Markup(_(
-            "<b>Migrated from product:</b> %(name)s (ID: %(id)s)<br/>"
-            "<b>Old Barcode:</b> %(barcode)s<br/>"
-            "<b>Old Internal Reference:</b> %(ref)s<br/>"
-            "<i>Set the barcode/internal reference on this new product "
-            "manually once confirmed.</i>"
-        ) % {
-            "name": old_product.display_name,
-            "id": old_product.id,
-            "barcode": old_barcode or _("(none)"),
-            "ref": old_ref or _("(none)"),
-        })
-        new_product.message_post(body=body)
-        old_product.message_post(
-            body=Markup(_(
-                "This product was migrated to a new Unit of Measure. "
-                "Replacement product: %s (ID: %s)"
-            ) % (new_product.display_name, new_product.id))
+    # ------------------------------------------------------------------
+    # Variant matching
+    # ------------------------------------------------------------------
+    def _map_variants(self, old_product, new_product):
+        """Return a list of (old_variant, new_variant) pairs.
+
+        Variants are matched on their attribute values (e.g. Grade 8-9+ /
+        500g), not on their order. Variants that don't exist yet on the new
+        template (dynamic attributes) are created. New variants that have no
+        active counterpart on the old template are archived, so the new
+        product has exactly the same active variants as the old one.
+        """
+        PTAV = self.env["product.template.attribute.value"].with_context(active_test=False)
+        new_ptavs = PTAV.search([("product_tmpl_id", "=", new_product.id)])
+        ptav_by_value = {ptav.product_attribute_value_id.id: ptav for ptav in new_ptavs}
+
+        pairs = []
+        for old_variant in old_product.product_variant_ids:
+            combination = PTAV
+            for old_ptav in old_variant.product_template_attribute_value_ids:
+                new_ptav = ptav_by_value.get(old_ptav.product_attribute_value_id.id)
+                if not new_ptav:
+                    raise UserError(_(
+                        "Could not find attribute value '%s' on the new product."
+                    ) % old_ptav.display_name)
+                combination |= new_ptav
+
+            new_variant = new_product._get_variant_for_combination(combination)
+            if not new_variant:
+                new_variant = new_product._create_product_variant(combination)
+            if not new_variant:
+                raise UserError(_(
+                    "Could not create the matching variant for '%s' on the new product."
+                ) % old_variant.display_name)
+            pairs.append((old_variant, new_variant))
+
+        matched = self.env["product.product"].concat(*[new for _old, new in pairs])
+        extra = new_product.product_variant_ids - matched
+        if extra:
+            extra.write({"active": False})
+        return pairs
+
+    def _copy_variant_values(self, variant_map):
+        """Copy per-variant values that live on product.product or on the
+        attribute values, and are not carried over by template.copy()."""
+        for old_variant, new_variant in variant_map:
+            new_variant.write({
+                # Cost per NEW unit: 1 old unit = factor new units, so the
+                # cost of one new unit is old cost / factor. This keeps the
+                # stock value identical before and after migration.
+                "standard_price": old_variant.standard_price / self.conversion_factor,
+                "weight": old_variant.weight,
+                "volume": old_variant.volume,
+            })
+
+            # Price extras ("+10 AED for Grade 8-9+") live on the template
+            # attribute values; copy them so sales prices stay the same.
+            for old_ptav in old_variant.product_template_attribute_value_ids:
+                new_ptav = new_variant.product_template_attribute_value_ids.filtered(
+                    lambda p: p.product_attribute_value_id == old_ptav.product_attribute_value_id
+                )
+                if new_ptav and new_ptav.price_extra != old_ptav.price_extra:
+                    new_ptav.price_extra = old_ptav.price_extra
+
+    # ------------------------------------------------------------------
+    # Open sale orders check
+    # ------------------------------------------------------------------
+    def _get_open_sale_orders(self, product):
+        """Confirmed sale order lines that still need delivery or invoicing.
+
+        Odoo refuses to archive a Kit BoM while such lines exist, and for any
+        product they would leave pending deliveries on the archived product.
+        """
+        lines = self.env["sale.order.line"].search([
+            ("product_id", "in", product.product_variant_ids.ids),
+            ("state", "=", "sale"),
+            ("invoice_status", "in", ("no", "to invoice")),
+        ])
+        return lines.order_id
+
+    # ------------------------------------------------------------------
+    # Bills of Materials
+    # ------------------------------------------------------------------
+    def _copy_boms(self, old_product, new_product, variant_map):
+        """Copy the old product's BoMs (incl. Kits) to the new product.
+
+        product.template.copy() does not copy BoMs. The BoM quantity is
+        converted to the new UoM, and variant-specific attribute values on
+        lines/by-products/operations are remapped to the new template.
+        """
+        if "mrp.bom" not in self.env:
+            return
+        boms = self.env["mrp.bom"].search([("product_tmpl_id", "=", old_product.id)])
+        if not boms:
+            return
+
+        variant_by_old = {old.id: new for old, new in variant_map}
+        PTAV = self.env["product.template.attribute.value"].with_context(active_test=False)
+        ptav_by_value = {
+            ptav.product_attribute_value_id.id: ptav
+            for ptav in PTAV.search([("product_tmpl_id", "=", new_product.id)])
+        }
+
+        def remap(ptavs):
+            new_ids = [
+                ptav_by_value[p.product_attribute_value_id.id].id
+                for p in ptavs if p.product_attribute_value_id.id in ptav_by_value
+            ]
+            return [(6, 0, new_ids)]
+
+        for bom in boms:
+            new_variant = False
+            if bom.product_id:
+                new_variant = variant_by_old.get(bom.product_id.id)
+                if not new_variant:
+                    continue  # BoM for an archived variant — nothing to copy to
+
+            # Copy on the OLD template first (so Odoo duplicates the lines,
+            # by-products and operations with correct links), then move
+            # everything to the new template in ONE write, so the
+            # attribute-value constraint is only checked once it's consistent.
+            new_bom = bom.copy({"code": bom.code})
+            vals = {
+                "product_tmpl_id": new_product.id,
+                "product_id": new_variant.id if new_variant else False,
+                "product_uom_id": self.new_uom_id.id,
+                "product_qty": bom.product_qty * self.conversion_factor,
+                "bom_line_ids": [
+                    (1, line.id, {"bom_product_template_attribute_value_ids":
+                                  remap(line.bom_product_template_attribute_value_ids)})
+                    for line in new_bom.bom_line_ids
+                ],
+            }
+            if "byproduct_ids" in new_bom._fields:
+                vals["byproduct_ids"] = [
+                    (1, bp.id, {"bom_product_template_attribute_value_ids":
+                                remap(bp.bom_product_template_attribute_value_ids)})
+                    for bp in new_bom.byproduct_ids
+                ]
+            if "operation_ids" in new_bom._fields:
+                vals["operation_ids"] = [
+                    (1, op.id, {"bom_product_template_attribute_value_ids":
+                                remap(op.bom_product_template_attribute_value_ids)})
+                    for op in new_bom.operation_ids
+                ]
+            new_bom.write(vals)
+
+    # ------------------------------------------------------------------
+    # Chatter logging
+    # ------------------------------------------------------------------
+    def _log_old_identifiers(self, new_product, old_product, variant_data):
+        rows = Markup("").join(
+            Markup("<li>%s → %s — Barcode: %s, Internal Ref: %s</li>") % (
+                data["old"].display_name,
+                data["new"].display_name,
+                data["barcode"] or _("(none)"),
+                data["ref"] or _("(none)"),
+            )
+            for data in variant_data
         )
+        body = Markup(
+            "<b>%s</b> %s (ID: %s)<ul>%s</ul><i>%s</i>"
+        ) % (
+            _("Migrated from product:"),
+            old_product.display_name,
+            old_product.id,
+            rows,
+            _("Set the barcode/internal reference on the new variants manually once confirmed."),
+        )
+        new_product.message_post(body=body)
+        old_product.message_post(body=Markup(_(
+            "This product was migrated to a new Unit of Measure. "
+            "Replacement product: %s (ID: %s)"
+        )) % (new_product.display_name, new_product.id))
 
-    def _transfer_stock(self, old_product, new_product, old_qty, new_qty):
-        """Transfer stock from the old product to the new one via proper
+    # ------------------------------------------------------------------
+    # Stock transfer (per variant)
+    # ------------------------------------------------------------------
+    def _transfer_stock(self, old_variant, new_variant, old_qty, new_qty):
+        """Transfer stock from one old variant to its new variant via proper
         stock.move records (through the Inventory Adjustment virtual
         location), so valuation layers/accounting entries are generated
         correctly. Handles both positive and negative on-hand quantities.
@@ -163,9 +375,6 @@ class ProductUomMigrationWizard(models.TransientModel):
 
         Move = self.env["stock.move"]
         Quant = self.env["stock.quant"]
-
-        old_variant = old_product.product_variant_ids[:1]
-        new_variant = new_product.product_variant_ids[:1]
 
         inventory_loc = self.env.ref("stock.location_inventory", raise_if_not_found=False)
         if not inventory_loc:
@@ -183,8 +392,10 @@ class ProductUomMigrationWizard(models.TransientModel):
             ("location_id.usage", "=", "internal"),
             ("quantity", "!=", 0),
         ])
-
         total_old = sum(quants.mapped("quantity")) or old_qty
+
+        old_uom = old_variant.uom_id.id
+        new_uom = new_variant.uom_id.id
 
         for quant in quants:
             qty_signed = quant.quantity
@@ -192,17 +403,17 @@ class ProductUomMigrationWizard(models.TransientModel):
             location = quant.location_id
 
             if qty_signed > 0:
-                self._do_move(Move, old_variant.id, old_product.uom_id.id,
-                               abs(qty_signed), location.id, inventory_loc.id)
+                self._do_move(Move, old_variant.id, old_uom,
+                              abs(qty_signed), location.id, inventory_loc.id)
                 if qty_in_signed > 0:
-                    self._do_move(Move, new_variant.id, new_product.uom_id.id,
-                                   abs(qty_in_signed), inventory_loc.id, location.id)
+                    self._do_move(Move, new_variant.id, new_uom,
+                                  abs(qty_in_signed), inventory_loc.id, location.id)
             else:
-                self._do_move(Move, old_variant.id, old_product.uom_id.id,
-                               abs(qty_signed), inventory_loc.id, location.id)
+                self._do_move(Move, old_variant.id, old_uom,
+                              abs(qty_signed), inventory_loc.id, location.id)
                 if qty_in_signed < 0:
-                    self._do_move(Move, new_variant.id, new_product.uom_id.id,
-                                   abs(qty_in_signed), location.id, inventory_loc.id)
+                    self._do_move(Move, new_variant.id, new_uom,
+                                  abs(qty_in_signed), location.id, inventory_loc.id)
 
     def _do_move(self, Move, product_id, uom_id, qty, src_location_id, dest_location_id):
         move = Move.create({
@@ -231,8 +442,12 @@ class ProductUomMigrationWizard(models.TransientModel):
         move._action_done()
         return move
 
+    # ------------------------------------------------------------------
+    # Archiving
+    # ------------------------------------------------------------------
     def _archive_old_product(self, old_product):
-        old_variant = old_product.product_variant_ids[:1]
+        # Read the variants before archiving, otherwise active_test hides them.
+        old_variants = old_product.with_context(active_test=False).product_variant_ids
         old_product.write({
             "active": False,
             "sale_ok": False,
@@ -240,8 +455,7 @@ class ProductUomMigrationWizard(models.TransientModel):
             "barcode": False,
             "default_code": False,
         })
-        # Barcode sometimes lives on the variant record specifically —
-        # clear it there too, in case the template-level write didn't
-        # propagate (same reasoning as when we read it earlier).
-        if old_variant:
-            old_variant.write({"barcode": False, "default_code": False})
+        # Barcodes/references live on each variant — clear all of them so
+        # they can be reused on the new variants.
+        if old_variants:
+            old_variants.write({"barcode": False, "default_code": False})
