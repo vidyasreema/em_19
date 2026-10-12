@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     'name': 'EM Custom',
-    'version': '19.0.1.0.0',
+    'version': '19.0.1.0.2',
     'category': 'Customizations',
     'summary': 'Small custom changes and enhancements for EM project.',
     'description': """
@@ -21,7 +21,7 @@
     'data': [
         'security/data.xml',
         'views/unreconciled_activity_cron.xml',
-        'views/sale_order_inherit.xml',
+        # 'views/sale_order_inherit.xml',
         'views/hr_employee_inherit.xml',
         'views/res_partner_inherit.xml'
     ],
