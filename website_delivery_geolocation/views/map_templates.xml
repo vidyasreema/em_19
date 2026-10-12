@@ -6,82 +6,92 @@
               inherit_id="website_sale.address"
               name="Google Map Address Selector">
 
+        <!-- Remove Odoo's "You are editing your delivery and billing addresses" warning -->
+        <xpath expr="//div[@role='alert'][contains(@t-if, 'use_delivery_as_billing')]" position="replace"/>
+
         <xpath expr="//form[@action='/shop/address/submit']" position="before">
+            <!-- Initial pin: the address being edited, or (new address) the
+                 location confirmed before shopping -->
+            <t t-set="geo_init_point" t-value="website._geo_address_initial_point(partner_sudo)"/>
             <div class="o_map_address_selector mb-4">
-                <div class="card shadow-sm">
+                <div class="d-flex align-items-baseline justify-content-between gap-2 mb-2">
+                    <h5 class="mb-0">
+                        <i class="fa fa-map-marker text-primary me-2"/>Delivery location
+                    </h5>
+                    <small class="text-muted d-none d-md-inline">
+                        Drag the pin; the address below fills in automatically
+                    </small>
+                </div>
 
-                    <!-- Header -->
-                    <div class="card-header bg-primary text-white">
-                        <h5 class="mb-0">
-                            <i class="fa fa-map-marker-alt me-2"></i>
-                            Select Your Location on Map
-                        </h5>
-                    </div>
+                <!-- Search + current location -->
+                <div class="input-group mb-2">
+                    <input type="text"
+                           id="o_map_search_input"
+                           class="form-control"
+                           placeholder="Search street, area or landmark"
+                           autocomplete="off"/>
+                    <button type="button"
+                            id="o_map_search_btn"
+                            class="btn btn-primary"
+                            title="Search" aria-label="Search">
+                        <i class="fa fa-search"/>
+                    </button>
+                    <button type="button"
+                            id="o_map_current_location_btn"
+                            class="btn btn-outline-primary"
+                            title="Use my current location" aria-label="Use my current location">
+                        <i class="fa fa-crosshairs"/>
+                    </button>
+                </div>
 
-                    <!-- Body -->
-                    <div class="card-body">
+                <!-- Google Map Container -->
+                <div id="o_delivery_map"
+                     t-att-data-api-key="website._geo_google_maps_key()"
+                     t-att-data-init-lat="geo_init_point and geo_init_point[0]"
+                     t-att-data-init-lng="geo_init_point and geo_init_point[1]"></div>
 
-                        <div class="alert alert-info mb-3">
-                            <i class="fa fa-info-circle me-2"></i>
-                            Click on the map or drag the marker to select your address.
-                            The address form will be filled automatically.
+                <!-- Selected location (shown once a point is picked) -->
+                <div id="o_map_selected_location" class="d-none d-flex align-items-start gap-2 mt-2">
+                    <i class="fa fa-check-circle text-success mt-1"/>
+                    <div class="small">
+                        <div id="o_map_selected_address" class="fw-semibold"></div>
+                        <div class="text-muted">
+                            <span id="o_map_selected_coords"></span>
                         </div>
-
-                        <!-- Search -->
-                        <div class="row g-2 mb-3">
-                            <div class="col-md-9">
-                                <input type="text"
-                                       id="o_map_search_input"
-                                       class="form-control"
-                                       placeholder="Search for your location (street, area, landmark)"/>
-                            </div>
-                            <div class="col-md-3">
-                                <button type="button"
-                                        id="o_map_search_btn"
-                                        class="btn btn-primary w-100">
-                                    <i class="fa fa-search me-1"></i> Search
-                                </button>
-                            </div>
-                        </div>
-
-                        <!-- Google Map Container -->
-                        <div id="o_delivery_map"
-                             style="width: 100%; height: 500px;"></div>
-
-                        <!-- Selected Location -->
-                        <div id="o_map_selected_location" class="mt-3 d-none">
-                            <h6 class="mb-2">
-                                <i class="fa fa-check-circle me-2"></i>
-                                Selected Location
-                            </h6>
-                            <p id="o_map_selected_address" class="mb-1 fw-semibold"></p>
-                            <small class="text-muted">
-                                <i class="fa fa-map-pin me-1"></i>
-                                Coordinates:
-                                <span id="o_map_selected_coords"></span>
-                            </small>
-                        </div>
-
-                        <!-- Action Buttons -->
-                        <div class="mt-3 d-flex gap-2 flex-wrap">
-                            <button type="button"
-                                    id="o_map_current_location_btn"
-                                    class="btn btn-outline-primary btn-sm">
-                                <i class="fa fa-crosshairs me-1"></i>
-                                Use My Current Location
-                            </button>
-
-                            <button type="button"
-                                    id="o_map_clear_btn"
-                                    class="btn btn-outline-secondary btn-sm">
-                                <i class="fa fa-times me-1"></i>
-                                Clear Selection
-                            </button>
-                        </div>
-
                     </div>
                 </div>
+                <small class="text-muted d-md-none d-block mt-1">
+                    Drag the pin; the address below fills in automatically.
+                </small>
             </div>
+        </xpath>
+
+        <!-- Hidden inputs: the map pin is saved on the address (res.partner).
+             Disabled (= not submitted) until the map sets a value, so an empty
+             value can never overwrite coordinates with 0. -->
+        <xpath expr="//form[@action='/shop/address/submit']" position="inside">
+            <input type="hidden" name="partner_latitude" id="o_partner_latitude"
+                   t-att-value="partner_sudo.partner_latitude if partner_sudo and partner_sudo.partner_latitude else None"
+                   t-att-disabled="None if partner_sudo and partner_sudo.partner_latitude else 'disabled'"/>
+            <input type="hidden" name="partner_longitude" id="o_partner_longitude"
+                   t-att-value="partner_sudo.partner_longitude if partner_sudo and partner_sudo.partner_longitude else None"
+                   t-att-disabled="None if partner_sudo and partner_sudo.partner_longitude else 'disabled'"/>
+        </xpath>
+    </template>
+
+    <!-- New address of a signed-in customer: start with their own name,
+         email and phone (they can still change them, e.g. for a gift) -->
+    <template id="address_prefill_customer_details"
+              inherit_id="portal.address_form_fields"
+              name="Prefill customer details on new address">
+        <xpath expr="//input[@id='o_name']" position="attributes">
+            <attribute name="t-att-value">partner_sudo.name or (not partner_sudo and not website.is_public_user() and current_partner.name)</attribute>
+        </xpath>
+        <xpath expr="//input[@id='o_email']" position="attributes">
+            <attribute name="t-att-value">partner_sudo.email or (not partner_sudo and not website.is_public_user() and current_partner.email)</attribute>
+        </xpath>
+        <xpath expr="//input[@id='o_phone']" position="attributes">
+            <attribute name="t-att-value">partner_sudo.phone or (not partner_sudo and not website.is_public_user() and current_partner.phone)</attribute>
         </xpath>
     </template>
 

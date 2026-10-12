@@ -7,41 +7,11 @@ _logger = logging.getLogger(__name__)
 class ResPartner(models.Model):
     _inherit = 'res.partner'
 
-    @api.model
-    def update_coordinates_from_map(self, partner_id, latitude, longitude):
-        """
-        Public method to update partner coordinates from map.
-        Uses sudo() to bypass permissions.
-        Can be called via RPC from JavaScript.
-        """
-        try:
-            partner = self.browse(partner_id)
-
-            if not partner.exists():
-                _logger.warning("❌ Partner %s not found", partner_id)
-                return {'success': False, 'error': 'Partner not found'}
-
-            # Use sudo() to bypass permission checks
-            partner.sudo().write({
-                'partner_latitude': float(latitude),
-                'partner_longitude': float(longitude)
-            })
-
-            _logger.info(
-                "✅ Map coordinates saved for partner %s: lat=%s, lon=%s",
-                partner_id, latitude, longitude
-            )
-
-            return {
-                'success': True,
-                'partner_id': partner_id,
-                'latitude': latitude,
-                'longitude': longitude
-            }
-
-        except Exception as e:
-            _logger.error("❌ Error saving coordinates: %s", e)
-            return {'success': False, 'error': str(e)}
+    def _get_frontend_writable_fields(self):
+        """Allow the checkout address form to save the map pin (hidden inputs)."""
+        fields_set = super()._get_frontend_writable_fields()
+        fields_set.update({'partner_latitude', 'partner_longitude'})
+        return fields_set
 
     def _geo_localize_if_address(self):
         """Geo-localize partner only when address is complete enough"""

@@ -9,7 +9,6 @@ publicWidget.registry.MapAddressCheckout = publicWidget.Widget.extend({
         defaultLat: 25.2048,
         defaultLng: 55.2708,
         defaultZoom: 12,
-        googleApiKey: "AIzaSyDPWub_dzNyAs7-56kyNKd3TrEvKBiVG6w",
         // Set to false until the /shop/address/map_update controller exists.
         enableSessionSave: false,
     },
@@ -39,9 +38,16 @@ publicWidget.registry.MapAddressCheckout = publicWidget.Widget.extend({
             return;
         }
 
+        // API key from the Odoo configuration (data-api-key on the map element)
+        var apiKey = document.getElementById('o_delivery_map').dataset.apiKey;
+        if (!apiKey) {
+            self._showError('The map is not available: no Google Maps API key is configured.');
+            return;
+        }
+
         var callbackName = "initGoogleMapAddressCheckout";
         var script = document.createElement("script");
-        script.src = `https://maps.googleapis.com/maps/api/js?key=${self.config.googleApiKey}&libraries=places&loading=async&callback=${callbackName}`;
+        script.src = `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(apiKey)}&libraries=places&loading=async&callback=${callbackName}`;
         script.async = true;
         script.defer = true;
 
@@ -83,14 +89,16 @@ publicWidget.registry.MapAddressCheckout = publicWidget.Widget.extend({
 
         try {
             var mapEl = document.getElementById('o_delivery_map');
-            mapEl.style.height = "500px";
-            mapEl.style.width = "100%";
+            // Size comes from map_style.css (smaller on mobile).
+            // On touch screens one finger scrolls the page, two fingers move the map;
+            // the pin itself can still be dragged with one finger.
+            var isTouch = window.matchMedia && window.matchMedia('(pointer: coarse)').matches;
 
             this.map = new google.maps.Map(mapEl, {
                 center: { lat: this.config.defaultLat, lng: this.config.defaultLng },
                 zoom: this.config.defaultZoom,
                 mapTypeId: google.maps.MapTypeId.ROADMAP,
-                gestureHandling: 'greedy',
+                gestureHandling: isTouch ? 'cooperative' : 'greedy',
                 zoomControl: true,
                 streetViewControl: false,
                 fullscreenControl: true,
@@ -115,6 +123,7 @@ publicWidget.registry.MapAddressCheckout = publicWidget.Widget.extend({
             }, 300);
 
             this._bindMapEvents();
+            this._applyInitialPoint(mapEl);
 
             console.log("✅ Map initialized!");
 
@@ -163,6 +172,52 @@ publicWidget.registry.MapAddressCheckout = publicWidget.Widget.extend({
         })
         .catch(function (err) {
             console.error("❌ Could not save coordinates:", err.message);
+        });
+    },
+
+    // ---------------------------------------------------------------
+    // Start from the initial pin given by the page (data-init-lat/lng):
+    // the address being edited, or the location confirmed before shopping.
+    // The form is filled automatically only when it is still empty, so an
+    // address the customer typed or saved is never replaced.
+    // ---------------------------------------------------------------
+    _applyInitialPoint: function (mapEl) {
+        var lat = parseFloat(mapEl.dataset.initLat);
+        var lng = parseFloat(mapEl.dataset.initLng);
+        if (!lat || !lng) {
+            return;
+        }
+        var latLng = new google.maps.LatLng(lat, lng);
+        this.map.setCenter(latLng);
+        this.map.setZoom(16);
+        this.marker.setPosition(latLng);
+
+        var street = document.querySelector('#o_street');
+        if (street && !street.value.trim()) {
+            // New address: fill the form from the pin (also sets the hidden inputs)
+            this._selectLocation(lat, lng);
+        } else {
+            // Existing address: only show its pin
+            this.selectedLatitude = lat;
+            this.selectedLongitude = lng;
+            if (this.infoWindow) {
+                this.infoWindow.close();
+                this.infoWindow = null;
+            }
+        }
+    },
+
+    // ---------------------------------------------------------------
+    // Put the pin in the hidden inputs posted with the address form, so the
+    // exact pin is saved on the address (res.partner).
+    // ---------------------------------------------------------------
+    _setCoordinateInputs: function (lat, lng) {
+        [['#o_partner_latitude', lat], ['#o_partner_longitude', lng]].forEach(function (pair) {
+            var input = document.querySelector(pair[0]);
+            if (input) {
+                input.value = pair[1].toFixed(7);
+                input.removeAttribute('disabled');
+            }
         });
     },
 
@@ -236,11 +291,9 @@ publicWidget.registry.MapAddressCheckout = publicWidget.Widget.extend({
 
         $('#o_map_selected_location').removeClass('d-none');
         $('#o_map_selected_address').html('<i class="fa fa-spinner fa-spin"></i>');
-        $('#o_map_selected_coords')
-            .text(lat.toFixed(6) + ', ' + lng.toFixed(6))
-            .addClass('text-success')
-            .css('font-weight', 'bold');
+        $('#o_map_selected_coords').text(lat.toFixed(6) + ', ' + lng.toFixed(6));
 
+        this._setCoordinateInputs(lat, lng);
         this._saveCoordinatesToSession(lat, lng);
 
         this._setFormBusy(true);

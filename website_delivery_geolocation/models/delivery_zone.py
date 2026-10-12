@@ -113,3 +113,24 @@ class Website(models.Model):
 
     def _display_partner_b2b_fields(self):
         return False
+
+    def _geo_address_initial_point(self, partner_sudo):
+        """Initial pin of the address map: (latitude, longitude) or None.
+
+        Here: the coordinates of the address being edited. Other modules can
+        extend it (area_tier_discount adds the location confirmed in its popup
+        for a new address).
+        """
+        if partner_sudo and partner_sudo.partner_latitude and partner_sudo.partner_longitude:
+            return partner_sudo.partner_latitude, partner_sudo.partner_longitude
+        return None
+
+    def _geo_google_maps_key(self):
+        """Google Maps API key from the configuration:
+        Website settings > Google Maps API Key, otherwise the key of
+        Settings > Integrations > Geolocation (base_geolocalize)."""
+        return (
+            self.sudo().google_maps_api_key
+            or self.env['ir.config_parameter'].sudo().get_param(
+                'base_geolocalize.google_map_api_key', '')
+        )

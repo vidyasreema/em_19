@@ -96,8 +96,7 @@
                         class="form-control"
                         rows="3"
                         placeholder="Add any special instructions or notes for your order..."
-                        t-att-value="website_sale_order.order_note or ''"
-                />
+                ><t t-out="website_sale_order.order_note or ''"/></textarea>
             </div>
             <script>
                 <![CDATA[
