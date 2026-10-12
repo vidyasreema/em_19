@@ -186,12 +186,14 @@ class SaleOrder(models.Model):
                                 order.name
                             )
                     else:
-                        # Clear delivery method if no zone found
-                        if order.carrier_id:
+                        # No zone found: remove the delivery line AND the delivery
+                        # method, so no price from the previous address remains.
+                        if order.carrier_id or order.order_line.filtered('is_delivery'):
                             _logger.warning(
-                                "⚠️ Clearing delivery method for order %s - no zone found",
+                                "⚠️ Clearing delivery method and line for order %s - no zone found",
                                 order.name
                             )
+                            order._remove_delivery_line()
                             order.carrier_id = False
 
         return res

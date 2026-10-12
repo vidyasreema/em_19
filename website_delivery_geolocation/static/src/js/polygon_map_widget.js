@@ -1,7 +1,34 @@
 /** @odoo-module **/
-import { Component, useRef, onMounted, onWillUnmount } from "@odoo/owl";
+import { Component, useRef, useState, onMounted, onWillUnmount } from "@odoo/owl";
 import { registry } from "@web/core/registry";
 import { standardFieldProps } from "@web/views/fields/standard_field_props";
+
+// Load Google Maps exactly once per page (loading it twice breaks map events)
+let googleMapsPromise = null;
+function loadGoogleMapsOnce(apiKey) {
+    if (window.google && window.google.maps && window.google.maps.Map) {
+        return Promise.resolve();
+    }
+    if (googleMapsPromise) {
+        return googleMapsPromise;
+    }
+    googleMapsPromise = new Promise((resolve, reject) => {
+        window.initGoogleMap = () => {
+            delete window.initGoogleMap;
+            resolve();
+        };
+        const script = document.createElement("script");
+        script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=geometry&callback=initGoogleMap`;
+        script.async = true;
+        script.defer = true;
+        script.onerror = () => {
+            googleMapsPromise = null;
+            reject(new Error("Failed to load Google Maps"));
+        };
+        document.head.appendChild(script);
+    });
+    return googleMapsPromise;
+}
 
 class PolygonMapWidget extends Component {
     static template = "PolygonMapWidget";
@@ -11,13 +38,13 @@ class PolygonMapWidget extends Component {
     static supportedTypes = ["text"];
 
     setup() {
+        this.state = useState({ drawing: false, type: null, count: 0 });
         this.mapRef = useRef("map");
         this.searchRef = useRef("search");
         this.searchBtnRef = useRef("searchBtn");
         this.exclusionSearchRef = useRef("exclusionSearch");
         this.exclusionSearchBtnRef = useRef("exclusionSearchBtn");
         this.map = null;
-        this.drawingManager = null;
         this.currentPolygon = null;
         this.exclusionZones = [];
         this.searchMarkers = [];
@@ -42,9 +69,10 @@ class PolygonMapWidget extends Component {
             if (this.infoWindow) {
                 this.infoWindow.close();
             }
-            if (this.drawingManager) {
-                this.drawingManager.setMap(null);
+            if (this._onKeyDown) {
+                document.removeEventListener("keydown", this._onKeyDown);
             }
+            try { this._resetDrawingState(); } catch (e) { /* ignore */ }
             if (this.resizeObserver) {
                 this.resizeObserver.disconnect();
             }
@@ -63,26 +91,8 @@ class PolygonMapWidget extends Component {
 
     async loadGoogleMaps() {
         try {
-            if (window.google && window.google.maps) {
-                this.initMap();
-                return;
-            }
-
-            await new Promise((resolve, reject) => {
-                const script = document.createElement("script");
-                script.src = `https://maps.googleapis.com/maps/api/js?key=${this.googleApiKey}&libraries=drawing,geometry&callback=initGoogleMap`;
-                script.async = true;
-                script.defer = true;
-                script.onerror = () => reject(new Error("Failed to load Google Maps"));
-
-                window.initGoogleMap = () => {
-                    delete window.initGoogleMap;
-                    resolve();
-                };
-
-                document.head.appendChild(script);
-            });
-
+            await loadGoogleMapsOnce(this.googleApiKey);
+            if (!this.mapRef.el) return; // component was destroyed while loading
             this.initMap();
         } catch (error) {
             console.error("❌ Error loading Google Maps:", error);
@@ -124,8 +134,11 @@ class PolygonMapWidget extends Component {
                 }
             }, 300);
 
+            let lastW = 0, lastH = 0;
             this.resizeObserver = new ResizeObserver(() => {
-                if (this.map) {
+                const w = mapEl.clientWidth, h = mapEl.clientHeight;
+                if (this.map && (w !== lastW || h !== lastH)) {
+                    lastW = w; lastH = h;
                     google.maps.event.trigger(this.map, "resize");
                 }
             });
@@ -134,10 +147,19 @@ class PolygonMapWidget extends Component {
             this.geocoder = new google.maps.Geocoder();
             this.infoWindow = new google.maps.InfoWindow();
 
-            this.setupDrawingManager();
-            this.setupDrawingControls();
-            this.setupSearch();
-            this.loadExistingPolygon();
+            // Run each step independently: a failure in one must not
+            // prevent the others (search, saved zones) from working.
+            [
+                () => this.setupDrawing(),
+                () => this.setupSearch(),
+                () => this.loadExistingPolygon(),
+            ].forEach((step) => {
+                try {
+                    step();
+                } catch (e) {
+                    console.error("❌ Init step failed:", e);
+                }
+            });
 
             console.log("✅ Google Map initialized!");
         } catch (error) {
@@ -145,158 +167,181 @@ class PolygonMapWidget extends Component {
         }
     }
 
-    setupDrawingManager() {
-        console.log("🎨 Setting up Drawing Manager...");
+    // ---- Custom polygon drawing (Google's DrawingManager was removed in May 2026) ----
+    setupDrawing() {
+        this.drawingType = null;   // null | 'target' | 'exclusion'
+        this.drawPoints = [];
+        this.drawPreview = null;
+        this.drawMarkers = [];
 
-        // Initialize drawing manager
-        this.drawingManager = new google.maps.drawing.DrawingManager({
-            drawingMode: null,
-            drawingControl: false, // We'll use custom buttons instead
-            polygonOptions: {
-                fillColor: "#4CAF50",
-                fillOpacity: 0.3,
-                strokeColor: "#2E7D32",
-                strokeWeight: 2,
-                editable: true,
-                draggable: false,
-            },
-        });
+        this.map.addListener("click", (e) => this.onDrawClick(e));
+        this.map.addListener("dblclick", () => this.onDrawDblClick());
 
-        console.log("✅ Drawing Manager created");
-
-        this.drawingManager.setMap(this.map);
-
-        console.log("✅ Drawing Manager set to map");
-
-        // Listen for polygon completion
-        google.maps.event.addListener(
-            this.drawingManager,
-            "polygoncomplete",
-            (polygon) => {
-                console.log("🎨 Polygon completed, isDrawingExclusion:", this.isDrawingExclusion);
-                this.handlePolygonComplete(polygon);
-            }
-        );
-
-        console.log("✅ Drawing Manager listeners attached");
+        this._onKeyDown = (ev) => {
+            if (!this.drawingType) return;
+            if (ev.key === "Enter") this.finishDrawing();
+            if (ev.key === "Escape") this.cancelDrawing();
+        };
+        document.addEventListener("keydown", this._onKeyDown);
     }
 
-    setupDrawingControls() {
-        // Create custom control buttons
-        const controlDiv = document.createElement('div');
-        controlDiv.style.cssText = 'margin: 10px; display: flex; gap: 10px; flex-direction: column;';
+    get isDrawing() {
+        return !!this.drawingType;
+    }
 
-        // Target Zone Button
-        const targetBtn = this.createControlButton(
-            '🎯 Draw Target Zone',
-            '#4CAF50',
-            () => {
-                this.startDrawingMode('target');
-            }
-        );
+    _drawStyle(isExclusion) {
+        return isExclusion
+            ? { fillColor: "#f44336", fillOpacity: 0.5, strokeColor: "#c62828" }
+            : { fillColor: "#4CAF50", fillOpacity: 0.3, strokeColor: "#2E7D32" };
+    }
 
-        // Exclusion Zone Button
-        const exclusionBtn = this.createControlButton(
-            '🚫 Draw Exclusion Zone',
-            '#f44336',
-            () => {
-                if (!this.currentPolygon) {
-                    alert("⚠️ Please draw a TARGET zone first!");
+    _setExistingClickable(clickable) {
+        // Existing polygons would swallow map clicks while drawing on top of them
+        [this.currentPolygon, ...this.exclusionZones].forEach((p) => {
+            // editable vertex handles would also swallow clicks while drawing
+            if (p) p.setOptions({ clickable, editable: clickable });
+        });
+    }
+
+    onDrawClick(e) {
+        try {
+            if (!this.isDrawing || !e.latLng) return;
+
+            // A double-click fires two clicks at (almost) the same spot: skip the 2nd
+            const now = Date.now();
+            const last = this.drawPoints[this.drawPoints.length - 1];
+            if (last && now - (this._lastClickTime || 0) < 400) {
+                const tol = (360 / (256 * Math.pow(2, this.map.getZoom()))) * 6; // ~6px
+                if (Math.abs(last.lat() - e.latLng.lat()) < tol &&
+                    Math.abs(last.lng() - e.latLng.lng()) < tol) {
                     return;
                 }
-                this.startDrawingMode('exclusion');
             }
-        );
+            this._lastClickTime = now;
+            this.drawPoints.push(e.latLng);
+            console.log(`✏️ Draw point ${this.drawPoints.length}:`, e.latLng.toString());
 
-        // Clear All Button
-        const clearBtn = this.createControlButton(
-            '🗑️ Clear All',
-            '#757575',
-            () => {
-                if (confirm('Delete all zones?')) {
-                    if (this.currentPolygon) {
-                        this.currentPolygon.setMap(null);
-                        this.currentPolygon = null;
-                    }
-                    this.exclusionZones.forEach(zone => zone.setMap(null));
-                    this.exclusionZones = [];
-                    this.saveAllZones();
-                }
+            const style = this._drawStyle(this.drawingType === "exclusion");
+            if (!this.drawPreview) {
+                this.drawPreview = new google.maps.Polyline({
+                    map: this.map,
+                    strokeColor: style.strokeColor,
+                    strokeWeight: 3,
+                    clickable: false,
+                    zIndex: 9999,
+                });
             }
-        );
+            this.drawPreview.setPath(this.drawPoints);
 
-        // Add instruction text
-        const instructionDiv = document.createElement('div');
-        instructionDiv.style.cssText = `
-            background: white;
-            padding: 8px 12px;
-            border-radius: 4px;
-            font-size: 12px;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.3);
-            max-width: 200px;
-        `;
-        instructionDiv.innerHTML = '<strong>📍 Click button then draw on map</strong><br/>Double-click to finish';
+            // Circle instead of google.maps.Marker (Marker is deprecated)
+            const dot = new google.maps.Circle({
+                map: this.map,
+                center: e.latLng,
+                radius: 6 * (156543.03392 * Math.cos(e.latLng.lat() * Math.PI / 180) / Math.pow(2, this.map.getZoom())),
+                fillColor: "#ffffff",
+                fillOpacity: 1,
+                strokeColor: style.strokeColor,
+                strokeWeight: 2,
+                clickable: false,
+                zIndex: 10000,
+            });
+            this.drawMarkers.push(dot);
 
-        controlDiv.appendChild(instructionDiv);
-        controlDiv.appendChild(targetBtn);
-        controlDiv.appendChild(exclusionBtn);
-        controlDiv.appendChild(clearBtn);
+            this.state.count = this.drawPoints.length;
+        } catch (err) {
+            console.error("❌ Draw click error:", err);
+            alert("Drawing error: " + err.message);
+        }
+    }
 
-        this.map.controls[google.maps.ControlPosition.TOP_LEFT].push(controlDiv);
+    onDrawDblClick() {
+        if (!this.isDrawing) return;
+        this.finishDrawing();
+    }
+
+    finishDrawing() {
+        if (!this.isDrawing) return;
+        if (this.drawPoints.length < 3) {
+            alert("⚠️ A zone needs at least 3 points.");
+            return;
+        }
+        const isExclusion = this.drawingType === "exclusion";
+        const polygon = new google.maps.Polygon({
+            paths: this.drawPoints.map((p) => ({ lat: p.lat(), lng: p.lng() })),
+        });
+        this.isDrawingExclusion = isExclusion;
+        this.handlePolygonComplete(polygon);
+    }
+
+    cancelDrawing() {
+        this._resetDrawingState();
+    }
+
+    _resetDrawingState() {
+        this.drawingType = null;
+        this.drawPoints = [];
+        if (this.drawPreview) {
+            this.drawPreview.setMap(null);
+            this.drawPreview = null;
+        }
+        (this.drawMarkers || []).forEach((m) => m.setMap(null));
+        this.drawMarkers = [];
+        if (this.map) {
+            this.map.setOptions({ draggableCursor: null, disableDoubleClickZoom: false });
+        }
+        this._setExistingClickable(true);
+        this.state.drawing = false;
+        this.state.type = null;
+        this.state.count = 0;
+    }
+
+    // ---- Toolbar handlers (wired in the OWL template) ----
+    onDrawTarget() {
+        this.startDrawingMode("target");
+    }
+
+    onDrawExclusion() {
+        if (!this.currentPolygon) {
+            alert("⚠️ Please draw a TARGET zone first!");
+            return;
+        }
+        this.startDrawingMode("exclusion");
+    }
+
+    onClearAll() {
+        if (!confirm("Delete all zones?")) return;
+        this._resetDrawingState();
+        if (this.currentPolygon) {
+            this.currentPolygon.setMap(null);
+            this.currentPolygon = null;
+        }
+        this.exclusionZones.forEach((zone) => zone.setMap(null));
+        this.exclusionZones = [];
+        this.saveAllZones();
+    }
+
+    onFinish() {
+        this.finishDrawing();
+    }
+
+    onCancel() {
+        this.cancelDrawing();
     }
 
     startDrawingMode(type) {
-        this.isDrawingExclusion = (type === 'exclusion');
-
-        console.log(`🎨 Starting ${type} drawing mode`);
-        console.log(`📍 Drawing Manager exists:`, !!this.drawingManager);
-        console.log(`📍 Map exists:`, !!this.map);
-
-        if (!this.drawingManager) {
-            console.error('❌ Drawing manager not initialized!');
-            alert('Drawing manager not ready. Please refresh the page.');
+        if (!this.map) {
+            alert("Map not ready. Please refresh the page.");
             return;
         }
-
-        // Set the appropriate polygon options
-        const polygonOptions = this.isDrawingExclusion ? {
-            fillColor: "#f44336",
-            fillOpacity: 0.5,
-            strokeColor: "#c62828",
-            strokeWeight: 2,
-            editable: true,
-            draggable: false,
-            clickable: true,
-        } : {
-            fillColor: "#4CAF50",
-            fillOpacity: 0.3,
-            strokeColor: "#2E7D32",
-            strokeWeight: 2,
-            editable: true,
-            draggable: false,
-            clickable: true,
-        };
-
-        console.log(`📍 Setting polygon options:`, polygonOptions);
-
-        // Update drawing manager options
-        this.drawingManager.setOptions({
-            polygonOptions: polygonOptions
-        });
-
-        // Activate polygon drawing mode
-        this.drawingManager.setDrawingMode(google.maps.drawing.OverlayType.POLYGON);
-
-        const currentMode = this.drawingManager.getDrawingMode();
-        console.log(`✅ Drawing mode set to:`, currentMode);
-        console.log(`✅ isDrawingExclusion = ${this.isDrawingExclusion}`);
-
-        if (currentMode !== google.maps.drawing.OverlayType.POLYGON) {
-            console.error('❌ Drawing mode did not activate properly!');
-            alert('Drawing mode failed to activate. Please try again or refresh the page.');
-        } else {
-            console.log('✅ Ready to draw! Click on the map to start drawing.');
-        }
+        this._resetDrawingState();
+        this.drawingType = type;
+        this.isDrawingExclusion = type === "exclusion";
+        this._setExistingClickable(false);
+        this.map.setOptions({ draggableCursor: "crosshair", disableDoubleClickZoom: true });
+        this.state.drawing = true;
+        this.state.type = type;
+        this.state.count = 0;
+        console.log(`🎨 Drawing mode ON: ${type}`);
     }
 
     createControlButton(text, color, onClick) {
@@ -325,7 +370,7 @@ class PolygonMapWidget extends Component {
 
     handlePolygonComplete(polygon) {
         // Stop drawing mode
-        this.drawingManager.setDrawingMode(null);
+        this._resetDrawingState();
 
         // Normalize coordinates to prevent world wrapping
         const path = polygon.getPath();

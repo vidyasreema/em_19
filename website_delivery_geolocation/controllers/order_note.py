@@ -5,9 +5,10 @@ from odoo.addons.website_sale.controllers.main import WebsiteSale
 
 class WebsiteSaleCustom(WebsiteSale):
 
-    @http.route(['/shop/save_order_note'], type='json', auth='public', website=True)
+    @http.route(['/shop/save_order_note'], type='jsonrpc', auth='public', website=True)
     def save_order_note(self, order_note='', **kwargs):
-        order = request.website.sale_get_order()
+        # Odoo 19: the current cart is request.cart (sale_get_order() was removed)
+        order = request.cart
         if order:
             order.sudo().write({'order_note': order_note})
             return {'success': True}

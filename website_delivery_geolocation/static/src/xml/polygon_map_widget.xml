@@ -67,6 +67,27 @@
                 </ul>
             </div>
 
+            <!-- Drawing Toolbar (plain HTML, not inside the Google map) -->
+            <div style="margin-bottom: 10px; display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
+                <button type="button" class="btn" t-on-click="onDrawTarget"
+                    style="background:#4CAF50; color:white; font-weight:bold;">🎯 Draw Target Zone</button>
+                <button type="button" class="btn" t-on-click="onDrawExclusion"
+                    style="background:#f44336; color:white; font-weight:bold;">🚫 Draw Exclusion Zone</button>
+                <button type="button" class="btn" t-on-click="onClearAll"
+                    style="background:#757575; color:white; font-weight:bold;">🗑️ Clear All</button>
+                <t t-if="state.drawing">
+                    <button type="button" class="btn" t-on-click="onFinish"
+                        style="background:#2196F3; color:white; font-weight:bold;">✔ Finish</button>
+                    <button type="button" class="btn" t-on-click="onCancel"
+                        style="background:#9E9E9E; color:white; font-weight:bold;">✖ Cancel</button>
+                    <span style="background:#fff8e1; padding:6px 12px; border-radius:4px; font-size:13px;">
+                        ✏️ Drawing <b t-esc="state.type === 'exclusion' ? 'EXCLUSION' : 'TARGET'"/> zone:
+                        click on the map to add points (min 3) — <b t-esc="state.count"/> so far.
+                        Double-click / Enter / Finish to close, Esc to cancel.
+                    </span>
+                </t>
+            </div>
+
             <!-- Map Container -->
             <div
                 t-ref="map"
