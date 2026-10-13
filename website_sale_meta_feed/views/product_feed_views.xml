@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="product_feed_list_inherit_meta" model="ir.ui.view">
+        <field name="name">product.feed.view.list.inherit.meta</field>
+        <field name="model">product.feed</field>
+        <field name="inherit_id" ref="website_sale.product_feed_list"/>
+        <field name="arch" type="xml">
+            <field name="product_category_ids" position="after">
+                <field
+                    name="out_of_stock_ribbon_ids"
+                    widget="many2many_tags"
+                    options="{'no_create': True}"
+                    optional="show"
+                />
+            </field>
+        </field>
+    </record>
+
+    <record id="product_feed_form_inherit_meta" model="ir.ui.view">
+        <field name="name">product.feed.view.form.inherit.meta</field>
+        <field name="model">product.feed</field>
+        <field name="inherit_id" ref="website_sale.product_feed_form"/>
+        <field name="arch" type="xml">
+            <field name="product_category_ids" position="after">
+                <field
+                    name="out_of_stock_ribbon_ids"
+                    widget="many2many_tags"
+                    options="{'no_create': True}"
+                />
+            </field>
+        </field>
+    </record>
+</odoo>
