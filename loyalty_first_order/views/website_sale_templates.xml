@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Guest cart: announce the welcome offer instead of applying it, since we
+         only know whether it is a first order once the email is entered. -->
+    <template id="first_order_guest_note" inherit_id="website_sale_loyalty.modify_code_form">
+        <xpath expr="//t[@t-if='website_sale_order.get_promo_code_error(delete=False)']" position="before">
+            <t t-set="first_order_programs" t-value="website_sale_order and website_sale_order._get_pending_first_order_programs()"/>
+            <div t-if="first_order_programs" class="alert alert-info text-start small" role="status">
+                New customer? Your welcome offer
+                (<strong t-out="', '.join(first_order_programs.mapped('name'))"/>)
+                will be applied at checkout once you enter your email address,
+                if this is your first order.
+            </div>
+        </xpath>
+    </template>
+</odoo>
