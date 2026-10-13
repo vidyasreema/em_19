@@ -4,6 +4,10 @@ import { Dialog } from "@web/core/dialog/dialog";
 import { useService } from "@web/core/utils/hooks";
 import { usePos } from "@point_of_sale/app/hooks/pos_hook";
 import { AutoComplete } from "@web/core/autocomplete/autocomplete";
+import {
+    compareRawMaterialTotal,
+    getConvertedRawMaterialTotal,
+} from "@pos_direct_manufacturing/js/raw_material_utils";
 
 export class RawMaterialPopup extends Component {
     static template = "pos_direct_manufacturing.RawMaterialPopup";
@@ -15,6 +19,7 @@ export class RawMaterialPopup extends Component {
         existingMaterials: { type: Array, optional: true },
         productQty: { type: Number, optional: true },
         productUomId: { type: [Number, { value: null }], optional: true },
+        enforcement: { type: String, optional: true },
     };
 
     setup() {
@@ -38,6 +43,9 @@ export class RawMaterialPopup extends Component {
         this.state = useState({
             lines,
             errorMessage: "",
+            // Set when the total is below the product quantity: the next
+            // Confirm saves anyway. Cleared as soon as anything is edited.
+            warningMessage: "",
         });
 
         // Base nextLineId on the ids actually present in `lines`, not on
@@ -71,7 +79,7 @@ export class RawMaterialPopup extends Component {
                 line.productId = p.id;
                 line.productName = p.display_name;
                 line.uomId = p.uom_id || null;
-                this.state.errorMessage = "";
+                this._clearMessages();
 
                 // search_pos_raw_materials searches the whole catalogue and
                 // deliberately ignores available_in_pos: a raw material such
@@ -121,10 +129,16 @@ export class RawMaterialPopup extends Component {
 
     onQtyChange(line, ev) {
         line.qty = parseFloat(ev.target.value) || 0;
+        this._clearMessages();
+    }
+
+    _clearMessages() {
         this.state.errorMessage = "";
+        this.state.warningMessage = "";
     }
 
     onAddLine() {
+        this._clearMessages();
         this.state.lines.push({
             id: this.nextLineId++,
             productId: null,
@@ -136,7 +150,7 @@ export class RawMaterialPopup extends Component {
 
     onRemoveLine(lineId) {
         this.state.lines = this.state.lines.filter((l) => l.id !== lineId);
-        this.state.errorMessage = "";
+        this._clearMessages();
     }
 
     /**
@@ -162,48 +176,15 @@ export class RawMaterialPopup extends Component {
     }
 
     /**
-     * Two units can be compared only when they share a reference unit.
-     * Odoo 19 keeps units in a tree and stores the path on each record, so
-     * a shared root is what makes a conversion possible. kg and g convert;
-     * kg and Units do not.
-     */
-    _uomsAreComparable(uomA, uomB) {
-        if (!uomA || !uomB || !uomA.parent_path || !uomB.parent_path) {
-            return false;
-        }
-        return uomA.parent_path.split("/")[0] === uomB.parent_path.split("/")[0];
-    }
-
-    /**
      * Total of all raw material quantities expressed in the finished
-     * product's unit. Returns null when the comparison does not apply —
-     * no unit on the finished product, or a material whose unit cannot be
-     * converted into it (kg of meat for a product sold in Units).
+     * product's unit, or null when the units cannot be compared.
      */
     _getConvertedTotal(validLines) {
-        const uomModel = this.pos.models["uom.uom"];
-        if (!uomModel || !this.props.productUomId) {
-            return null;
-        }
-        const targetUom = uomModel.get(this.props.productUomId);
-        if (!targetUom || !targetUom.factor) {
-            return null;
-        }
-
-        let total = 0;
-        for (const line of validLines) {
-            const uomId = this._resolveUomId(line);
-            if (!uomId) {
-                return null;
-            }
-            const lineUom = uomModel.get(uomId);
-            if (!lineUom || !this._uomsAreComparable(lineUom, targetUom)) {
-                return null;
-            }
-            // Same formula as UomUom._compute_quantity on the server.
-            total += (line.qty * lineUom.factor) / targetUom.factor;
-        }
-        return total;
+        return getConvertedRawMaterialTotal(
+            this.pos.models["uom.uom"],
+            validLines.map((line) => ({ qty: line.qty, uomId: this._resolveUomId(line) })),
+            this.props.productUomId
+        );
     }
 
     async onConfirm() {
@@ -248,20 +229,36 @@ export class RawMaterialPopup extends Component {
         // kilos of meat against a count of burgers has no correct answer,
         // so the check is skipped rather than guessed at.
         //
-        // Only the upper bound is enforced. Consuming less raw material
-        // than the finished quantity is normal — trim, bone and cooking
-        // loss all show up that way — so a low total passes silently.
-        // Consuming more would build a Manufacturing Order that pulls
-        // more stock than it produces, which is a real inventory error.
-        if (totalQty !== null && this.props.productQty) {
-            const tolerance = this.pos.config.raw_material_tolerance || 0;
-            const rounded = Math.round(totalQty * 1000) / 1000;
+        // More than the product quantity is blocked: the Manufacturing
+        // Order would pull more stock than it produces. Less is blocked
+        // too for Mandatory products; for the others it is warned once,
+        // and the next Confirm saves anyway, since trim, bone and cooking
+        // loss can make a lower total correct.
+        const tolerance = this.pos.config.raw_material_tolerance || 0;
+        const check = compareRawMaterialTotal(totalQty, this.props.productQty, tolerance);
+        const uomName = this.pos.models["uom.uom"]?.get(this.props.productUomId)?.name || "";
+        const total = `${totalQty} ${uomName}`.trim();
+        const expected = `${this.props.productQty} ${uomName}`.trim();
 
-            if (rounded > this.props.productQty + tolerance) {
-                this.state.errorMessage =
-                    `Total raw material quantity (${rounded}) cannot exceed the product quantity (${this.props.productQty}) by more than ${tolerance}.`;
-                return;
-            }
+        if (check === "over") {
+            this.state.warningMessage = "";
+            this.state.errorMessage =
+                `Total raw material quantity (${total}) cannot exceed the product quantity (${expected}) by more than ${tolerance}.`;
+            return;
+        }
+        if (check === "under" && this.props.enforcement === "force") {
+            this.state.warningMessage = "";
+            this.state.errorMessage =
+                `Total raw material quantity (${total}) is less than the product quantity (${expected}). ` +
+                `This product requires the raw materials to add up to ${expected}.`;
+            return;
+        }
+        if (check === "under" && !this.state.warningMessage) {
+            this.state.warningMessage =
+                `Total raw material quantity (${total}) is less than the product quantity (${expected}). ` +
+                `The raw materials should add up to ${expected}. ` +
+                `Correct the quantities, or press "Confirm anyway" to save as it is.`;
+            return;
         }
 
         if (this.props.getPayload) {

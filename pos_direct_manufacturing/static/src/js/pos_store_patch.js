@@ -12,6 +12,19 @@ function describeProducts(lines) {
     return [...names].map((name) => `• ${name}`).join("\n");
 }
 
+/** "• Burger: 0.8 kg of raw materials for 1 kg sold", one per line. */
+function describeQtyMismatches(mismatches) {
+    return mismatches
+        .map(({ line, total, uomName }) =>
+            _t("• %(product)s: %(total)s of raw materials for %(qty)s sold", {
+                product: line.product_id.display_name,
+                total: `${total} ${uomName}`.trim(),
+                qty: `${line.qty} ${uomName}`.trim(),
+            })
+        )
+        .join("\n");
+}
+
 patch(PosStore.prototype, {
     async pay() {
         const order = this.getOrder();
@@ -29,6 +42,42 @@ patch(PosStore.prototype, {
                 ),
             });
             return;
+        }
+
+        // The popup checks the total when the materials are saved, but the
+        // line quantity can still change afterwards.
+        const { over, underMandatory, under } = order.getRawMaterialQtyMismatches();
+        if (over.length > 0) {
+            await this.env.services.dialog.add(AlertDialog, {
+                title: _t("Too Much Raw Material"),
+                body: _t(
+                    "Payment cannot continue. The raw materials are more than the quantity sold:\n%s\n\nTap \"+ Raw Material\" on these order lines and correct the quantities, then try again.",
+                    describeQtyMismatches(over)
+                ),
+            });
+            return;
+        }
+        if (underMandatory.length > 0) {
+            await this.env.services.dialog.add(AlertDialog, {
+                title: _t("Raw Material Quantity Too Low"),
+                body: _t(
+                    "Payment cannot continue. These product(s) require the raw materials to add up to the quantity sold:\n%s\n\nTap \"+ Raw Material\" on these order lines and correct the quantities, then try again.",
+                    describeQtyMismatches(underMandatory)
+                ),
+            });
+            return;
+        }
+        if (under.length > 0) {
+            const confirmed = await ask(this.env.services.dialog, {
+                title: _t("Raw Material Quantity Too Low"),
+                body: _t(
+                    "The raw materials are less than the quantity sold:\n%s\n\nThey should add up to the quantity sold. Continue to payment anyway?",
+                    describeQtyMismatches(under)
+                ),
+            });
+            if (!confirmed) {
+                return;
+            }
         }
 
         if (warning.length > 0) {

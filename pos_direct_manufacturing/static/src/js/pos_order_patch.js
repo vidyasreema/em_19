@@ -2,6 +2,10 @@
 
 import { patch } from "@web/core/utils/patch";
 import { PosOrder } from "@point_of_sale/app/models/pos_order";
+import {
+    compareRawMaterialTotal,
+    getConvertedRawMaterialTotal,
+} from "@pos_direct_manufacturing/js/raw_material_utils";
 
 /**
  * Enforcement level set on the product form. Products that were never
@@ -50,6 +54,50 @@ patch(PosOrder.prototype, {
             const level = getRawMaterialEnforcement(line.product_id);
             if (level === "force" || level === "warning") {
                 result[level].push(line);
+            }
+        }
+        return result;
+    },
+
+    /**
+     * Lines whose raw materials do not add up to the quantity sold, e.g.
+     * when the line quantity was changed after the materials were saved.
+     * Same rule as the raw material popup: "over" is blocked, "under" is
+     * blocked for Mandatory products ("underMandatory") and warned for the
+     * others. Each entry is { line, total, uomName }.
+     */
+    getRawMaterialQtyMismatches() {
+        const result = { over: [], underMandatory: [], under: [] };
+        const uomModel = this.models["uom.uom"];
+        const tolerance = this.config?.raw_material_tolerance || 0;
+        for (const line of this.lines) {
+            const materials = line.raw_material_ids || [];
+            if (line.qty <= 0 || line.refunded_orderline_id || !materials.length) {
+                continue;
+            }
+            const productUomId =
+                line.product_id?.uom_id?.id || line.product_id?.product_tmpl_id?.uom_id?.id;
+            const total = getConvertedRawMaterialTotal(
+                uomModel,
+                materials.map((m) => ({
+                    qty: m.qty,
+                    uomId:
+                        m.uom_id?.id ||
+                        m.product_id?.uom_id?.id ||
+                        m.product_id?.product_tmpl_id?.uom_id?.id,
+                })),
+                productUomId
+            );
+            let check = compareRawMaterialTotal(total, line.qty, tolerance);
+            if (check === "under" && getRawMaterialEnforcement(line.product_id) === "force") {
+                check = "underMandatory";
+            }
+            if (check) {
+                result[check].push({
+                    line,
+                    total,
+                    uomName: uomModel?.get(productUomId)?.name || "",
+                });
             }
         }
         return result;

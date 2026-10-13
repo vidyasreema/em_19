@@ -18,7 +18,7 @@ class ProductTemplate(models.Model):
 
     raw_material_enforcement = fields.Selection(
         [
-            ('force', 'Mandatory - block payment without raw materials'),
+            ('force', 'Mandatory - block payment without raw materials or with a wrong quantity'),
             ('warning', 'Warning - warn but allow payment'),
             ('none', 'None - no validation'),
         ],
@@ -29,7 +29,9 @@ class ProductTemplate(models.Model):
         help="Applies only to manufactured products sold at POS. Decides "
              "what happens at payment when an order line for this product "
              "has no raw materials selected.\n\n"
-             "Mandatory: payment is blocked until raw materials are added.\n"
+             "Mandatory: payment is blocked until raw materials are added "
+             "and add up to the quantity sold (within the POS Raw Material "
+             "Tolerance).\n"
              "Warning: the cashier is warned but may continue.\n"
              "None: no check.\n\n"
              "Each line of an order is checked against its own product's "
