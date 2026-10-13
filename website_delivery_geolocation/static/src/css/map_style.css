@@ -10,10 +10,162 @@
 #o_delivery_map {
     width: 100%;
     height: 360px;
+    /* One finger moves the map, so keep it shorter than the screen (e.g. a
+       phone in landscape): there is always page left to scroll with. */
+    max-height: 55vh;
+    min-height: 200px;
     border-radius: 12px;
     border: 1px solid #dee2e6;
     overflow: hidden;
     z-index: 1;
+}
+
+/* Fixed centre pin: the map moves under it (like Uber / noon) */
+.o_geo_map_wrap {
+    position: relative;
+}
+
+.o_geo_center_pin,
+.o_geo_pin_shadow {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    pointer-events: none;   /* touches go through to the map */
+    display: none;          /* shown once the map is ready */
+}
+
+.o_geo_center_pin {
+    width: 36px;
+    height: 48px;
+    margin: -48px 0 0 -18px;   /* tip of the pin on the exact map centre */
+    z-index: 3;
+    filter: drop-shadow(0 2px 2px rgba(0, 0, 0, 0.35));
+    transition: transform 0.15s ease-out;
+}
+
+.o_geo_center_pin svg {
+    display: block;
+}
+
+.o_geo_center_pin path {
+    fill: var(--geo-brand);
+}
+
+.o_geo_center_pin circle {
+    fill: #fff;
+}
+
+.o_geo_pin_shadow {
+    width: 12px;
+    height: 5px;
+    margin: -2.5px 0 0 -6px;
+    border-radius: 50%;
+    background: rgba(0, 0, 0, 0.3);
+    z-index: 2;
+    transition: transform 0.15s ease-out, opacity 0.15s ease-out;
+}
+
+.o_geo_ready .o_geo_center_pin,
+.o_geo_ready .o_geo_pin_shadow {
+    display: block;
+}
+
+/* Pin lifted while the map is being moved */
+.o_geo_moving .o_geo_center_pin {
+    transform: translateY(-12px);
+}
+
+.o_geo_moving .o_geo_pin_shadow {
+    transform: scale(1.5);
+    opacity: 0.6;
+}
+
+/* Full-screen button inside the map, styled like Google's controls */
+.o_geo_map_control {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    margin: 10px;
+    padding: 0;
+    border: 0;
+    border-radius: 2px;
+    background: #fff;
+    box-shadow: rgba(0, 0, 0, 0.3) 0 1px 4px -1px;
+    color: #666;
+    font-size: 18px;
+    cursor: pointer;
+}
+
+.o_geo_map_control:hover {
+    color: #333;
+}
+
+/* Full-screen location picker: search, map, address, Confirm (like noon) */
+.o_geo_expanded_only {
+    display: none !important;
+}
+
+.o_map_address_selector.o_geo_expanded {
+    position: fixed;
+    inset: 0;
+    z-index: 1050;
+    margin: 0 !important;
+    display: flex;
+    flex-direction: column;
+    padding: calc(12px + env(safe-area-inset-top, 0px)) 12px calc(12px + env(safe-area-inset-bottom, 0px));
+    background: #fff;
+}
+
+.o_geo_expanded .o_geo_expanded_only {
+    display: block !important;
+}
+
+.o_geo_expanded .o_geo_hint {
+    display: none !important;
+}
+
+.o_geo_expanded .o_geo_map_wrap {
+    flex: 1 1 auto;
+    min-height: 0;
+}
+
+.o_geo_expanded #o_delivery_map {
+    height: 100%;
+    max-height: none;
+    min-height: 0;
+}
+
+body.o_geo_noscroll {
+    overflow: hidden;
+}
+
+/* Full screen on short, wide screens (phone in landscape): map over the whole
+   height, search / address / Confirm in a side panel. */
+@media (max-height: 500px) and (min-width: 576px) {
+    .o_map_address_selector.o_geo_expanded {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 280px;
+        grid-template-rows: auto auto auto 1fr;
+        column-gap: 12px;
+        padding-left: calc(12px + env(safe-area-inset-left, 0px));
+        padding-right: calc(12px + env(safe-area-inset-right, 0px));
+    }
+    .o_map_address_selector.o_geo_expanded > * {
+        grid-column: 2;
+    }
+    .o_map_address_selector.o_geo_expanded > .o_geo_map_wrap {
+        grid-column: 1;
+        grid-row: 1 / -1;
+    }
+    .o_geo_expanded #o_map_selected_location {
+        grid-row: 3;
+    }
+    .o_geo_expanded #o_map_confirm_btn {
+        grid-row: 4;
+        align-self: end;
+    }
 }
 
 /* Search group */
