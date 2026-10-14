@@ -29,10 +29,16 @@
                 <div t-if="state.errorMessage" class="alert alert-danger mt-2 mb-0 py-2">
                     <t t-esc="state.errorMessage"/>
                 </div>
+                <div t-if="state.warningMessage" class="alert alert-warning mt-2 mb-0 py-2" role="alert">
+                    <t t-esc="state.warningMessage"/>
+                </div>
             </div>
             <t t-set-slot="footer">
                 <button class="btn btn-secondary" t-on-click="onCancel">Cancel</button>
-                <button class="btn btn-primary" t-on-click="onConfirm">Confirm</button>
+                <button class="btn"
+                        t-att-class="state.warningMessage ? 'btn-warning' : 'btn-primary'"
+                        t-on-click="onConfirm"
+                        t-esc="state.warningMessage ? 'Confirm anyway' : 'Confirm'"/>
             </t>
         </Dialog>
     </t>

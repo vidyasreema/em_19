@@ -25,6 +25,7 @@
     ],
     'assets': {
         'point_of_sale._assets_pos': [
+            'pos_direct_manufacturing/static/src/js/raw_material_utils.js',
             'pos_direct_manufacturing/static/src/js/order_line_patch.js',
             'pos_direct_manufacturing/static/src/xml/order_line_patch.xml',
             'pos_direct_manufacturing/static/src/js/raw_material_popup.js',

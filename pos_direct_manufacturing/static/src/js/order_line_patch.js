@@ -6,6 +6,7 @@ import { useService } from "@web/core/utils/hooks";
 import { usePos } from "@point_of_sale/app/hooks/pos_hook";
 import { AlertDialog } from "@web/core/confirmation_dialog/confirmation_dialog";
 import { RawMaterialPopup } from "@pos_direct_manufacturing/js/raw_material_popup";
+import { getRawMaterialEnforcement } from "@pos_direct_manufacturing/js/pos_order_patch";
 
 patch(Orderline.prototype, {
     setup() {
@@ -79,6 +80,9 @@ patch(Orderline.prototype, {
         this.dialog.add(RawMaterialPopup, {
             existingMaterials,
             productQty: line.qty,
+            // Mandatory products must have the exact quantity: the popup
+            // then refuses a low total instead of offering "Confirm anyway".
+            enforcement: getRawMaterialEnforcement(line.product_id),
             // The finished product's unit: the popup converts raw material
             // quantities into this before comparing totals.
             productUomId:

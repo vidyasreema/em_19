@@ -42,8 +42,9 @@ class PosConfig(models.Model):
              "sold by the kilo).\n\n"
              "Above the sold quantity plus this tolerance the order is "
              "blocked; below the sold quantity minus this tolerance the "
-             "cashier is warned but may continue. Set to 0 to require an "
-             "exact match.\n\n"
+             "cashier is warned but may continue, except for products whose "
+             "Raw Material Enforcement is Mandatory, which are blocked too. "
+             "Set to 0 to require an exact match.\n\n"
              "The comparison is skipped entirely when the raw materials "
              "cannot be converted into the finished product's unit — for "
              "example meat measured in kg used for a product sold in Units.",

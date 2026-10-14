@@ -9,6 +9,9 @@ publicWidget.registry.MapAddressCheckout = publicWidget.Widget.extend({
         defaultLat: 25.2048,
         defaultLng: 55.2708,
         defaultZoom: 12,
+        // The address under the pin is looked up again only when the map moved
+        // at least this far (avoids extra Google requests for small nudges/zooms).
+        minMoveMeters: 10,
         // Set to false until the /shop/address/map_update controller exists.
         enableSessionSave: false,
     },
@@ -60,6 +63,7 @@ publicWidget.registry.MapAddressCheckout = publicWidget.Widget.extend({
     },
 
     _showError: function (message) {
+        $('.o_geo_map_wrap').removeClass('o_geo_ready');
         $('#o_delivery_map').html('<div class="alert alert-danger">' + message + '</div>');
     },
 
@@ -90,33 +94,35 @@ publicWidget.registry.MapAddressCheckout = publicWidget.Widget.extend({
         try {
             var mapEl = document.getElementById('o_delivery_map');
             // Size comes from map_style.css (smaller on mobile).
-            // On touch screens one finger scrolls the page, two fingers move the map;
-            // the pin itself can still be dragged with one finger.
-            var isTouch = window.matchMedia && window.matchMedia('(pointer: coarse)').matches;
-
+            // Fixed pin (like Uber / noon): the pin stays in the centre of the
+            // map (.o_geo_center_pin) and the customer moves the map under it.
+            // 'greedy': one finger (or the mouse) moves the map on every screen.
+            // The map is never taller than about half the screen
+            // (map_style.css), so the page can still be scrolled around it.
+            // Google's fullscreen would hide the pin: the expand button
+            // (_addExpandControl) opens our own full-screen picker instead.
             this.map = new google.maps.Map(mapEl, {
                 center: { lat: this.config.defaultLat, lng: this.config.defaultLng },
                 zoom: this.config.defaultZoom,
                 mapTypeId: google.maps.MapTypeId.ROADMAP,
-                gestureHandling: isTouch ? 'cooperative' : 'greedy',
+                gestureHandling: 'greedy',
                 zoomControl: true,
                 streetViewControl: false,
-                fullscreenControl: true,
+                fullscreenControl: false,
+                clickableIcons: false,
             });
 
             this.geocoder = new google.maps.Geocoder();
+            // Last point whose address was looked up (for minMoveMeters).
+            this.lastLookup = null;
+            // Moves only fill the form after the customer used the map (or the
+            // search / current location), never on page load: an address that
+            // was typed or saved is not replaced by just opening the page.
+            this.userMoved = false;
+            this.lookupSeq = 0;
 
-            this.marker = new google.maps.Marker({
-                position: { lat: this.config.defaultLat, lng: this.config.defaultLng },
-                map: this.map,
-                draggable: true,
-                animation: google.maps.Animation.DROP,
-            });
-
-            this.infoWindow = new google.maps.InfoWindow({
-                content: '<strong>📍 Drag to your location!</strong>',
-            });
-            this.infoWindow.open(this.map, this.marker);
+            this._addExpandControl();
+            $('.o_geo_map_wrap').addClass('o_geo_ready');
 
             setTimeout(function () {
                 google.maps.event.trigger(self.map, "resize");
@@ -190,7 +196,6 @@ publicWidget.registry.MapAddressCheckout = publicWidget.Widget.extend({
         var latLng = new google.maps.LatLng(lat, lng);
         this.map.setCenter(latLng);
         this.map.setZoom(16);
-        this.marker.setPosition(latLng);
 
         var street = document.querySelector('#o_street');
         if (street && !street.value.trim()) {
@@ -200,10 +205,7 @@ publicWidget.registry.MapAddressCheckout = publicWidget.Widget.extend({
             // Existing address: only show its pin
             this.selectedLatitude = lat;
             this.selectedLongitude = lng;
-            if (this.infoWindow) {
-                this.infoWindow.close();
-                this.infoWindow = null;
-            }
+            this.lastLookup = { lat: lat, lng: lng };
         }
     },
 
@@ -223,14 +225,42 @@ publicWidget.registry.MapAddressCheckout = publicWidget.Widget.extend({
 
     _bindMapEvents: function () {
         var self = this;
+        var mapEl = document.getElementById('o_delivery_map');
 
+        // Any touch / click / wheel on the map is the customer using it
+        // (drag, pinch, zoom buttons). Capture phase: Google stops some events.
+        ['pointerdown', 'touchstart', 'wheel', 'keydown'].forEach(function (type) {
+            mapEl.addEventListener(type, function () {
+                self.userMoved = true;
+            }, { capture: true, passive: true });
+        });
+
+        // Lift the pin while the map moves under it, drop it when it stops.
+        google.maps.event.addListener(this.map, "dragstart", function () {
+            self.userMoved = true;
+            self._setPinMoving(true);
+        });
+
+        // Tap / click: bring that point under the pin (looked up on 'idle').
         google.maps.event.addListener(this.map, "click", function (event) {
-            self._selectLocation(event.latLng.lat(), event.latLng.lng());
+            self.userMoved = true;
+            self.map.panTo(event.latLng);
         });
 
-        google.maps.event.addListener(this.marker, "dragend", function (event) {
-            self._selectLocation(event.latLng.lat(), event.latLng.lng());
+        google.maps.event.addListener(this.map, "idle", function () {
+            self._onMapIdle();
         });
+
+        $('#o_map_collapse_btn, #o_map_confirm_btn').off('click').on('click', function () {
+            self._setExpanded(false);
+        });
+
+        this._onKeydown = function (e) {
+            if (e.key === 'Escape' && self.expanded) {
+                self._setExpanded(false);
+            }
+        };
+        document.addEventListener('keydown', this._onKeydown);
 
         $('#o_map_search_btn').off('click').on('click', function () {
             self._searchLocation();
@@ -272,22 +302,115 @@ publicWidget.registry.MapAddressCheckout = publicWidget.Widget.extend({
         });
     },
 
+    // End of one address lookup. Only the latest lookup may unblock the
+    // form: an older answer arriving late must not release it early.
+    _finishSelection: function (seq) {
+        if (seq === this.lookupSeq) {
+            this.selecting = false;
+            this._setFormBusy(false);
+        }
+    },
+
+    _setPinMoving: function (moving) {
+        $('.o_geo_map_wrap').toggleClass('o_geo_moving', moving);
+        if (moving) {
+            // The point under the pin is changing: no Confirm until it is known.
+            this._setFormBusy(true);
+        }
+    },
+
+    // The map stopped moving: the point under the pin is the map centre.
+    _onMapIdle: function () {
+        var wasMoving = $('.o_geo_map_wrap').hasClass('o_geo_moving');
+        $('.o_geo_map_wrap').removeClass('o_geo_moving');
+        if (!this.userMoved) {
+            return;
+        }
+        var center = this.map.getCenter();
+        var lat = center.lat();
+        var lng = center.lng();
+        if (this.lastLookup
+                && this._distanceMeters(this.lastLookup.lat, this.lastLookup.lng, lat, lng) < this.config.minMoveMeters) {
+            if (wasMoving && !this.selecting) {
+                // Barely moved: keep the current address and release the form
+                // (unless the previous address is still being filled in).
+                this._setFormBusy(false);
+            }
+            return;
+        }
+        this._selectLocation(lat, lng);
+    },
+
+    // Haversine distance in metres (no extra Google library needed).
+    _distanceMeters: function (lat1, lng1, lat2, lng2) {
+        var toRad = Math.PI / 180;
+        var dLat = (lat2 - lat1) * toRad;
+        var dLng = (lng2 - lng1) * toRad;
+        var a = Math.sin(dLat / 2) * Math.sin(dLat / 2)
+            + Math.cos(lat1 * toRad) * Math.cos(lat2 * toRad) * Math.sin(dLng / 2) * Math.sin(dLng / 2);
+        return 6371000 * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    },
+
+    // Expand button inside the map (top right), styled like Google's controls.
+    _addExpandControl: function () {
+        var self = this;
+        var btn = document.createElement('button');
+        btn.type = 'button';
+        btn.id = 'o_map_expand_btn';
+        btn.className = 'o_geo_map_control';
+        btn.title = 'Full screen';
+        btn.setAttribute('aria-label', 'Full screen');
+        btn.innerHTML = '<i class="fa fa-expand"></i>';
+        // Bound here: Google adds the control to the page asynchronously.
+        btn.addEventListener('click', function () {
+            self._setExpanded(!self.expanded);
+        });
+        this.expandBtn = btn;
+        this.map.controls[google.maps.ControlPosition.RIGHT_TOP].push(btn);
+    },
+
+    // Full-screen location picker (search, map, address, Confirm), like noon.
+    _setExpanded: function (expanded) {
+        this.expanded = expanded;
+        $('.o_map_address_selector').toggleClass('o_geo_expanded', expanded);
+        if (this.expandBtn) {
+            this.expandBtn.innerHTML = expanded ? '<i class="fa fa-compress"></i>' : '<i class="fa fa-expand"></i>';
+            this.expandBtn.title = expanded ? 'Exit full screen' : 'Full screen';
+            this.expandBtn.setAttribute('aria-label', this.expandBtn.title);
+        }
+        $('body').toggleClass('o_geo_noscroll', expanded);
+        // Keep the same point under the pin while the map changes size.
+        var center = this.map.getCenter();
+        google.maps.event.trigger(this.map, 'resize');
+        this.map.setCenter(center);
+        if (!expanded) {
+            var block = document.querySelector('.o_map_address_selector');
+            if (block) {
+                block.scrollIntoView({ block: 'nearest' });
+            }
+        }
+    },
+
+    destroy: function () {
+        if (this._onKeydown) {
+            document.removeEventListener('keydown', this._onKeydown);
+        }
+        $('body').removeClass('o_geo_noscroll');
+        this._super.apply(this, arguments);
+    },
+
     _selectLocation: function (lat, lng) {
         var self = this;
 
         this.selectedLatitude = lat;
         this.selectedLongitude = lng;
+        this.lastLookup = { lat: lat, lng: lng };
+        var seq = ++this.lookupSeq;
+        this.selecting = true;
 
         console.log('📍 Location selected:', lat, lng);
 
         var latLng = new google.maps.LatLng(lat, lng);
-        this.marker.setPosition(latLng);
-        this.map.panTo(latLng);
-
-        if (this.infoWindow) {
-            this.infoWindow.close();
-            this.infoWindow = null;
-        }
 
         $('#o_map_selected_location').removeClass('d-none');
         $('#o_map_selected_address').html('<i class="fa fa-spinner fa-spin"></i>');
@@ -299,9 +422,12 @@ publicWidget.registry.MapAddressCheckout = publicWidget.Widget.extend({
         this._setFormBusy(true);
 
         this.geocoder.geocode({ location: latLng }, function (results, status) {
+            if (seq !== self.lookupSeq) {
+                return;  // the pin moved again meanwhile: a newer lookup is running
+            }
             if (status === google.maps.GeocoderStatus.OK && results.length > 0) {
                 $('#o_map_selected_address').text(results[0].formatted_address);
-                self._fillOdooAddressForm(results[0]);
+                self._fillOdooAddressForm(results[0], seq);
             } else {
                 // No address at this point (sea, desert, unmapped area).
                 // Clear the form so a stale address from the previous pin can
@@ -311,7 +437,7 @@ publicWidget.registry.MapAddressCheckout = publicWidget.Widget.extend({
                     '<span class="text-danger"><strong>No address found here.</strong> ' +
                     'Please pick a location on land.</span>'
                 );
-                self._setFormBusy(false);
+                self._finishSelection(seq);
             }
         });
     },
@@ -348,9 +474,9 @@ publicWidget.registry.MapAddressCheckout = publicWidget.Widget.extend({
 
             if (status === google.maps.GeocoderStatus.OK && results.length > 0) {
                 var location = results[0].geometry.location;
+                self.userMoved = true;
                 self.map.setCenter(location);
                 self.map.setZoom(15);
-                self.marker.setPosition(location);
                 self._selectLocation(location.lat(), location.lng());
             } else {
                 alert('Location not found');
@@ -375,9 +501,9 @@ publicWidget.registry.MapAddressCheckout = publicWidget.Widget.extend({
                 var lat = position.coords.latitude;
                 var lng = position.coords.longitude;
                 var latLng = new google.maps.LatLng(lat, lng);
+                self.userMoved = true;
                 self.map.setCenter(latLng);
                 self.map.setZoom(16);
-                self.marker.setPosition(latLng);
                 self._selectLocation(lat, lng);
                 $btn.prop('disabled', false).html(originalHTML);
             },
@@ -388,11 +514,11 @@ publicWidget.registry.MapAddressCheckout = publicWidget.Widget.extend({
         );
     },
 
-    _fillOdooAddressForm: function (geocodeResult) {
+    _fillOdooAddressForm: function (geocodeResult, seq) {
         var self = this;
         var components = geocodeResult.address_components;
         if (!components) {
-            this._setFormBusy(false);
+            this._finishSelection(seq);
             return;
         }
 
@@ -433,7 +559,7 @@ publicWidget.registry.MapAddressCheckout = publicWidget.Widget.extend({
         this._setNative('#o_zip', zip || '00000');
 
         if (!country) {
-            this._setFormBusy(false);
+            this._finishSelection(seq);
             return;
         }
 
@@ -442,7 +568,7 @@ publicWidget.registry.MapAddressCheckout = publicWidget.Widget.extend({
 
         if (!countrySelect) {
             console.warn('⚠️ country select #o_country_id not found');
-            this._setFormBusy(false);
+            this._finishSelection(seq);
             return;
         }
 
@@ -453,7 +579,7 @@ publicWidget.registry.MapAddressCheckout = publicWidget.Widget.extend({
 
         if (!countryOption) {
             console.warn('⚠️ no country option matched code:', countryCode);
-            this._setFormBusy(false);
+            this._finishSelection(seq);
             return;
         }
 
@@ -476,26 +602,30 @@ publicWidget.registry.MapAddressCheckout = publicWidget.Widget.extend({
         }
 
         if (state) {
-            this._selectStateWhenReady(state.long_name, 0);
+            this._selectStateWhenReady(state.long_name, 0, seq);
         } else {
-            this._setFormBusy(false);
+            this._finishSelection(seq);
         }
     },
 
-    _selectStateWhenReady: function (stateName, attempts) {
+    _selectStateWhenReady: function (stateName, attempts, seq) {
         var self = this;
         var maxAttempts = 25;   // 25 x 200ms = 5s ceiling
         var stateSelect = document.querySelector('#o_state_id');
+
+        if (seq !== self.lookupSeq) {
+            return;  // a newer pin position took over
+        }
 
         // Country has no states in Odoo — the select never appears. Not an error.
         if (!stateSelect) {
             if (attempts < maxAttempts) {
                 setTimeout(function () {
-                    self._selectStateWhenReady(stateName, attempts + 1);
+                    self._selectStateWhenReady(stateName, attempts + 1, seq);
                 }, 200);
             } else {
                 console.log('ℹ️ no state select for this country — continuing');
-                self._setFormBusy(false);
+                self._finishSelection(seq);
             }
             return;
         }
@@ -512,11 +642,11 @@ publicWidget.registry.MapAddressCheckout = publicWidget.Widget.extend({
         if (stillOldList || notPopulated) {
             if (attempts < maxAttempts) {
                 setTimeout(function () {
-                    self._selectStateWhenReady(stateName, attempts + 1);
+                    self._selectStateWhenReady(stateName, attempts + 1, seq);
                 }, 200);
             } else {
                 console.warn('⚠️ state list never rebuilt for:', stateName);
-                self._setFormBusy(false);
+                self._finishSelection(seq);
             }
             return;
         }
@@ -538,7 +668,7 @@ publicWidget.registry.MapAddressCheckout = publicWidget.Widget.extend({
             console.warn('⚠️ no state match for "' + stateName + '" — left blank for the customer');
         }
 
-        self._setFormBusy(false);
+        self._finishSelection(seq);
     },
 
     _clearSelection: function () {
@@ -548,17 +678,17 @@ publicWidget.registry.MapAddressCheckout = publicWidget.Widget.extend({
         $('#o_map_selected_location').addClass('d-none');
         $('#o_map_search_input').val('');
 
+        // Cancel a running lookup; moving back to the default point is not
+        // a choice of the customer, so it is not looked up.
+        this.lookupSeq++;
+        this.selecting = false;
+        this.userMoved = false;
+        this.lastLookup = null;
         this._setFormBusy(false);
 
         var defaultLatLng = new google.maps.LatLng(this.config.defaultLat, this.config.defaultLng);
-        this.marker.setPosition(defaultLatLng);
         this.map.setCenter(defaultLatLng);
         this.map.setZoom(this.config.defaultZoom);
-
-        this.infoWindow = new google.maps.InfoWindow({
-            content: '<strong>📍 Drag to your location!</strong>',
-        });
-        this.infoWindow.open(this.map, this.marker);
     },
 });
 

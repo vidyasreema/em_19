@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Fields required by the Meta catalog, next to the availability. -->
+    <template id="gmc_xml_meta_fields" inherit_id="website_sale.gmc_xml">
+        <xpath expr="//*[local-name()='availability']" position="after">
+            <g:condition xmlns:g="http://base.google.com/ns/1.0" t-out="item['condition']"/>
+            <g:brand xmlns:g="http://base.google.com/ns/1.0" t-if="item.get('brand')" t-out="item['brand']"/>
+        </xpath>
+    </template>
+</odoo>
