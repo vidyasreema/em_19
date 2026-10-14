@@ -13,4 +13,40 @@
             </div>
         </xpath>
     </template>
+
+    <!-- Order summary: show the items total and each offer as its own row, so the
+         customer can see how the total is reached. -->
+    <template id="order_summary_offers" inherit_id="website_sale.total" name="Offers in order summary">
+        <xpath expr="//tr[@name='o_order_delivery']" position="before">
+            <t t-set="offer_lines" t-value="website_sale_order._get_offer_summary_lines()"/>
+            <t t-if="offer_lines">
+                <tr name="o_order_items">
+                    <td class="ps-0 pt-0 pb-2 border-0 text-muted" colspan="2">Items</td>
+                    <td class="text-end pe-0 pt-0 pb-2 border-0">
+                        <span t-out="website_sale_order._get_items_summary_amount()"
+                              class="monetary_field" style="white-space: nowrap;"
+                              t-options="{'widget': 'monetary', 'display_currency': website_sale_order.currency_id}"/>
+                    </td>
+                </tr>
+                <!-- cart_product_price adds data-reward-type, used by the checkout
+                     script to refresh the amount when the delivery method changes. -->
+                <tr t-foreach="offer_lines" t-as="line" name="o_order_offer">
+                    <td class="ps-0 pt-0 pb-2 border-0 text-success" colspan="2" t-out="line._get_line_header()"/>
+                    <td class="text-end pe-0 pt-0 pb-2 border-0 text-success">
+                        <t t-call="website_sale.cart_product_price">
+                            <t t-set="product_price" t-value="line._get_cart_display_price()"/>
+                        </t>
+                    </td>
+                </tr>
+            </t>
+        </xpath>
+    </template>
+
+    <!-- Checkout item list: offers are shown in the summary rows above instead.
+         The cart page keeps them in its list, where they can be removed. -->
+    <template id="cart_summary_without_offers" inherit_id="website_sale.cart_summary_content">
+        <xpath expr="//tr[@t-as='line']" position="attributes">
+            <attribute name="t-foreach">website_sale_order.website_order_line - website_sale_order._get_offer_summary_lines()</attribute>
+        </xpath>
+    </template>
 </odoo>
