@@ -82,6 +82,22 @@ class SaleOrder(models.Model):
         status = self.with_context(skip_first_order_check=True)._program_check_compute_points(programs)
         return programs.filtered(lambda p: 'error' not in status.get(p, {}))
 
+    def _get_offer_summary_lines(self):
+        """Offer lines (discounts, free shipping, gift cards) shown as their own
+        rows in the order summary instead of among the cart items. Free product
+        rewards stay with the items: they are real products."""
+        self.ensure_one()
+        return self.website_order_line.filtered(
+            lambda l: l.is_reward_line
+            and l.reward_id.reward_type != 'product'
+            and not self.currency_id.is_zero(l._get_cart_display_price()))
+
+    def _get_items_summary_amount(self):
+        """Items total before offers, with the same tax display as the cart lines."""
+        self.ensure_one()
+        items = self.website_order_line - self._get_offer_summary_lines()
+        return sum(line._get_cart_display_price() for line in items)
+
     def action_confirm(self):
         # Safety net for backend orders only. Website orders are confirmed after
         # the online payment, so blocking there would leave a paid, unconfirmed
