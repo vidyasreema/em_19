@@ -44,7 +44,7 @@
               inherit_id="website_sale.payment"
               name="Delivery Timing Banner — Payment Page">
 
-        <xpath expr="//div[contains(@class,'col-12')]" position="after">
+        <xpath expr="//div[hasclass('col-12')]" position="after">
             <div id="delivery_timing_confirmation_banner"
                  class="delivery_banner alert alert-info mb-3"
                  style="display: none;"

@@ -17,7 +17,6 @@ publicWidget.registry.DeliveryTimingWidget = publicWidget.Widget.extend({
 
     start: function () {
         this._setupMutationObserver();
-        this._startPolling();
         this._checkAndLoadTiming();
         return this._super.apply(this, arguments);
     },
@@ -26,13 +25,11 @@ publicWidget.registry.DeliveryTimingWidget = publicWidget.Widget.extend({
         if (this._observer) {
             this._observer.disconnect();
         }
-        if (this._pollInterval) {
-            clearInterval(this._pollInterval);
-        }
         this._super.apply(this, arguments);
     },
 
     // ── Mutation Observer ──────────────────────────────────────
+    // Odoo re-renders the delivery methods when the address changes.
     _setupMutationObserver: function () {
         const self = this;
         this._observer = new MutationObserver(function (mutations) {
@@ -44,23 +41,6 @@ publicWidget.registry.DeliveryTimingWidget = publicWidget.Widget.extend({
         this._observer.observe(this.el, { childList: true, subtree: true });
     },
 
-    // ── Polling (backup) ───────────────────────────────────────
-    _startPolling: function () {
-        const self = this;
-        this._lastCarrier = null;
-        this._pollInterval = setInterval(function () {
-            const current = self._getCurrentCarrierId();
-            if (current !== self._lastCarrier) {
-                self._lastCarrier = current;
-                if (current) {
-                    self._loadDeliveryTiming(current);
-                } else {
-                    self._hideBanner();
-                }
-            }
-        }, 500);
-    },
-
     // ── Helpers ────────────────────────────────────────────────
     _getCurrentCarrierId: function () {
         const $checked = this.$('input[name="o_delivery_radio"]:checked');
@@ -69,6 +49,10 @@ publicWidget.registry.DeliveryTimingWidget = publicWidget.Widget.extend({
 
     _checkAndLoadTiming: function () {
         const carrierId = this._getCurrentCarrierId();
+        if (carrierId === this._lastCarrierId) {
+            return;
+        }
+        this._lastCarrierId = carrierId;
         if (carrierId) {
             this._loadDeliveryTiming(carrierId);
         } else {
@@ -76,9 +60,8 @@ publicWidget.registry.DeliveryTimingWidget = publicWidget.Widget.extend({
         }
     },
 
-    _onDeliveryChange: function (ev) {
-        const carrierId = $(ev.currentTarget).data('dm-id');
-        this._loadDeliveryTiming(carrierId);
+    _onDeliveryChange: function () {
+        this._checkAndLoadTiming();
     },
 
     _getSelectedAddressId: function () {
@@ -96,31 +79,16 @@ publicWidget.registry.DeliveryTimingWidget = publicWidget.Widget.extend({
     // ── Main RPC ───────────────────────────────────────────────
     _loadDeliveryTiming: function (carrierId) {
         const self = this;
-        if (!carrierId) {
-            self._hideBanner();
-            return;
-        }
-
-        const addressId = this._getSelectedAddressId();
-
         rpc('/shop/delivery/timing', {
             carrier_id: parseInt(carrierId, 10),
-            address_id: addressId,
+            address_id: this._getSelectedAddressId(),
         })
         .then(function (result) {
             if (!result || !result.delivery_date) {
                 self._hideBanner();
                 return;
             }
-
-            try {
-                sessionStorage.setItem('delivery_carrier_id', carrierId.toString());
-            } catch (e) {
-                console.warn('Could not store carrier id:', e);
-            }
-
-            // ⭐ Always show banner on checkout if delivery_date exists.
-            // show_popup is intentionally ignored here — no popup on checkout.
+            // No popup on this page, only the banner.
             self._renderBanner(result);
             self._showBanner();
         })
@@ -161,7 +129,7 @@ publicWidget.registry.DeliveryTimingWidget = publicWidget.Widget.extend({
 // ─────────────────────────────────────────────────────────────
 // Widget 2: Payment / Confirmation Page
 // Selector: .oe_website_sale
-// Banner + Popup — popup always shown on payment if date exists
+// Banner always, popup only if the delivery method asks for it
 // ─────────────────────────────────────────────────────────────
 publicWidget.registry.DeliveryTimingConfirmation = publicWidget.Widget.extend({
     selector: '.oe_website_sale',
@@ -174,57 +142,26 @@ publicWidget.registry.DeliveryTimingConfirmation = publicWidget.Widget.extend({
         return this._super.apply(this, arguments);
     },
 
-    // ── Get carrier ID ─────────────────────────────────────────
-    _getCarrierId: function () {
-        try {
-            const id = sessionStorage.getItem('delivery_carrier_id');
-            if (id) return id;
-        } catch (e) {}
-
-        const $hidden = $('input[type="hidden"][name="delivery_type"]');
-        if ($hidden.length && $hidden.val()) return $hidden.val();
-
-        const $radio = $('input[name="delivery_type"]:checked');
-        if ($radio.length && $radio.val()) return $radio.val();
-
-        const $carrier = $('.o_delivery_carrier_select input[type="radio"]:checked');
-        if ($carrier.length) return $carrier.val();
-
-        return null;
-    },
-
     // ── Main RPC ───────────────────────────────────────────────
     _loadConfirmationTiming: function () {
         const self = this;
-        const carrierId = this._getCarrierId();
 
-        if (!carrierId) {
-            console.warn('No carrier ID found on confirmation page');
-            return;
-        }
-
-        rpc('/shop/delivery/timing', {
-            carrier_id: parseInt(carrierId, 10),
-        })
+        // No carrier_id: the server uses the delivery method of the cart.
+        rpc('/shop/delivery/timing', {})
         .then(function (result) {
             if (!result || !result.delivery_date) return;
 
-            // ⭐ Always save commitment date
-            rpc('/shop/save_delivery_timing', {
-                delivery_data: { delivery_date: result.delivery_date },
-            })
-            .then(function (saveResult) {
-                console.log('Delivery date saved:', saveResult);
-            })
+            // The server computes and saves the promise on the cart.
+            rpc('/shop/save_delivery_timing', {})
             .catch(function (err) {
-                console.warn('Could not save delivery date:', err);
+                console.warn('Could not save delivery promise:', err);
             });
 
-            // ⭐ Always render banner on payment page if delivery_date exists
             self._renderConfirmationBanner(result);
 
-            // ⭐ Always show popup on payment page — show_popup flag is ignored here
-            self._showDeliveryPopup(result.delivery_date, result.message);
+            if (result.show_popup) {
+                self._showDeliveryPopup(result.delivery_date, result.message);
+            }
         })
         .catch(function (err) {
             console.error('Confirmation timing error:', err);

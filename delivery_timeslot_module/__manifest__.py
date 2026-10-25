@@ -1,23 +1,22 @@
 # -*- coding: utf-8 -*-
 {
     'name': 'Website Delivery Timeslot',
-    'version': '19.0.2.0.0',
+    'version': '19.0.3.2.0',
     'category': 'Website/eCommerce',
     'summary': 'Smart delivery timing messages based on store working hours',
     'description': """
-        Website Delivery Time Slot Management
-        ======================================
+        Website Delivery Promise
+        ========================
 
-        Displays intelligent delivery messages to customers based on when they order:
+        Tells the customer when the order will arrive, based on the delivery
+        method and the time the order is placed (Annex 3, section 8):
 
-        Scenario 1 - Within working hours:
-            No message shown. Order proceeds normally.
+        Scenario 1 - Same day: before the method's last same-day order time.
+        Scenario 2 - Next working day: after it, or for methods without same day.
+        Scenario 3 - Before opening: later the same day.
 
-        Scenario 2 - Shortly after closing (within 1-2 hrs of close):
-            "Your order will be ready for delivery tomorrow during working hours"
-
-        Scenario 3 - Late off-hours (after midnight / deep night before opening):
-            "Your order will be available for delivery today by [opening time]"
+        The promise (type, message, promised time) is saved on the order when
+        the customer pays, and the Delivery Date is set to the promised time.
     """,
     'author': 'Vidyasree',
     'depends': [
@@ -33,7 +32,9 @@
         'views/website_sale_delivery_templates.xml',
         'views/sale_order_report_inherit.xml',
         'views/sale_order_view_inherit.xml',
-        'views/store_settings.xml'
+        'views/store_settings.xml',
+        'views/website_sale_confirmation.xml',
+        'data/mail_template_data.xml',
     ],
     'assets': {
         'web.assets_frontend': [
@@ -45,4 +46,5 @@
     'installable': True,
     'application': False,
     'auto_install': False,
+    'license': 'LGPL-3',
 }

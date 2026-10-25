@@ -8,65 +8,62 @@
             <notebook position="inside">
                 <page string="Delivery Timing" name="delivery_timing">
 
-                    <!-- Delivery Behaviour -->
-                    <group string="Delivery Settings">
-                        <group>
-                            <field name="enable_same_day_delivery"
-                                   string="Support Same-Day Delivery?"/>
-                            <field name="lead_time_days"
-                                   string="Extra Lead Time (days)"/>
+                    <p class="text-muted">
+                        The promise shown to the customer depends on when the order is placed.
+                        Opening time, closing time and working days come from
+                        <strong>Website › Configuration › Store Settings</strong>.
+                    </p>
+
+                    <group>
+                        <!-- Scenario 1 -->
+                        <group string="Scenario 1 — Same Day">
+                            <field name="enable_same_day_delivery" string="Same-Day Delivery"/>
+                            <field name="promise_same_day_cutoff" widget="float_time"
+                                   invisible="not enable_same_day_delivery"/>
+                            <field name="promise_same_day_hours"
+                                   invisible="not enable_same_day_delivery"/>
+                            <field name="message_scenario_1" string="Message"
+                                   invisible="not enable_same_day_delivery"/>
+                            <field name="show_popup_scenario_1" string="Show Popup"
+                                   invisible="not enable_same_day_delivery"/>
+                            <div colspan="2" class="text-muted small"
+                                 invisible="not enable_same_day_delivery">
+                                Orders on a working day, from opening until the last same-day
+                                order time. Promised: order time + the hours above.
+                            </div>
+                        </group>
+
+                        <!-- Scenario 2 -->
+                        <group string="Scenario 2 — Next Working Day">
+                            <field name="promise_next_day_from" widget="float_time" string="Promised From"/>
+                            <field name="promise_next_day_until" widget="float_time" string="Promised Until"/>
+                            <field name="message_scenario_2" string="Message"/>
+                            <field name="show_popup_scenario_2" string="Show Popup"/>
+                            <div colspan="2" class="text-muted small">
+                                Orders after the last same-day order time (or all day without
+                                same-day delivery), and on closed days.
+                            </div>
+                        </group>
+
+                        <!-- Scenario 3 -->
+                        <group string="Scenario 3 — Before Opening">
+                            <field name="promise_early_from" widget="float_time" string="Promised From"/>
+                            <field name="promise_early_until" widget="float_time" string="Promised Until"/>
+                            <field name="message_scenario_3" string="Message"/>
+                            <field name="show_popup_scenario_3" string="Show Popup"/>
+                            <div colspan="2" class="text-muted small">
+                                Orders after midnight, before opening: promised later the same day.
+                            </div>
+                        </group>
+
+                        <group string="Message Placeholders">
+                            <div colspan="2" class="text-muted small">
+                                <strong>{day}</strong>: today / tomorrow / on Friday<br/>
+                                <strong>{from}</strong>, <strong>{until}</strong>: the promised times, e.g. 12:00 PM<br/>
+                                <strong>{opening_time}</strong>: the shop opening time
+                            </div>
                         </group>
                     </group>
-
-                    <separator string="Customer Messages per Scenario"/>
-
-                    <!-- Scenario 1 -->
-                    <group string="Scenario 1 — Within Working Hours">
-                        <group>
-                            <label for="message_scenario_1" string="Message (optional):"/>
-                            <field name="message_scenario_1"
-                                   nolabel="1"
-                                   placeholder="Leave empty for no message"/>
-                            <field name="show_popup_scenario_1"
-                                   string="Show Warning Popup"/>
-                            <p class="text-muted small">
-                                Triggered when: customer orders within shop hours (e.g. 3:00 PM).
-                            </p>
-                        </group>
-                    </group>
-
-                    <!-- Scenario 2 -->
-                    <group string="Scenario 2 — Shortly After Closing">
-                        <group>
-                            <label for="message_scenario_2" string="Message:"/>
-                            <field name="message_scenario_2"
-                                   nolabel="1"
-                                   placeholder="e.g. Your order will be ready for delivery tomorrow during working hours."/>
-                            <field name="show_popup_scenario_2"
-                                   string="Show Warning Popup"/>
-                            <p class="text-muted small">
-                                Triggered when: customer orders within the grace period after closing (e.g. 11:30 PM).
-                            </p>
-                        </group>
-                    </group>
-
-                    <!-- Scenario 3 -->
-                    <group string="Scenario 3 — Late Night / Early Morning">
-                        <group>
-                            <label for="message_scenario_3" string="Message:"/>
-                            <field name="message_scenario_3"
-                                   nolabel="1"
-                                   placeholder="e.g. Your order will be available for delivery today by {opening_time}."/>
-                            <field name="show_popup_scenario_3"
-                                   string="Show Warning Popup"/>
-                            <p class="text-muted small">
-                                Triggered when: customer orders in deep off-hours (e.g. 1:00 AM).
-                                Use <strong>{opening_time}</strong> to insert the actual opening time.
-                            </p>
-                        </group>
-                    </group>
-
-                    <separator/>
 
                 </page>
             </notebook>

@@ -1,18 +1,25 @@
 # -*- coding: utf-8 -*-
+from datetime import timedelta
+
+import pytz
+
 from odoo import fields, models, api
 from odoo.exceptions import ValidationError
+
+DAY_FIELDS = [
+    'shop_monday', 'shop_tuesday', 'shop_wednesday',
+    'shop_thursday', 'shop_friday', 'shop_saturday', 'shop_sunday',
+]
 
 
 class StoreSettings(models.Model):
     _name = 'store.settings'
     _description = 'Store Settings'
-    _sql_constraints = [
-        (
-            'unique_website',
-            'UNIQUE(website_id)',
-            'A Store Settings record already exists for this website!'
-        ),
-    ]
+
+    _unique_website = models.Constraint(
+        'UNIQUE(website_id)',
+        'A Store Settings record already exists for this website!',
+    )
 
     name = fields.Char(string='Name', default='Store Settings')
     website_id = fields.Many2one('website', string='Website')
@@ -38,16 +45,6 @@ class StoreSettings(models.Model):
     shop_saturday  = fields.Boolean(string='Saturday',  default=True)
     shop_sunday    = fields.Boolean(string='Sunday',    default=True)
 
-    # ─── Off-Hours Grace Period ────────────────────────────────
-    shop_scenario2_grace_hours = fields.Float(
-        string='After-Close Grace Period (hours)',
-        default=2.0,
-        help=(
-            'Hours after closing time that still trigger the "tomorrow delivery" message '
-            '(Scenario 2). Orders placed after this window trigger Scenario 3.'
-        )
-    )
-
     @api.constrains('website_id')
     def _check_unique_website(self):
         for record in self:
@@ -72,3 +69,30 @@ class StoreSettings(models.Model):
                 'website_id': website_id,
             })
         return settings
+
+    @api.model
+    def _find_for_website(self, website):
+        """Settings of this website, otherwise any settings (empty if none)."""
+        return self.search([('website_id', '=', website.id)], limit=1) or self.search([], limit=1)
+
+    def _get_timezone(self):
+        """Timezone of the website's company (read with sudo: website visitors
+        cannot read the company contact), Asia/Dubai by default."""
+        company = self.website_id.company_id or self.env.company
+        try:
+            return pytz.timezone(company.sudo().partner_id.tz or 'Asia/Dubai')
+        except pytz.UnknownTimeZoneError:
+            return pytz.timezone('Asia/Dubai')
+
+    def _is_working_day(self, day):
+        self.ensure_one()
+        return bool(self[DAY_FIELDS[day.weekday()]])
+
+    def _next_working_day(self, from_day):
+        """from_day itself if it is a working day, otherwise the next one."""
+        self.ensure_one()
+        for offset in range(7):
+            candidate = from_day + timedelta(days=offset)
+            if self._is_working_day(candidate):
+                return candidate
+        return from_day  # no working day configured
