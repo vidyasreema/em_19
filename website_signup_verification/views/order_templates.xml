@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Annex 3A 5.4: the sign-up box follows the rate of the sign-up coupon -->
+    <template id="order_form_signup_rate" inherit_id="website_purchase_journey.order_form" name="Sign-up: rate of the sign-up coupon">
+        <xpath expr="//h3[hasclass('o_journey_h')][contains(., 'Sign up and get')]" position="attributes">
+            <attribute name="t-out">website._signup_coupon_title() or None</attribute>
+        </xpath>
+    </template>
+</odoo>

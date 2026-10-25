@@ -1,0 +1,32 @@
+// Sign-in / sign-up with Google and Facebook first: a short page
+.o_login_social_btns {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+    gap: 0.5rem;
+}
+
+.o_login_social_btn {
+    min-height: 44px;
+    font-weight: 500;
+
+    --oauth-icon-size: 1.25em;
+}
+
+.o_login_compact {
+    .mb-3 {
+        margin-bottom: 0.6rem !important;
+    }
+    .field-password {
+        padding-top: 0 !important;
+    }
+    .oe_login_buttons {
+        padding-top: 0.5rem !important;
+    }
+    .oe_login_buttons .btn-link {
+        margin-top: 0.25rem !important;
+    }
+}
+
+.o_login_social_btn:hover {
+    background-color: var(--bs-tertiary-bg) !important;
+}

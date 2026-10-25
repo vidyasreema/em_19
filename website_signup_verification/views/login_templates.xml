@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Sign-in / sign-up: Google and Facebook first, then the email form.
+         Takes: social_providers (Google first), social_caption -->
+    <template id="login_social_buttons" name="Sign in with Google / Facebook">
+        <div class="o_login_auth o_login_social mb-3">
+            <div class="small text-muted text-center mb-2" t-out="social_caption"/>
+            <div class="o_login_social_btns">
+                <a t-foreach="social_providers" t-as="p" t-att-href="p.get('auth_link') or '#'"
+                   class="btn border bg-body text-body d-flex align-items-center justify-content-center gap-2 o_login_social_btn">
+                    <i t-att-class="p['css_class']" role="presentation"/>
+                    <span t-if="'o_google_provider' in (p.get('css_class') or '')">Google</span>
+                    <span t-elif="'o_facebook_provider' in (p.get('css_class') or '')">Facebook</span>
+                    <span t-else="" t-out="p['body']"/>
+                </a>
+            </div>
+            <div class="o_login_social_or d-flex align-items-center gap-2 small text-muted mt-3">
+                <span class="flex-grow-1 border-top"/>or with your email<span class="flex-grow-1 border-top"/>
+            </div>
+        </div>
+    </template>
+
+    <template id="login_social_first" inherit_id="web.login" name="Sign-in: Google and Facebook first">
+        <xpath expr="//div[@id='oe_structure_login_top']" position="after">
+            <t t-set="oauth_on_top" t-value="website and website.login_social_first and providers"/>
+        </xpath>
+        <xpath expr="//form[contains(@t-attf-class, 'oe_login_form')]/input[@name='csrf_token']" position="after">
+            <t t-if="oauth_on_top" t-call="website_signup_verification.login_social_buttons">
+                <t t-set="social_providers" t-value="[p for p in providers if 'o_google_provider' in (p.get('css_class') or '')] + [p for p in providers if 'o_google_provider' not in (p.get('css_class') or '')]"/>
+                <t t-set="social_caption">Sign in with</t>
+            </t>
+        </xpath>
+        <xpath expr="//form[contains(@t-attf-class, 'oe_login_form')]" position="attributes">
+            <attribute name="t-attf-class" add="#{'o_login_compact' if oauth_on_top else ''}" separator=" "/>
+        </xpath>
+    </template>
+
+    <template id="signup_social_first" inherit_id="auth_signup.signup" name="Sign-up: Google and Facebook first">
+        <xpath expr="//div[@id='oe_structure_signup_top']" position="after">
+            <t t-set="oauth_on_top" t-value="website and website.login_social_first and providers and not message"/>
+        </xpath>
+        <xpath expr="//form[hasclass('oe_signup_form')]/input[@name='csrf_token']" position="after">
+            <t t-if="oauth_on_top" t-call="website_signup_verification.login_social_buttons">
+                <t t-set="social_providers" t-value="[p for p in providers if 'o_google_provider' in (p.get('css_class') or '')] + [p for p in providers if 'o_google_provider' not in (p.get('css_class') or '')]"/>
+                <t t-set="social_caption">Sign up with</t>
+            </t>
+        </xpath>
+        <xpath expr="//form[hasclass('oe_signup_form')]" position="attributes">
+            <attribute name="t-attf-class">oe_signup_form #{'o_login_compact' if oauth_on_top else ''}</attribute>
+        </xpath>
+    </template>
+
+    <!-- The Google / Facebook buttons are at the top: not again under the form
+         (other sign-in options, e.g. passkeys, stay there) -->
+    <template id="login_oauth_social_first" inherit_id="web.login_oauth" name="Sign-in options: without Google / Facebook">
+        <xpath expr="//div[hasclass('o_login_auth')]" position="before">
+            <t t-if="oauth_on_top" t-set="auth_btns" t-value="[b for b in auth_btns if b not in providers]"/>
+        </xpath>
+    </template>
+</odoo>

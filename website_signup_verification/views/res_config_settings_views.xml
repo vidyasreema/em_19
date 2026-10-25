@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="res_config_settings_view_form_signup_verification" model="ir.ui.view">
+        <field name="name">res.config.settings.form.signup.verification</field>
+        <field name="model">res.config.settings</field>
+        <field name="inherit_id" ref="website_purchase_journey.res_config_settings_view_form_purchase_journey"/>
+        <field name="arch" type="xml">
+            <setting id="purchase_journey_setting" position="after">
+                <setting id="signup_verification_setting" string="Verify sign-ups with a code"
+                         help="A code is emailed at sign-up and the account is created only once it is entered; a guest email is linked to its orders. Untick to go back to the standard sign-up at once.">
+                    <field name="signup_verification"/>
+                    <div class="mt-2">
+                        <label for="signup_coupon_program_id" string="Sign-up coupon" class="o_light_label"/>
+                        <field name="signup_coupon_program_id" class="w-100" options="{'no_create': True}"/>
+                        <div class="text-muted small">Fixed-code programme: only for verified new accounts, once per customer and mobile. Empty: no sign-up coupon rules.</div>
+                    </div>
+                </setting>
+                <setting id="login_social_first_setting" string="Google and Facebook first on sign-in"
+                         help="Sign-in and sign-up pages: the Google and Facebook buttons at the top, then the email form. Untick to go back to the standard pages at once.">
+                    <field name="login_social_first"/>
+                </setting>
+            </setting>
+        </field>
+    </record>
+</odoo>

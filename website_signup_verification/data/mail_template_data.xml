@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Annex 3A task 2.1: the verification code, from no-reply@, The Cut version -->
+    <record id="mail_template_signup_code" model="mail.template">
+        <field name="name">Website: Sign-up Verification Code</field>
+        <field name="model_id" ref="website_signup_verification.model_website_signup_verification"/>
+        <field name="subject">{{ ctx.get('code') }} is your {{ object.website_id.name }} verification code</field>
+        <field name="email_from">{{ object.email_from }}</field>
+        <field name="use_default_to" eval="False"/>
+        <field name="email_to">{{ object.email }}</field>
+        <field name="lang">{{ object.lang }}</field>
+        <field name="auto_delete" eval="True"/>
+        <field name="description">Sent to customers who sign up on the website, to confirm their email</field>
+        <field name="body_html" type="html">
+<div style="margin:0; padding:24px 0; background-color:#EEEBE6; font-family:Arial, Helvetica, sans-serif; color:#1E1B19;">
+    <table border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width:480px; margin:0 auto; background-color:#ffffff; border-radius:18px; border-collapse:separate;">
+        <tr>
+            <td style="background-color:#7A1F2B; border-radius:18px 18px 0 0; padding:18px 24px; color:#ffffff; font-size:20px; font-weight:bold;">
+                <t t-out="object.website_id.name or ''">The Cut</t>
+            </td>
+        </tr>
+        <tr>
+            <td style="padding:24px;">
+                <p style="margin:0 0 12px 0; font-size:16px;">
+                    Hello<t t-if="object.name"> <t t-out="object.name">Sara</t></t>,
+                </p>
+                <p style="margin:0 0 16px 0; font-size:14px; color:#6A635E;">
+                    Enter this code to confirm your email and finish creating your account.
+                </p>
+                <div style="margin:0 0 16px 0; padding:14px 0; background-color:#F6E9EA; border-radius:12px; text-align:center; font-size:32px; font-weight:bold; letter-spacing:8px; color:#7A1F2B;">
+                    <t t-out="ctx.get('code')">123456</t>
+                </div>
+                <p style="margin:0 0 8px 0; font-size:14px;">
+                    The code is valid for <t t-out="ctx.get('valid_minutes')">10</t> minutes.
+                </p>
+                <p style="margin:0; font-size:13px; color:#6A635E;">
+                    If you did not ask for it, you can ignore this email: no account is created without the code.
+                </p>
+            </td>
+        </tr>
+        <tr>
+            <td style="padding:12px 24px 20px 24px; font-size:12px; color:#6A635E; border-top:1px solid #E2DDD6;">
+                This is an automatic email, please do not reply.
+            </td>
+        </tr>
+    </table>
+</div>
+        </field>
+    </record>
+</odoo>
