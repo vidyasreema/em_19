@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- "How did you hear about us?" in one tap: the answers as buttons until
+         the customer answers, then only their answer.
+         Takes: order, order_source_url, order_source_token and
+         order_source_back (page to come back to) optional -->
+    <template id="order_source_block" name="How did you hear about us?">
+        <t t-set="order_sources" t-value="website.order_source_question and request.env['website.order.source'].sudo().search([])"/>
+        <section t-if="order_sources" id="o_order_source" class="card mb-4 o_order_source">
+            <div class="card-body">
+                <h5 class="card-title mb-1">How did you hear about us?</h5>
+                <div t-if="order.order_source_id" class="d-flex flex-wrap align-items-center gap-2 mt-2 o_order_source_answered">
+                    <span class="badge rounded-pill text-bg-primary fs-6 fw-normal px-3 py-2 o_order_source_answer">
+                        <i class="fa fa-check me-1" role="presentation"/><t t-out="order.order_source_id.name"/>
+                    </span>
+                    <span class="text-success o_order_source_thanks">Thank you!</span>
+                </div>
+                <t t-else="">
+                <p class="text-muted mb-3">One tap is enough.</p>
+                <form t-att-action="order_source_url" method="post" class="d-flex flex-wrap gap-2">
+                    <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                    <input t-if="order_source_token" type="hidden" name="access_token" t-att-value="order_source_token"/>
+                    <input t-if="order_source_back" type="hidden" name="back" t-att-value="order_source_back"/>
+                    <t t-foreach="order_sources" t-as="source">
+                        <button type="submit" name="source_id" t-att-value="source.id"
+                                class="btn btn-outline-secondary rounded-pill o_order_source_option"
+                                t-out="source.name"/>
+                    </t>
+                </form>
+                </t>
+            </div>
+        </section>
+    </template>
+
+    <!-- Confirmation page, right after ordering -->
+    <template id="confirmation_order_source" inherit_id="website_sale.confirmation"
+              name="How did you hear about us?">
+        <xpath expr="//div[@id='oe_structure_website_sale_confirmation_1']" position="before">
+            <t t-call="website_order_source.order_source_block">
+                <t t-set="order_source_url" t-value="'/shop/order/source'"/>
+            </t>
+        </xpath>
+    </template>
+
+    <!-- My Orders > order page: the answer, or the question when not answered yet -->
+    <template id="sale_order_portal_order_source" inherit_id="sale.sale_order_portal_content"
+              name="How did you hear about us? (order page)">
+        <xpath expr="//div[@id='informations']" position="inside">
+            <div t-if="report_type == 'html' and sale_order.website_id and sale_order.state == 'sale'"
+                 class="col-12">
+                <t t-call="website_order_source.order_source_block">
+                    <t t-set="order" t-value="sale_order"/>
+                    <t t-set="order_source_url" t-value="'/my/orders/%s/source' % sale_order.id"/>
+                    <t t-set="order_source_token" t-value="request.params.get('access_token')"/>
+                </t>
+            </div>
+        </xpath>
+    </template>
+    <!-- Track your order: under the order status -->
+    <template id="portal_order_track_order_source" inherit_id="website_purchase_journey.portal_order_track"
+              name="How did you hear about us? (track your order)">
+        <xpath expr="//button[hasclass('o_journey_reorder')]/.." position="before">
+            <t t-if="track_order.website_id and track_order.state == 'sale'" t-call="website_order_source.order_source_block">
+                <t t-set="order" t-value="track_order"/>
+                <t t-set="order_source_url" t-value="'/my/orders/%s/source' % track_order.id"/>
+                <t t-set="order_source_token" t-value="access_token"/>
+                <t t-set="order_source_back" t-value="'track'"/>
+            </t>
+        </xpath>
+    </template>
+</odoo>

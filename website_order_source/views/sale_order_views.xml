@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Online Orders: the answer on the order page, the list and the search -->
+    <record id="sale_order_view_form_online_source" model="ir.ui.view">
+        <field name="name">sale.order.form.online.orders.source</field>
+        <field name="model">sale.order</field>
+        <field name="inherit_id" ref="online_orders.sale_order_view_form_online"/>
+        <field name="arch" type="xml">
+            <field name="online_cash_to_collect_text" position="after">
+                <field name="order_source_id" options="{'no_create': True, 'no_open': True}"/>
+            </field>
+        </field>
+    </record>
+
+    <record id="sale_order_view_list_online_source" model="ir.ui.view">
+        <field name="name">sale.order.list.online.orders.source</field>
+        <field name="model">sale.order</field>
+        <field name="inherit_id" ref="online_orders.sale_order_view_list_online"/>
+        <field name="arch" type="xml">
+            <field name="stage_id" position="after">
+                <field name="order_source_id" optional="hide"/>
+            </field>
+        </field>
+    </record>
+
+    <record id="sale_order_view_search_online_source" model="ir.ui.view">
+        <field name="name">sale.order.search.online.orders.source</field>
+        <field name="model">sale.order</field>
+        <field name="inherit_id" ref="online_orders.sale_order_view_search_online"/>
+        <field name="arch" type="xml">
+            <field name="partner_shipping_id" position="after">
+                <field name="order_source_id"/>
+            </field>
+            <filter name="group_zone" position="after">
+                <filter name="group_order_source" string="Heard About Us" context="{'group_by': 'order_source_id'}"/>
+            </filter>
+        </field>
+    </record>
+
+    <!-- Sales app: the answer in Other Info -->
+    <record id="view_order_form_source" model="ir.ui.view">
+        <field name="name">sale.order.form.order.source</field>
+        <field name="model">sale.order</field>
+        <field name="inherit_id" ref="sale.view_order_form"/>
+        <field name="arch" type="xml">
+            <field name="source_id" position="after">
+                <field name="order_source_id" options="{'no_create': True, 'no_open': True}"/>
+            </field>
+        </field>
+    </record>
+</odoo>

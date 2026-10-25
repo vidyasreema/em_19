@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Configuration: the answers shown on the confirmation page -->
+    <record id="website_order_source_view_list" model="ir.ui.view">
+        <field name="name">website.order.source.list</field>
+        <field name="model">website.order.source</field>
+        <field name="arch" type="xml">
+            <list string="Order Sources" editable="bottom">
+                <field name="sequence" widget="handle"/>
+                <field name="name"/>
+                <field name="order_count"/>
+                <field name="active" widget="boolean_toggle"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="website_order_source_view_search" model="ir.ui.view">
+        <field name="name">website.order.source.search</field>
+        <field name="model">website.order.source</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="name"/>
+                <filter name="filter_archived" string="Archived" domain="[('active', '=', False)]"/>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_website_order_sources" model="ir.actions.act_window">
+        <field name="name">Order Sources</field>
+        <field name="res_model">website.order.source</field>
+        <field name="view_mode">list</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">Add an answer to "How did you hear about us?"</p>
+            <p>The answers are shown on the confirmation page of the website, in this order.</p>
+        </field>
+    </record>
+
+    <!-- Reporting: website orders by answer -->
+    <record id="sale_order_view_pivot_order_source" model="ir.ui.view">
+        <field name="name">sale.order.pivot.order.source</field>
+        <field name="model">sale.order</field>
+        <field name="priority">100</field>
+        <field name="arch" type="xml">
+            <pivot string="Orders by Source" sample="1">
+                <field name="order_source_id" type="row"/>
+                <field name="date_order" interval="month" type="col"/>
+                <field name="amount_total" type="measure"/>
+            </pivot>
+        </field>
+    </record>
+
+    <record id="sale_order_view_graph_order_source" model="ir.ui.view">
+        <field name="name">sale.order.graph.order.source</field>
+        <field name="model">sale.order</field>
+        <field name="priority">100</field>
+        <field name="arch" type="xml">
+            <graph string="Orders by Source" type="pie" sample="1">
+                <field name="order_source_id"/>
+            </graph>
+        </field>
+    </record>
+
+    <record id="action_orders_by_source" model="ir.actions.act_window">
+        <field name="name">Orders by Source</field>
+        <field name="res_model">sale.order</field>
+        <field name="view_mode">pivot,graph,list</field>
+        <field name="domain">[('website_id', '!=', False), ('state', '=', 'sale')]</field>
+        <field name="context">{'create': False, 'pivot_measures': ['__count', 'amount_total']}</field>
+        <field name="search_view_id" ref="online_orders.sale_order_view_search_online"/>
+        <field name="view_ids" eval="[(5, 0, 0),
+            (0, 0, {'view_mode': 'pivot', 'view_id': ref('sale_order_view_pivot_order_source')}),
+            (0, 0, {'view_mode': 'graph', 'view_id': ref('sale_order_view_graph_order_source')}),
+            (0, 0, {'view_mode': 'list', 'view_id': ref('online_orders.sale_order_view_list_online')})]"/>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">No answers yet</p>
+            <p>Customers answer "How did you hear about us?" on the confirmation page after ordering.</p>
+        </field>
+    </record>
+
+    <menuitem id="menu_orders_by_source" name="Orders by Source" sequence="30"
+              parent="online_orders.menu_online_orders_reporting" action="action_orders_by_source"
+              groups="online_orders.group_online_orders_marketing,online_orders.group_online_orders_management"/>
+    <menuitem id="menu_order_sources" name="Order Sources" sequence="30"
+              parent="online_orders.menu_online_orders_config" action="action_website_order_sources"
+              groups="online_orders.group_online_orders_marketing,online_orders.group_online_orders_management"/>
+</odoo>
