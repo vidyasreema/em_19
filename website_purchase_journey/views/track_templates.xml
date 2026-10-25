@@ -1,0 +1,170 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Track your order / Order details (Annex 3 C6, v2 §7) -->
+    <template id="portal_order_track" name="Purchase Journey: track your order">
+        <t t-call="portal.portal_layout">
+            <t t-set="currency" t-value="track_order.currency_id"/>
+            <t t-set="steps" t-value="[
+                ('Order received', 'We are preparing your cuts.'),
+                ('Out for delivery', 'Your driver is on the way.'),
+                ('Delivered', 'Enjoy. Your next-order coupon is in your account.' if track_order.online_next_order_coupons else 'Enjoy.'),
+            ]"/>
+            <div class="o_journey_track_page mx-auto my-3">
+                <div class="text-center mb-4">
+                    <span t-attf-class="o_journey_track_icon d-inline-flex align-items-center justify-content-center rounded-circle mb-2 #{'o_journey_track_icon_cancel' if step == -1 else ''}">
+                        <i t-attf-class="fa #{'fa-times' if step == -1 else 'fa-check'}" role="presentation"/>
+                    </span>
+                    <h3 class="mb-1">
+                        <t t-if="step == -1">Order cancelled</t>
+                        <t t-elif="step == 2">Order details</t>
+                        <t t-else="">Track your order</t>
+                    </h3>
+                    <p class="text-muted mb-0">
+                        <t t-out="track_order.name"/> ·
+                        <t t-out="track_order.amount_total" t-options="{'widget': 'monetary', 'display_currency': currency}"/>
+                        <t t-if="summary['savings']"> · you saved
+                            <t t-out="summary['savings']" t-options="{'widget': 'monetary', 'display_currency': currency}"/>
+                        </t>
+                    </p>
+                </div>
+
+                <section class="card mb-3">
+                    <div class="card-body">
+                        <h5 class="card-title">Items</h5>
+                        <div t-foreach="track_order._journey_product_lines()" t-as="line"
+                             class="d-flex justify-content-between gap-3 py-1 o_journey_track_line">
+                            <span>
+                                <t t-out="'%g' % line.product_uom_qty"/> ×
+                                <t t-out="line.name_short"/>
+                            </span>
+                            <span class="text-nowrap" t-out="line._get_cart_display_price()"
+                                  t-options="{'widget': 'monetary', 'display_currency': currency}"/>
+                        </div>
+                        <div t-if="summary['has_delivery']" class="d-flex justify-content-between gap-3 py-1 text-muted">
+                            <span>Delivery</span>
+                            <span t-if="summary['free_delivery']" class="text-success">Free</span>
+                            <span t-else="" class="text-nowrap" t-out="summary['delivery_fee']"
+                                  t-options="{'widget': 'monetary', 'display_currency': currency}"/>
+                        </div>
+                        <div t-foreach="summary['coupons']" t-as="coupon" class="d-flex justify-content-between gap-3 py-1 text-success">
+                            <span t-out="coupon['name']"/>
+                            <span class="text-nowrap">−<t t-out="coupon['amount']" t-options="{'widget': 'monetary', 'display_currency': currency}"/></span>
+                        </div>
+                        <div class="d-flex justify-content-between gap-3 pt-2 mt-1 border-top fw-bold">
+                            <span>Total</span>
+                            <span class="text-nowrap" t-out="track_order.amount_total" t-options="{'widget': 'monetary', 'display_currency': currency}"/>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="card mb-3">
+                    <div class="card-body">
+                        <h5 class="card-title">Order status</h5>
+                        <div t-if="step == -1" class="alert alert-secondary mb-0" role="status">
+                            This order was cancelled. If you paid for it, the refund is on its way.
+                        </div>
+                        <t t-else="">
+                            <div t-if="track_order.delivery_promise_message and step &lt; 2" class="small text-muted mb-2 o_journey_track_promise">
+                                Promised: <t t-out="track_order.delivery_promise_message"/>
+                                <span t-if="track_order.delivery_promise_date_label" class="d-block fw-bold" t-out="track_order.delivery_promise_date_label"/>
+                            </div>
+                            <div class="o_journey_track_steps">
+                                <div t-foreach="steps" t-as="track_step"
+                                     t-attf-class="d-flex gap-3 align-items-start py-2 o_journey_track_step #{'o_journey_track_step_on' if track_step_index &lt;= step else ''}">
+                                    <span class="o_journey_track_dot d-inline-flex align-items-center justify-content-center rounded-circle flex-shrink-0">
+                                        <i t-if="track_step_index &lt;= step" class="fa fa-check" role="presentation"/>
+                                    </span>
+                                    <span>
+                                        <strong class="d-block" t-out="track_step[0]"/>
+                                        <small class="text-muted" t-out="track_step[1]"/>
+                                    </span>
+                                </div>
+                            </div>
+                            <div t-if="step == 2 and track_order.online_next_order_coupons and not website.is_public_user()" class="alert alert-success small mt-2 mb-0">
+                                Your next-order coupon is in your account. <a href="/my/coupons">View my coupons</a>
+                            </div>
+                        </t>
+                    </div>
+                </section>
+
+                <div class="d-flex flex-column flex-sm-row gap-2">
+                    <button t-if="track_order._is_reorder_allowed()" type="button"
+                            class="btn btn-primary flex-fill o_journey_reorder"
+                            t-att-data-order-id="track_order.id" t-att-data-access-token="access_token">
+                        <i class="fa fa-rotate-right me-1" role="presentation"/>Order again
+                    </button>
+                    <a t-att-href="'/my/orders/%s%s' % (track_order.id, '?access_token=%s' % access_token if access_token else '')"
+                       class="btn btn-outline-secondary flex-fill">Full order and invoice</a>
+                </div>
+            </div>
+        </t>
+    </template>
+
+    <template id="portal_breadcrumbs_track" inherit_id="portal.portal_breadcrumbs" name="Purchase Journey: Track breadcrumb">
+        <xpath expr="//ol[hasclass('o_portal_submenu')]" position="inside">
+            <t t-if="page_name == 'journey_track'">
+                <li class="breadcrumb-item"><a href="/my/orders">Sales Orders</a></li>
+                <li class="breadcrumb-item active" t-out="track_order.name"/>
+            </t>
+        </xpath>
+    </template>
+
+    <template id="my_orders_track_buttons" name="Purchase Journey: Track and Order again buttons">
+        <t t-if="order.website_id and order.state == 'sale'">
+            <t t-set="delivered" t-value="order._journey_track_step() == 2"/>
+            <a t-att-href="'/my/orders/%s/track' % order.id"
+               t-attf-class="btn btn-sm #{'btn-outline-primary' if delivered else 'btn-primary'} o_journey_track_btn">
+                <t t-if="delivered">View details</t>
+                <t t-else="">Track</t>
+            </a>
+            <button t-if="order._is_reorder_allowed()" type="button"
+                    class="btn btn-sm btn-outline-secondary ms-1 o_journey_reorder" t-att-data-order-id="order.id">
+                Order again
+            </button>
+        </t>
+    </template>
+
+    <!-- My orders: Track / View details and Order again on each order
+         (own column on wide screens, own row under the order on phones) -->
+    <template id="portal_my_orders_track" inherit_id="sale.portal_my_orders" name="Purchase Journey: Track and Order again">
+        <xpath expr="//t[@t-foreach='orders']/tr" position="after">
+            <tr t-if="website.journey_enabled and order.website_id and order.state == 'sale'" class="d-md-none">
+                <td colspan="10" class="border-top-0 pt-0">
+                    <t t-call="website_purchase_journey.my_orders_track_buttons"/>
+                </td>
+            </tr>
+        </xpath>
+        <th name="order_total" position="after">
+            <th t-if="website.journey_enabled" class="d-none d-md-table-cell"/>
+        </th>
+        <td name="order_amount_total" position="after">
+            <td t-if="website.journey_enabled" class="text-end text-nowrap d-none d-md-table-cell">
+                <t t-call="website_purchase_journey.my_orders_track_buttons"/>
+            </td>
+        </td>
+    </template>
+
+    <!-- Odoo's order page: Track, and Order again that asks before changing the cart -->
+    <template id="sale_order_reorder_button" inherit_id="website_sale.sale_order_re_order_btn"
+              name="Purchase Journey: Order again on the order page">
+        <xpath expr="//button[@id='reorder_sidebar_button']/.." position="attributes">
+            <attribute name="t-if" add="not website.journey_enabled" separator="and"/>
+        </xpath>
+    </template>
+
+    <template id="sale_order_portal_track_button" inherit_id="sale.sale_order_portal_template"
+              name="Purchase Journey: Track button on the order page">
+        <div id="print_invoice_sidebar_button" position="after">
+            <button t-if="website.journey_enabled and sale_order.with_user(request.env.user).sudo()._is_reorder_allowed()"
+                    type="button" class="btn btn-secondary o_journey_reorder"
+                    t-att-data-order-id="sale_order.id" t-att-data-access-token="request.params.get('access_token')">
+                <i class="fa fa-rotate-right me-1" role="presentation"/>Order again
+            </button>
+            <a t-if="website.journey_enabled and sale_order.website_id and sale_order.state == 'sale'"
+               t-att-href="'/my/orders/%s/track%s' % (sale_order.id, '?access_token=%s' % sale_order.access_token if website.is_public_user() and sale_order.access_token else '')"
+               class="btn btn-primary o_journey_track_btn">
+                <i class="fa fa-truck me-1" role="presentation"/>Track your order
+            </a>
+        </div>
+    </template>
+</odoo>

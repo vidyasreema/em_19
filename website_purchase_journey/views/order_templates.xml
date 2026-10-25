@@ -1,0 +1,365 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Single order page (Annex 3 C3 + Version 2 §1-3, §5):
+         desktop: the form on the left (scrolls), the summary on the right (pinned);
+         phones: one column, the summary behind "Show order summary", a fixed bottom bar. -->
+
+    <template id="order_page_empty" name="Purchase Journey: empty order">
+        <t t-call="website.layout">
+            <div id="wrap" class="o_journey_order_empty">
+                <div class="container py-5 text-center">
+                    <h2>Your order</h2>
+                    <p class="text-muted">Your cart is empty.</p>
+                    <a href="/shop" class="btn btn-primary rounded-pill px-4">Browse cuts</a>
+                </div>
+            </div>
+        </t>
+    </template>
+
+    <template id="order_page" name="Purchase Journey: order page">
+        <t t-call="website.layout">
+            <t t-set="no_footer" t-value="True"/>
+            <t t-set="currency" t-value="website_sale_order.currency_id"/>
+            <t t-set="money_options" t-value="{'widget': 'monetary', 'display_currency': website_sale_order.currency_id}"/>
+            <div id="wrap" class="oe_website_sale o_journey_order"
+                 t-att-data-show-promise-popup="'1' if show_promise_popup else '0'"
+                 t-att-data-promise-message="promise and promise.get('message') or ''"
+                 t-att-data-is-public="'1' if is_public else '0'">
+
+                <!-- Savings / free delivery bar -->
+                <div t-if="summary['savings']" class="o_journey_savebar text-center small py-2">
+                    Your savings on this order
+                    <b t-out="summary['savings']" t-options="money_options"/>
+                </div>
+                <div t-elif="summary['threshold'] and summary['left_for_free']" class="o_journey_savebar text-center small py-2">
+                    Add <b t-out="summary['left_for_free']" t-options="money_options"/> to get free delivery
+                </div>
+
+                <div class="container py-3 pb-5 o_journey_order_container">
+                    <div class="d-flex align-items-center gap-2 mb-3">
+                        <a href="/shop" class="btn btn-light rounded-circle o_journey_back" aria-label="Back to shop" title="Back to shop">
+                            <i class="fa fa-arrow-left"/>
+                        </a>
+                        <div>
+                            <h2 class="h4 mb-0">Your order</h2>
+                            <small t-if="promise" class="text-muted">
+                                <t t-if="zone" t-out="zone.name"/><t t-if="zone"> · </t><span class="o_journey_promise_text" t-out="promise['message']"/>
+                                <span class="d-block fw-bold o_journey_promise_date" t-out="promise['date_label']"/>
+                            </small>
+                        </div>
+                    </div>
+
+                    <!-- Phones: summary behind a toggle -->
+                    <button class="btn btn-light border w-100 d-flex justify-content-between align-items-center d-lg-none mb-3 o_journey_sumtog collapsed"
+                            type="button" data-bs-toggle="collapse" data-bs-target="#o_journey_summary"
+                            aria-expanded="false" aria-controls="o_journey_summary">
+                        <span><i class="fa fa-shopping-basket me-2"/><span class="o_journey_sumtog_label">Show order summary</span></span>
+                        <b t-out="summary['total']" t-options="money_options"/>
+                    </button>
+
+                    <div class="row g-4 align-items-start">
+                        <!-- Summary (right on desktop, pinned) -->
+                        <div class="col-12 col-lg-5 order-lg-2">
+                            <div id="o_journey_summary" class="collapse d-lg-block o_journey_summary">
+                                <t t-call="website_purchase_journey.order_summary"/>
+                            </div>
+                        </div>
+                        <!-- Form (left on desktop, scrolls) -->
+                        <div class="col-12 col-lg-7 order-lg-1">
+                            <t t-call="website_purchase_journey.order_form"/>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Promise popup (Annex 3 D3) -->
+                <div class="modal fade o_journey_promise_modal" tabindex="-1" aria-hidden="true">
+                    <div class="modal-dialog modal-dialog-centered">
+                        <div class="modal-content">
+                            <div class="modal-body text-center p-4">
+                                <i class="fa fa-truck fa-2x text-primary mb-3"/>
+                                <h5 class="mb-2">Delivery time</h5>
+                                <p class="mb-1 o_journey_promise_modal_text" t-out="promise and promise.get('message') or ''"/>
+                                <p class="mb-0 fw-bold text-primary o_journey_promise_date" t-out="promise and promise.get('date_label') or ''"/>
+                            </div>
+                            <div class="modal-footer justify-content-center border-0 pt-0">
+                                <button type="button" class="btn btn-primary rounded-pill px-4" data-bs-dismiss="modal">Got it</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- Address details: Change / Add of the receiver and the address -->
+            <t t-call="website_purchase_journey.address_sheet"/>
+        </t>
+    </template>
+
+    <!-- ── Summary: free delivery, cart, coupon, payment summary, savings ── -->
+    <template id="order_summary" name="Purchase Journey: order summary">
+        <!-- Free delivery progress -->
+        <section t-if="summary['threshold']" class="o_journey_blk o_journey_progress" aria-label="Free delivery progress">
+            <div class="small mb-2">
+                <t t-if="summary['left_for_free']">
+                    Add <b t-out="summary['left_for_free']" t-options="money_options"/> to get <b>free delivery</b>
+                </t>
+                <b t-else="" class="text-success">Free delivery unlocked.</b>
+            </div>
+            <div class="progress" style="height: 6px;">
+                <div class="progress-bar" role="progressbar" t-attf-style="width: #{summary['progress']}%"/>
+            </div>
+        </section>
+
+        <!-- Cart -->
+        <section class="o_journey_blk">
+            <h3 class="o_journey_h">Your cart</h3>
+            <t t-foreach="website_sale_order.website_order_line.filtered(lambda l: not l.is_reward_line and not l.is_delivery)" t-as="line">
+                <div class="d-flex align-items-center gap-3 py-2 o_journey_cart_line" t-att-data-line-id="line.id"
+                     t-att-data-qty="'%g' % line.product_uom_qty">
+                    <img t-att-src="website.image_url(line.product_id, 'image_128')" class="rounded o_journey_thumb" alt="" loading="lazy"/>
+                    <div class="flex-grow-1 min-w-0">
+                        <div class="fw-bold text-truncate" t-out="line.product_id.product_tmpl_id.display_name"/>
+                        <small class="text-muted" t-out="line.product_id.product_template_attribute_value_ids.filtered(lambda v: len(v.attribute_line_id.value_ids) &gt; 1).mapped('name') and ' · '.join(line.product_id.product_template_attribute_value_ids.filtered(lambda v: len(v.attribute_line_id.value_ids) &gt; 1).mapped('name')) or ''"/>
+                    </div>
+                    <div class="text-end">
+                        <div class="o_journey_stepper d-flex align-items-center justify-content-end mb-1">
+                            <button type="button" class="btn btn-sm btn-outline-primary rounded-circle o_journey_line_minus" aria-label="Remove one" title="Remove one">
+                                <i class="fa fa-minus"/>
+                            </button>
+                            <span class="o_journey_row_in_cart fw-bold text-center" t-out="'%g' % line.product_uom_qty"/>
+                            <button type="button" class="btn btn-sm btn-primary rounded-circle o_journey_line_plus" aria-label="Add one" title="Add one">
+                                <i class="fa fa-plus"/>
+                            </button>
+                        </div>
+                        <b t-out="line.price_total" t-options="money_options"/>
+                    </div>
+                </div>
+            </t>
+        </section>
+
+        <!-- Coupon (right under the cart) -->
+        <section class="o_journey_blk o_journey_coupon">
+            <h3 class="o_journey_h">Coupon</h3>
+            <div class="input-group">
+                <label class="visually-hidden" for="o_journey_coupon_code">Coupon code</label>
+                <input id="o_journey_coupon_code" type="text" class="form-control o_journey_coupon_code"
+                       placeholder="Enter code" autocomplete="off"/>
+                <button type="button" class="btn btn-primary o_journey_coupon_apply">Apply</button>
+            </div>
+            <div t-if="coupon_error" class="small text-danger mt-2 o_journey_coupon_error" role="alert" t-out="coupon_error"/>
+            <div t-foreach="summary['coupons']" t-as="coupon" class="small text-success mt-2 o_journey_coupon_ok">
+                <i class="fa fa-check me-1"/><t t-out="coupon['message']"/>
+                <button t-if="coupon['removable']" type="button" class="btn btn-link btn-sm p-0 ms-1 align-baseline o_journey_coupon_remove"
+                        t-att-data-line-id="coupon['line'].id">Remove</button>
+            </div>
+            <a t-if="not is_public" href="/my/coupons" class="small d-inline-block mt-2">View my coupons</a>
+        </section>
+
+        <!-- Payment summary -->
+        <section class="o_journey_blk o_journey_totals">
+            <h3 class="o_journey_h">Payment summary</h3>
+            <div class="d-flex justify-content-between">
+                <span>Subtotal (<t t-out="summary['items_count']"/> items)</span>
+                <span t-out="summary['items_amount']" t-options="money_options"/>
+            </div>
+            <div t-foreach="summary['coupons']" t-as="coupon" class="d-flex justify-content-between text-success">
+                <span>Coupon<t t-if="coupon['code']"> (<t t-out="coupon['code']"/>)</t></span>
+                <span>− <t t-out="coupon['amount']" t-options="money_options"/></span>
+            </div>
+            <div class="d-flex justify-content-between">
+                <span>Delivery</span>
+                <span t-if="not summary['has_delivery']" class="text-muted">Add your address</span>
+                <span t-elif="summary['free_delivery']">
+                    <del class="text-muted me-1" t-out="summary['delivery_base_fee']" t-options="money_options"/>
+                    <span class="text-success fw-bold">Free</span>
+                </span>
+                <span t-else="" t-out="summary['delivery_fee']" t-options="money_options"/>
+            </div>
+            <div t-if="promise" class="small text-muted mt-1 o_journey_promise_line">
+                <i class="fa fa-clock-o me-1"/><span class="o_journey_promise_text" t-out="promise['message']"/>
+                <div class="ps-3 fw-bold o_journey_promise_date" t-out="promise['date_label']"/>
+            </div>
+            <div class="d-flex justify-content-between fw-bold fs-5 pt-2 mt-2 o_journey_total_row">
+                <span>Total</span>
+                <span t-out="summary['total']" t-options="money_options"/>
+            </div>
+            <div t-if="is_public and summary['signup_saving']" class="o_journey_loss small mt-2 d-flex justify-content-between align-items-center">
+                <span>Sign up and save <b t-out="summary['signup_saving']" t-options="money_options"/> on this order</span>
+                <button type="button" class="btn btn-link btn-sm p-0 o_journey_show_signup">Sign up</button>
+            </div>
+        </section>
+
+        <!-- Savings -->
+        <section t-if="summary['savings']" class="o_journey_blk o_journey_savings">
+            <h3 class="o_journey_h d-flex justify-content-between">
+                <span>Your savings on this order</span>
+                <span t-out="summary['savings']" t-options="money_options"/>
+            </h3>
+            <div t-if="summary['discount']" class="d-flex justify-content-between small">
+                <span>Coupon discount</span><span t-out="summary['discount']" t-options="money_options"/>
+            </div>
+            <div t-if="summary['delivery_base_fee']" class="d-flex justify-content-between small">
+                <span>Free delivery</span><span t-out="summary['delivery_base_fee']" t-options="money_options"/>
+            </div>
+        </section>
+    </template>
+
+    <!-- ── Form: sign-up, contact, driver, receiver, address, payment ── -->
+    <template id="order_form" name="Purchase Journey: order form">
+        <!-- Sign-up box for guests (Version 2 §2) -->
+        <t t-if="is_public">
+            <section t-attf-class="o_journey_blk o_journey_gbox #{'d-none' if guest_mode else ''}">
+                <h3 class="o_journey_h">New here? Sign up and get 10% off</h3>
+                <p class="small text-muted mb-2">Sign up in seconds. Your cart is saved.<br/>Members get exclusive offers and order tracking.</p>
+                <div t-if="summary['signup_saving']" class="o_journey_loss small mb-3">
+                    You save <b t-out="summary['signup_saving']" t-options="money_options"/> on this order
+                </div>
+                <div class="d-grid gap-2">
+                    <a t-foreach="oauth_providers" t-as="provider" t-att-href="provider['auth_link']"
+                       class="btn btn-outline-secondary rounded-pill o_journey_sso">
+                        <t t-set="provider_name" t-value="(provider['name'] or '').lower()"/>
+                        <svg t-if="'google' in provider_name" class="o_journey_sso_icon" viewBox="0 0 24 24" aria-hidden="true">
+                            <path fill="#4285F4" d="M22 12.2c0-.7-.1-1.4-.2-2H12v3.9h5.6a4.8 4.8 0 0 1-2.1 3.1v2.6h3.4c2-1.8 3.1-4.5 3.1-7.6z"/>
+                            <path fill="#34A853" d="M12 22c2.8 0 5.2-.9 6.9-2.5l-3.4-2.6c-.9.6-2.1 1-3.5 1-2.7 0-5-1.8-5.8-4.3H2.7v2.7A10 10 0 0 0 12 22z"/>
+                            <path fill="#FBBC05" d="M6.2 13.6a6 6 0 0 1 0-3.8V7.1H2.7a10 10 0 0 0 0 9.2z"/>
+                            <path fill="#EA4335" d="M12 6c1.5 0 2.9.5 4 1.5l3-3A10 10 0 0 0 2.7 7.1l3.5 2.7C7 7.8 9.3 6 12 6z"/>
+                        </svg>
+                        <svg t-elif="'facebook' in provider_name" class="o_journey_sso_icon" viewBox="0 0 24 24" aria-hidden="true">
+                            <path fill="#1877F2" d="M24 12a12 12 0 1 0-13.9 11.9v-8.4H7.1V12h3V9.4c0-3 1.8-4.7 4.5-4.7 1.3 0 2.7.2 2.7.2v3h-1.5c-1.5 0-2 .9-2 1.9V12h3.4l-.5 3.5h-2.9v8.4A12 12 0 0 0 24 12z"/>
+                        </svg>
+                        <i t-else="" class="fa fa-sign-in o_journey_sso_icon" role="presentation"/>
+                        Continue with <t t-out="provider['name'].split(' ')[0]"/>
+                    </a>
+                    <a t-att-href="signup_url" class="btn btn-outline-secondary rounded-pill o_journey_signup_email">
+                        <svg class="o_journey_sso_icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+                            <rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/>
+                        </svg>
+                        Sign up with email
+                    </a>
+                </div>
+                <button type="button" class="btn btn-link w-100 mt-2 o_journey_guest_go">Continue as guest</button>
+            </section>
+            <section t-attf-class="o_journey_blk o_journey_gline d-flex justify-content-between align-items-center #{'' if guest_mode else 'd-none'}">
+                <span>Checking out as guest</span>
+                <button type="button" class="btn btn-link btn-sm p-0 o_journey_show_signup">
+                    <t t-if="summary['signup_saving']">Sign up and save <t t-out="summary['signup_saving']" t-options="money_options"/></t>
+                    <t t-else="">Sign up</t>
+                </button>
+            </section>
+        </t>
+        <section t-else="" class="o_journey_blk small">
+            Signed in as <b t-out="website_sale_order.partner_id.email or website_sale_order.partner_id.name"/>
+        </section>
+
+        <!-- Contact (Version 2 §1.4, §3) -->
+        <section class="o_journey_blk">
+            <t t-if="is_public">
+                <h3 class="o_journey_h">Contact</h3>
+                <label for="o_journey_email" class="form-label small">Email (required, for your order confirmation)</label>
+                <input id="o_journey_email" type="email" class="form-control o_journey_email" placeholder="you@example.com"
+                       t-att-value="contact_email" autocomplete="email"/>
+                <div class="invalid-feedback">Enter a valid email address</div>
+            </t>
+            <div class="form-check mt-2 mb-0">
+                <input id="o_journey_consent" type="checkbox" class="form-check-input o_journey_consent" t-att-checked="consent or None"/>
+                <label for="o_journey_consent" class="form-check-label">Email me with news and offers</label>
+            </div>
+        </section>
+
+        <!-- Instructions for the driver -->
+        <section class="o_journey_blk">
+            <h3 class="o_journey_h">Instructions for the driver</h3>
+            <div class="d-flex flex-wrap gap-2 mb-2">
+                <button type="button" class="btn btn-sm rounded-pill o_journey_chip"
+                        data-key="leave_at_door" t-att-aria-pressed="'true' if website_sale_order.delivery_leave_at_door else 'false'">
+                    Leave at my door
+                </button>
+                <button type="button" class="btn btn-sm rounded-pill o_journey_chip"
+                        data-key="call_on_arrival" t-att-aria-pressed="'true' if website_sale_order.delivery_call_on_arrival else 'false'">
+                    Call me on arrival
+                </button>
+            </div>
+            <label class="visually-hidden" for="o_journey_note">Note for the driver</label>
+            <textarea id="o_journey_note" class="form-control o_journey_note" rows="2"
+                      placeholder="Tower entrance, parking, landmark… (optional)"
+                      t-out="website_sale_order.order_note or (shipping and shipping.delivery_directions) or ''"/>
+            <div class="form-check mt-2 mb-0">
+                <input id="o_journey_save_note" type="checkbox" class="form-check-input o_journey_save_note" checked="checked"/>
+                <label for="o_journey_save_note" class="form-check-label small">Save these instructions for this address</label>
+            </div>
+        </section>
+
+        <!-- Receiver -->
+        <section t-if="shipping" class="o_journey_blk d-flex justify-content-between align-items-center">
+            <div>
+                <small class="text-muted">Received by</small><br/>
+                <b t-out="shipping.name"/><t t-if="shipping.phone"> · <t t-out="shipping.phone"/></t>
+            </div>
+            <button type="button" class="o_journey_link o_journey_address_open"
+                    t-att-data-address="website._journey_address_data(shipping)" data-focus="name">Change</button>
+        </section>
+
+        <!-- Address -->
+        <section class="o_journey_blk o_journey_address" id="o_journey_address">
+            <h3 class="o_journey_h">Delivery address</h3>
+            <t t-if="len(addresses) &gt; 1">
+                <div t-foreach="addresses" t-as="address" class="form-check o_journey_addr_row">
+                    <input type="radio" name="o_journey_address" class="form-check-input o_journey_address_pick"
+                           t-attf-id="o_journey_address_#{address.id}" t-att-value="address.id"
+                           t-att-checked="address == shipping or None"/>
+                    <label class="form-check-label" t-attf-for="o_journey_address_#{address.id}">
+                        <b t-if="address.address_label" t-out="address_labels.get(address.address_label)"/>
+                        <t t-if="address.address_label"> · </t><t t-out="', '.join(filter(None, [address.street, address.street2, address.city]))"/>
+                    </label>
+                    <button type="button" class="o_journey_link ms-2 o_journey_address_open"
+                            t-att-data-address="website._journey_address_data(address)">Edit</button>
+                </div>
+            </t>
+            <div t-elif="shipping" class="d-flex justify-content-between align-items-center gap-2 o_journey_addr_row">
+                <span>
+                    <b t-if="shipping.address_label" t-out="address_labels.get(shipping.address_label)"/>
+                    <t t-if="shipping.address_label"> · </t><t t-out="', '.join(filter(None, [shipping.street, shipping.street2, shipping.city]))"/>
+                </span>
+                <button type="button" class="o_journey_link o_journey_address_open"
+                        t-att-data-address="website._journey_address_data(shipping)">Change</button>
+            </div>
+            <div class="mt-2">
+                <button type="button" t-attf-class="#{'btn btn-primary w-100' if not shipping else 'o_journey_link'} o_journey_add_address o_journey_address_open">
+                    + Add delivery address
+                </button>
+            </div>
+            <div class="invalid-feedback d-block o_journey_address_error d-none">Add your delivery address</div>
+        </section>
+
+        <!-- Payment -->
+        <section class="o_journey_blk o_journey_payment">
+            <h3 class="o_journey_h">Payment method</h3>
+            <div t-foreach="errors" t-as="error" class="alert alert-danger" role="alert">
+                <b t-out="error[0]"/><br/><t t-out="error[1]"/>
+            </div>
+            <t t-if="not errors and website_sale_order.amount_total">
+                <t t-call="payment.form"/>
+            </t>
+            <div class="o_journey_form_error alert alert-danger mt-2 d-none" role="alert"/>
+        </section>
+
+        <!-- Order button: at the end of the form on desktop, a fixed bar on phones -->
+        <div class="o_journey_dock">
+            <div t-if="shipping" class="small text-truncate d-lg-none mb-2">
+                <i class="fa fa-map-marker me-1"/><t t-out="', '.join(filter(None, [shipping.street, shipping.street2]))"/>
+            </div>
+            <t t-if="not errors">
+                <form t-if="not website_sale_order.amount_total" name="o_wsale_confirm_order"
+                      action="/shop/payment/validate" method="post" class="m-0">
+                    <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                    <button name="o_payment_submit_button" type="submit"
+                            class="btn btn-primary btn-lg w-100 rounded-pill o_journey_place">
+                        Place order · <t t-out="summary['total']" t-options="money_options"/>
+                    </button>
+                </form>
+                <button t-else="" name="o_payment_submit_button" type="submit" disabled="true"
+                        class="btn btn-primary btn-lg w-100 rounded-pill o_journey_place">
+                    Place order · <t t-out="summary['total']" t-options="money_options"/>
+                </button>
+            </t>
+        </div>
+    </template>
+</odoo>

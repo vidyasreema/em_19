@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- My Account: "My coupons" card -->
+    <template id="portal_my_home_coupons" inherit_id="portal.portal_my_home" name="Purchase Journey: My coupons card">
+        <div id="portal_common_category" position="inside">
+            <t t-if="website.journey_enabled" t-call="portal.portal_docs_entry">
+                <t t-set="icon" t-value="'/loyalty/static/img/portal-loyalty.svg'"/>
+                <t t-set="title">My coupons</t>
+                <t t-set="text">Your coupon codes, ready to apply to your order</t>
+                <t t-set="url" t-value="'/my/coupons'"/>
+                <t t-set="config_card" t-value="True"/>
+            </t>
+        </div>
+    </template>
+
+    <template id="portal_breadcrumbs_coupons" inherit_id="portal.portal_breadcrumbs" name="Purchase Journey: My coupons breadcrumb">
+        <xpath expr="//ol[hasclass('o_portal_submenu')]" position="inside">
+            <li t-if="page_name == 'journey_coupons'" class="breadcrumb-item">My coupons</li>
+        </xpath>
+    </template>
+
+    <!-- My coupons (Annex 3 C5) -->
+    <template id="portal_my_coupons" name="My coupons">
+        <t t-call="portal.portal_layout">
+            <t t-set="breadcrumbs_searchbar" t-value="True"/>
+            <div class="o_journey_my_coupons">
+                <h3 class="mt-3 mb-1">My coupons</h3>
+                <p class="text-muted small mb-3">
+                    Coupons apply to the full amount. Once delivery is free, they apply to
+                    the amount above the free-delivery threshold.
+                </p>
+                <div t-if="coupon_error" class="alert alert-warning small" role="alert" t-out="coupon_error"/>
+                <div t-if="not current_coupons" class="alert alert-light border" role="status">No coupons right now.</div>
+                <div class="row g-3 mb-4">
+                    <div t-foreach="current_coupons" t-as="coupon" class="col-md-6">
+                        <div class="border rounded-3 p-3 h-100 d-flex flex-column gap-1 o_journey_coupon_card">
+                            <div class="d-flex justify-content-between align-items-start gap-2">
+                                <h5 class="mb-0" t-out="coupon['title']"/>
+                                <span t-attf-class="badge rounded-pill #{'text-bg-success' if coupon['state'] == 'current' else 'text-bg-warning'}"
+                                      t-out="coupon['status']"/>
+                            </div>
+                            <div class="small text-muted" t-out="coupon['program']"/>
+                            <div class="mt-1">
+                                <span class="font-monospace fs-5 fw-bold user-select-all o_journey_coupon_code_value" t-out="coupon['code']"/>
+                            </div>
+                            <small class="text-muted" t-out="coupon['rule']"/>
+                            <div class="mt-auto pt-2">
+                                <span t-if="coupon['applied']" class="text-success small fw-bold">
+                                    <i class="fa fa-check me-1"/>Applied to your order
+                                </span>
+                                <form t-elif="coupon['can_apply']" action="/my/coupons/apply" method="post" class="m-0">
+                                    <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                                    <input type="hidden" name="card_id" t-att-value="coupon['card'].id"/>
+                                    <button type="submit" class="btn btn-primary btn-sm rounded-pill px-3 o_journey_coupon_use">Apply to my order</button>
+                                </form>
+                                <small t-elif="coupon['state'] == 'current'" class="text-muted">Add products to your cart to use it.</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <t t-if="past_coupons">
+                    <h5 class="text-muted mb-2">Used and expired</h5>
+                    <t t-call="portal.portal_table">
+                        <thead>
+                            <tr><th>Coupon</th><th>Code</th><th class="text-end">Status</th></tr>
+                        </thead>
+                        <tbody>
+                            <tr t-foreach="past_coupons" t-as="coupon">
+                                <td t-out="coupon['title']"/>
+                                <td class="font-monospace" t-out="coupon['code']"/>
+                                <td class="text-end"><span class="badge text-bg-secondary" t-out="coupon['status']"/></td>
+                            </tr>
+                        </tbody>
+                    </t>
+                </t>
+            </div>
+        </t>
+    </template>
+</odoo>

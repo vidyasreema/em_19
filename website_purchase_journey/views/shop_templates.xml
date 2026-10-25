@@ -1,0 +1,125 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Product card: values of the card, "from" price, and our own action row
+         under the price. The theme turns the standard action area into round
+         icon buttons over the image (hidden on phones), so it is not used. -->
+    <template id="products_item_journey" inherit_id="website_sale.products_item" name="Purchase Journey: product card">
+        <xpath expr="//t[@t-set='show_ribbons']" position="after">
+            <t t-set="journey" t-value="website.journey_enabled and product._journey_tile_info(website)"/>
+        </xpath>
+        <xpath expr="//t[@t-set='template_price_vals']" position="after">
+            <!-- Several weights: the cheapest one, "from" -->
+            <t t-if="journey and journey['from_price'] is not None"
+               t-set="template_price_vals" t-value="{'price_reduce': journey['from_price']}"/>
+        </xpath>
+        <xpath expr="//div[hasclass('product_price')]/span[1]" position="before">
+            <small t-if="journey and journey['show_from']" class="text-muted me-1 o_journey_from">from</small>
+        </xpath>
+        <!-- Price and button on one line (like the prototype); styled by journey.scss -->
+        <xpath expr="//div[hasclass('o_wsale_product_sub')]//div[hasclass('product_price')]" position="after">
+            <t t-if="journey">
+                <t t-set="journey_qty" t-value="'%g' % journey['cart_qty']"/>
+                <div class="o_journey_tile_actions d-flex align-items-center"
+                     t-att-data-product-template-id="product.id"
+                     t-att-data-product-id="journey['variant'].id"
+                     t-att-data-cart-qty="journey_qty">
+                    <button t-if="journey['out_of_stock']" type="button" disabled="disabled"
+                            class="btn btn-sm btn-light border o_journey_btn o_journey_out_of_stock">Out of stock</button>
+                    <!-- Several weights: "Choose weight", then "In cart · N" (opens the sheet) -->
+                    <button t-elif="journey['multi']" type="button"
+                            t-attf-class="btn btn-sm o_journey_btn o_journey_choose #{'btn-outline-primary' if journey['cart_qty'] else 'btn-primary'}">
+                        <t t-if="journey['cart_qty']">In cart · <t t-out="journey_qty"/></t>
+                        <t t-else="">Choose weight</t>
+                    </button>
+                    <!-- One weight: "Add", then a quantity stepper -->
+                    <t t-else="">
+                        <button type="button"
+                                t-attf-class="btn btn-sm btn-primary o_journey_btn o_journey_add #{'d-none' if journey['cart_qty'] else ''}">
+                            <i class="fa fa-plus me-1" role="presentation"/>Add
+                        </button>
+                        <div t-attf-class="o_journey_stepper o_journey_tile_stepper d-flex align-items-center #{'' if journey['cart_qty'] else 'd-none'}"
+                             role="group" aria-label="Quantity">
+                            <button type="button" class="btn btn-sm btn-outline-primary rounded-circle o_journey_tile_minus"
+                                    aria-label="Remove one" title="Remove one"><i class="fa fa-minus"/></button>
+                            <span class="o_journey_row_in_cart fw-bold text-center o_journey_tile_qty" t-out="journey_qty"/>
+                            <button type="button" class="btn btn-sm btn-primary rounded-circle o_journey_tile_plus"
+                                    aria-label="Add one" title="Add one"><i class="fa fa-plus"/></button>
+                        </div>
+                    </t>
+                    <!-- Favourites (Odoo's wishlist button, its script does the rest) -->
+                    <t t-if="products_in_wishlist is not None">
+                        <t t-set="journey_in_wish" t-value="product in products_in_wishlist"/>
+                        <button type="button"
+                                t-attf-class="btn btn-sm btn-link ms-auto px-1 o_add_wishlist o_journey_fav #{'o_in_wishlist' if journey_in_wish else ''}"
+                                t-att-disabled="journey_in_wish"
+                                t-att-data-product-template-id="product.id"
+                                t-att-data-product-product-id="journey['variant'].id"
+                                data-action="o_wishlist"
+                                t-att-title="'In your favourites' if journey_in_wish else 'Add to favourites'"
+                                t-att-aria-label="'In your favourites' if journey_in_wish else 'Add to favourites'">
+                            <i t-attf-class="fa #{'fa-heart' if journey_in_wish else 'fa-heart-o'}" role="presentation"/>
+                        </button>
+                    </t>
+                </div>
+            </t>
+        </xpath>
+    </template>
+
+    <!-- The standard round "Add to cart" icon is replaced by the action row above -->
+    <template id="shop_product_buttons_journey" inherit_id="website_sale.shop_product_buttons"
+              name="Purchase Journey: hide the standard card button">
+        <xpath expr="//t[@name='buttons_container']" position="attributes">
+            <attribute name="t-if">not website.journey_enabled</attribute>
+        </xpath>
+    </template>
+
+    <template id="weight_sheet" name="Purchase Journey: weight sheet">
+        <div class="modal fade o_journey_weight_sheet" id="o_journey_weight_sheet" tabindex="-1"
+             aria-labelledby="o_journey_weight_sheet_title" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable o_journey_sheet_dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="o_journey_weight_sheet_title">Choose weight</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"/>
+                    </div>
+                    <div class="modal-body p-0 o_journey_sheet_body"/>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-primary w-100" data-bs-dismiss="modal">Done</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </template>
+
+    <template id="weight_sheet_rows" name="Purchase Journey: weight sheet rows">
+        <div class="px-3 pt-3 pb-1 small text-muted" t-out="product.display_name"/>
+        <ul class="list-group list-group-flush">
+            <li t-foreach="rows" t-as="row"
+                t-attf-class="list-group-item d-flex align-items-center gap-3 py-3 o_journey_weight_row #{'text-muted' if row['out_of_stock'] else ''}"
+                t-att-data-product-id="row['variant'].id"
+                t-att-data-cart-qty="'%g' % row['cart_qty']">
+                <div class="flex-grow-1">
+                    <div class="fw-bold o_journey_weight_label" t-out="row['label']"/>
+                    <div class="o_journey_weight_price"
+                         t-out="row['price']" t-options="{'widget': 'monetary', 'display_currency': website.currency_id}"/>
+                </div>
+                <!-- In the cart: quantity stepper (also to remove); otherwise Add -->
+                <div t-if="row['cart_qty']" class="o_journey_stepper d-flex align-items-center">
+                    <button type="button" class="btn btn-sm btn-outline-primary rounded-circle o_journey_qty_minus"
+                            aria-label="Remove one" title="Remove one">
+                        <i class="fa fa-minus" role="presentation"/>
+                    </button>
+                    <span class="o_journey_row_in_cart fw-bold text-center" t-out="'%g' % row['cart_qty']"/>
+                    <button type="button" class="btn btn-sm btn-primary rounded-circle o_journey_qty_plus"
+                            aria-label="Add one" title="Add one" t-att-disabled="row['out_of_stock'] or None">
+                        <i class="fa fa-plus" role="presentation"/>
+                    </button>
+                </div>
+                <span t-elif="row['out_of_stock']" class="badge rounded-pill text-bg-light border o_journey_row_out_of_stock">Out of stock</span>
+                <button t-else="" type="button" class="btn btn-sm btn-primary rounded-pill px-3 o_journey_sheet_add">
+                    <i class="fa fa-plus me-1" role="presentation"/>Add
+                </button>
+            </li>
+        </ul>
+    </template>
+</odoo>

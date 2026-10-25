@@ -1,0 +1,797 @@
+// Colours of the v2 prototype
+$journey-ox: #7A1F2B;
+$journey-ox-soft: #F6E9EA;
+$journey-ink: #1E1B19;
+$journey-err: #B3261E;
+$journey-ground: #EEEBE6;
+$journey-line: #E2DDD6;
+$journey-muted: #6A635E;
+$journey-save: #1D6B4B;
+$journey-save-soft: #E3F2EA;
+$journey-shadow: 0 1px 2px rgba(30, 27, 25, .06), 0 6px 18px rgba(30, 27, 25, .06);
+
+// The pages of the journey use the colours of the prototype (Bootstrap
+// buttons, links, checkboxes), whatever the colours of the theme
+@mixin journey-colours {
+    --bs-primary: #{$journey-ox};
+    --bs-primary-rgb: #{to-rgb($journey-ox)};
+    --bs-link-color: #{$journey-ox};
+    --bs-link-color-rgb: #{to-rgb($journey-ox)};
+    --bs-link-hover-color: #{darken($journey-ox, 6%)};
+    --bs-link-hover-color-rgb: #{to-rgb(darken($journey-ox, 6%))};
+    --bs-body-color: #{$journey-ink};
+    color: $journey-ink;
+
+    .btn-primary {
+        @include button-variant($journey-ox, $journey-ox, $white,
+            darken($journey-ox, 6%), darken($journey-ox, 6%), $white,
+            darken($journey-ox, 8%), darken($journey-ox, 8%), $white,
+            rgba($journey-ox, .45), rgba($journey-ox, .45), $white);
+    }
+    .btn-outline-primary {
+        @include button-outline-variant($journey-ox, $white, $journey-ox, $journey-ox, $white);
+    }
+    .text-primary {
+        color: $journey-ox !important;
+    }
+    .border-primary {
+        border-color: $journey-ox !important;
+    }
+    .form-check-input:checked {
+        background-color: $journey-ox;
+        border-color: $journey-ox;
+    }
+    .text-success {
+        color: $journey-save !important;
+    }
+    .text-danger {
+        color: $journey-err !important;
+    }
+}
+
+.o_journey_order,
+.o_journey_address_modal,
+.o_journey_location_modal,
+.o_journey_weight_sheet,
+.o_journey_promise_modal,
+.o_journey_track_page,
+.o_journey_tile_actions,
+.o_journey_track_bar {
+    @include journey-colours;
+}
+
+// "Deliver to" bar: one line on desktop, area and promise on two lines on phones
+.o_journey_location_bar {
+    background-color: $gray-100;
+    border-bottom: 1px solid $gray-200;
+    color: $gray-900;
+
+    .o_journey_area {
+        max-width: 100%;
+    }
+    .o_journey_promise {
+        margin-left: auto;
+    }
+    @include media-breakpoint-down(md) {
+        .o_journey_promise {
+            flex-basis: 100%;
+            margin-left: 0;
+            padding-left: 1.25rem; // under the text, after the pin
+            color: $gray-700;
+        }
+    }
+}
+
+.o_journey_map_wrap {
+    height: 50vh;
+    max-height: 420px;
+}
+
+.o_journey_map {
+    height: 100%;
+    width: 100%;
+}
+
+.o_journey_center_pin {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -100%);
+    font-size: 2.5rem;
+    color: $journey-ox;
+    pointer-events: none;
+}
+
+// Product card: price and button on one line, at the bottom of the card so
+// they line up across a row whatever the length of the product name.
+.oe_product_cart:has(.o_journey_tile_actions) .o_wsale_product_sub {
+    margin-top: auto;
+    flex-wrap: wrap;
+    align-items: center;
+    row-gap: map-get($spacers, 2);
+    margin-bottom: map-get($spacers, 3);
+}
+
+.o_journey_tile_actions {
+    position: relative;
+    z-index: 2; // above the card link
+    order: 7; // after the price (Odoo orders the card blocks: price 6, standard button 8)
+
+    .o_journey_btn {
+        padding: 0.3rem 1rem;
+        border-radius: $border-radius-pill;
+        white-space: nowrap;
+        font-weight: 600;
+    }
+    .o_journey_out_of_stock {
+        opacity: 1;
+        color: $gray-600;
+    }
+}
+
+// Quantity stepper (card, weight sheet, order page)
+.o_journey_stepper {
+    gap: map-get($spacers, 2);
+
+    .btn {
+        width: 2rem;
+        height: 2rem;
+        padding: 0;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .o_journey_row_in_cart {
+        min-width: 1.5rem;
+    }
+}
+
+// Weight sheet: a bottom sheet on phones
+@include media-breakpoint-down(sm) {
+    .o_journey_weight_sheet .o_journey_sheet_dialog {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        margin: 0;
+        max-width: none;
+
+        .modal-content {
+            border-bottom-left-radius: 0;
+            border-bottom-right-radius: 0;
+        }
+    }
+}
+
+// ── Order page (look of the v2 prototype, in the colours of the site) ───────
+
+.o_journey_order {
+    background-color: $journey-ground;
+
+    .o_journey_savebar {
+        background-color: $journey-save-soft;
+        color: $journey-save;
+        font-weight: 600;
+    }
+    .o_journey_back {
+        width: 44px;
+        height: 44px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        background-color: $white;
+        border: 0;
+        box-shadow: $journey-shadow;
+    }
+    .o_journey_blk {
+        background-color: $white;
+        border: 0;
+        border-radius: 18px;
+        box-shadow: $journey-shadow;
+        padding: 1rem 1.1rem;
+        margin-bottom: .85rem;
+    }
+    .o_journey_h {
+        font-size: 1rem;
+        font-weight: 700;
+        margin-bottom: .6rem;
+    }
+    .text-muted {
+        color: $journey-muted !important;
+    }
+
+    // Fields: soft filled, like the prototype
+    .form-control {
+        background-color: $journey-ground;
+        border: 1px solid transparent;
+        border-radius: 12px;
+        min-height: 48px;
+
+        &:focus {
+            background-color: $white;
+            border-color: $journey-ox;
+            box-shadow: 0 0 0 .2rem rgba($journey-ox, .15);
+        }
+        &.is-invalid {
+            border-color: $journey-err;
+        }
+    }
+    textarea.form-control {
+        min-height: 76px;
+    }
+    .form-check-input {
+        width: 1.15em;
+        height: 1.15em;
+        border-color: $journey-line;
+
+        &:checked {
+            background-color: $journey-ox;
+            border-color: $journey-ox;
+        }
+    }
+
+    // Sign-up box
+    .o_journey_sso,
+    .o_journey_signup_email {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 50px;
+        border-radius: 14px;
+        border: 1px solid $journey-line;
+        background-color: $white;
+        color: $journey-ink;
+        font-weight: 600;
+        gap: 10px;
+        border-radius: 14px !important;
+
+        &:hover, &:focus, &:active {
+            border-color: $journey-muted;
+            background-color: $white;
+            color: $journey-ink;
+        }
+    }
+    .o_journey_link,
+    .o_journey_guest_go,
+    .o_journey_show_signup,
+    .o_journey_address a:not(.btn-primary),
+    .o_journey_gline a,
+    .o_journey_blk a.small {
+        color: $journey-ox;
+        font-weight: 600;
+        text-decoration: underline;
+        text-underline-offset: 3px;
+    }
+    .o_journey_loss {
+        background-color: rgba($journey-ox, .08);
+        color: $journey-ink;
+        border-radius: 12px;
+        padding: .6rem .75rem;
+    }
+
+    // Driver chips
+    .o_journey_chip {
+        border: 1px solid $journey-line;
+        background-color: $journey-ground;
+        border-radius: 12px;
+        padding: .5rem .8rem;
+        min-height: 40px;
+        color: $journey-ink;
+
+        &[aria-pressed="true"] {
+            border-color: $journey-ox;
+            background-color: rgba($journey-ox, .08);
+            color: $journey-ox;
+            font-weight: 600;
+        }
+    }
+
+    // Address rows
+    .o_journey_addr_row {
+        background-color: $journey-ground;
+        border-radius: 12px;
+        padding: .6rem .75rem .6rem 2.25rem;
+        margin-bottom: .5rem;
+        min-height: 44px;
+    }
+    div.o_journey_addr_row.d-flex {
+        padding-left: .75rem;
+    }
+
+    // Free delivery progress
+    .o_journey_progress .progress {
+        background-color: $journey-line;
+        border-radius: 6px;
+    }
+    .o_journey_progress .progress-bar {
+        background-color: $journey-save;
+        border-radius: 6px;
+    }
+
+    // Cart
+    .o_journey_cart_line + .o_journey_cart_line {
+        border-top: 1px solid $journey-line;
+    }
+    .o_journey_thumb {
+        width: 56px;
+        height: 56px;
+        object-fit: cover;
+        background-color: $journey-ground;
+        border-radius: 12px !important;
+    }
+    .o_journey_stepper {
+        width: fit-content;
+        margin-left: auto;
+        gap: 0;
+        border: 1.5px solid $journey-ox;
+        border-radius: 10px;
+        overflow: hidden;
+
+        .btn {
+            width: 34px;
+            height: 34px;
+            border: 0;
+            border-radius: 0;
+            background-color: transparent;
+            color: $journey-ox;
+            box-shadow: none;
+
+            &:hover {
+                background-color: rgba($journey-ox, .08);
+            }
+        }
+        .o_journey_row_in_cart {
+            min-width: 1.5rem;
+        }
+    }
+
+    // Coupon: field and button side by side
+    .o_journey_coupon .input-group {
+        gap: .5rem;
+        flex-wrap: nowrap;
+
+        > .form-control,
+        > .btn {
+            border-radius: 12px !important;
+        }
+        > .btn {
+            min-height: 48px;
+            padding-left: 1.25rem;
+            padding-right: 1.25rem;
+            font-weight: 700;
+        }
+    }
+
+    // Payment summary
+    .o_journey_totals > div {
+        padding: 3px 0;
+    }
+    .o_journey_promise_line {
+        background-color: $journey-save-soft;
+        color: $journey-save !important;
+        border-radius: 10px;
+        padding: .4rem .65rem !important;
+        margin: .4rem 0;
+    }
+    .o_journey_total_row {
+        border-top: 1px dashed $journey-line;
+    }
+    .o_journey_savings {
+        background-color: $journey-save-soft;
+        color: $journey-save;
+        box-shadow: none;
+    }
+
+    // Odoo's payment form inside the payment block
+    .o_journey_payment {
+        // The block has its own title: hide the "Payment method" title of Odoo's form
+        #o_payment_methods:not(.collapse) > p:first-child {
+            display: none;
+        }
+        .list-group-item {
+            border-color: $journey-line;
+        }
+        .list-group {
+            border-radius: 12px;
+        }
+    }
+    .o_journey_place,
+    .o_journey_add_address.btn-primary {
+        border-radius: 14px !important;
+        min-height: 54px;
+        font-weight: 700;
+    }
+
+    // Pinned summary on desktop when it fits the screen (set by the page script)
+    @include media-breakpoint-up(lg) {
+        .o_journey_summary.o_journey_sticky {
+            position: sticky;
+            top: map-get($spacers, 3);
+        }
+    }
+    // Phones: the order button is a fixed bar at the bottom
+    @include media-breakpoint-down(lg) {
+        .o_journey_order_container {
+            padding-bottom: 9rem !important;
+        }
+        .o_journey_dock {
+            position: fixed;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            z-index: $zindex-fixed;
+            background-color: $white;
+            border-top: 1px solid $journey-line;
+            box-shadow: 0 -6px 18px rgba(30, 27, 25, .08);
+            padding: map-get($spacers, 2) map-get($spacers, 3) calc(#{map-get($spacers, 2)} + env(safe-area-inset-bottom, 0px));
+        }
+    }
+}
+
+// Track your order / Order details: same ground and cards
+main:has(.o_journey_track_page) {
+    background-color: $journey-ground;
+}
+.o_journey_track_page .card {
+    border: 0;
+    border-radius: 18px;
+    box-shadow: $journey-shadow;
+}
+
+// Tracking bar of the open order (shop)
+.o_journey_track_bar {
+    min-height: 52px;
+    background-color: rgba($success, .12);
+    color: darken($success, 10%);
+
+    &:hover, &:focus {
+        background-color: rgba($success, .2);
+        color: darken($success, 15%);
+    }
+}
+
+// Track your order / Order details
+.o_journey_track_page {
+    max-width: 720px;
+}
+
+.o_journey_track_icon {
+    width: 48px;
+    height: 48px;
+    background-color: rgba($success, .12);
+    color: $success;
+    font-size: 1.4rem;
+
+    &.o_journey_track_icon_cancel {
+        background-color: rgba($secondary, .15);
+        color: $secondary;
+    }
+}
+
+.o_journey_track_dot {
+    width: 22px;
+    height: 22px;
+    margin-top: 1px;
+    border: 2px solid $border-color;
+    font-size: .7rem;
+}
+
+.o_journey_track_step_on .o_journey_track_dot {
+    background-color: $success;
+    border-color: $success;
+    color: $white;
+}
+
+// Favourites heart on the card (Odoo's wishlist button)
+.o_journey_tile_actions .o_journey_fav {
+    color: $journey-ox;
+    font-size: 1.1rem;
+
+    &:disabled {
+        opacity: 1;
+    }
+}
+
+// My Account: lifetime savings
+.o_journey_lifetime_savings {
+    background-color: rgba($success, .12);
+    color: darken($success, 10%);
+}
+
+// ── Shop (look of the v2 prototype) ─────────────────────────────────────────
+.o_wsale_products_page:has(.o_journey_tile_actions) {
+    background-color: $journey-ground;
+
+    .oe_product_cart:has(.o_journey_tile_actions) {
+        // Own layer: the theme paints parts of the card below it (negative
+        // z-index), they must stay above the white background
+        isolation: isolate;
+        background-color: $white;
+        border: 0 !important;
+        border-radius: 18px !important;
+        overflow: hidden;
+        box-shadow: $journey-shadow;
+
+        .oe_product_image {
+            border-radius: 0 !important;
+        }
+        .o_wsale_product_information {
+            padding-left: .9rem;
+            padding-right: .9rem;
+        }
+        .o_wsale_products_item_title,
+        .o_wsale_products_item_title a {
+            color: $journey-ink;
+            font-weight: 600;
+        }
+    }
+}
+
+// Card buttons: outlined, like the prototype (Add, Choose weight, In cart · N)
+.o_journey_tile_actions {
+    .o_journey_btn.btn-primary,
+    .o_journey_btn.btn-outline-primary {
+        background-color: $white;
+        color: $journey-ox;
+        border: 1.5px solid $journey-ox;
+        border-radius: 10px !important;
+        font-weight: 700;
+        padding: .35rem .9rem;
+
+        &:hover, &:focus {
+            background-color: $journey-ox;
+            color: $white;
+        }
+    }
+    .o_journey_out_of_stock {
+        background-color: $white;
+        border: 1.5px solid $journey-line !important;
+        border-radius: 10px !important;
+        color: $journey-muted;
+        padding: .35rem .9rem;
+    }
+    .o_journey_tile_stepper {
+        gap: 0;
+        border: 1.5px solid $journey-ox;
+        border-radius: 10px;
+        overflow: hidden;
+
+        .btn {
+            border: 0;
+            border-radius: 0 !important;
+            background-color: transparent;
+            color: $journey-ox;
+            box-shadow: none;
+
+            &:hover {
+                background-color: rgba($journey-ox, .08);
+            }
+        }
+    }
+}
+
+// "View cart · N items · total" at the bottom right of the shop pages (cart pill of the prototype)
+.o_journey_cart_bar {
+    position: fixed;
+    right: 32px;
+    bottom: 32px;
+    z-index: $zindex-fixed - 1;
+    background-color: $journey-ox;
+    color: $white;
+    border-radius: 999px;
+    padding: 12px 20px;
+    min-height: 48px;
+    gap: 12px !important;
+    white-space: nowrap;
+    font-weight: 700;
+    text-decoration: none;
+    box-shadow: 0 8px 24px rgba(122, 31, 43, .35);
+
+    &:hover, &:focus {
+        background-color: darken($journey-ox, 6%);
+        color: $white;
+    }
+    @media (max-width: 1023.98px) {
+        right: auto;
+        left: 50%;
+        transform: translateX(-50%);
+        bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+    }
+}
+
+// Sign-up buttons: logos of the prototype
+.o_journey_sso_icon {
+    width: 20px;
+    height: 20px;
+    flex: none;
+}
+
+// Text buttons (Change, Edit, Edit pin, + Add delivery address)
+.o_journey_link {
+    background: none;
+    border: 0;
+    padding: 6px 0;
+    color: $journey-ox;
+    font-weight: 600;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+
+    &:hover, &:focus {
+        color: darken($journey-ox, 6%);
+    }
+}
+
+// ── "Address details" sheet (sizes of the v2 prototype) ─────────────────────
+body:has(.o_journey_address_modal.show) .modal-backdrop {
+    --bs-backdrop-bg: #14100E;
+    --bs-backdrop-opacity: .45;
+}
+
+.o_journey_address_modal {
+    font-size: 15px;
+    line-height: 1.45;
+
+    .modal-content {
+        display: block;
+        background-color: $white;
+        border: 0;
+        border-radius: 22px;
+        box-shadow: none;
+        padding: 18px 16px;
+        max-height: 92vh;
+        overflow: auto;
+    }
+    .o_journey_sheet_title {
+        margin: 0 0 4px;
+        font-size: 18px;
+        font-weight: 700;
+        line-height: 1.3;
+    }
+    .o_journey_sheet_sub {
+        color: $journey-muted;
+        font-size: 13px;
+        margin: 0 0 14px;
+    }
+    .o_journey_minimap {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        background-color: $journey-ground;
+        border-radius: 12px;
+        padding: 10px;
+        margin-bottom: 12px;
+
+        b {
+            flex: 1;
+            min-width: 0;
+        }
+    }
+    .o_journey_pin_icon {
+        width: 22px;
+        height: 22px;
+        flex: none;
+        color: $journey-ox;
+    }
+    .o_journey_sheet_chips {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-bottom: 12px;
+    }
+    .o_journey_sheet_chip {
+        display: inline-flex;
+        align-items: center;
+        border: 1px solid $journey-line;
+        background-color: $journey-ground;
+        border-radius: 12px;
+        padding: 8px 12px;
+        min-height: 40px;
+        font-size: 13.5px;
+        cursor: pointer;
+    }
+    .btn-check:checked + .o_journey_sheet_chip {
+        border-color: $journey-ox;
+        background-color: $journey-ox-soft;
+        color: $journey-ox;
+        font-weight: 600;
+    }
+    .btn-check:focus-visible + .o_journey_sheet_chip {
+        outline: 2px solid $journey-ox;
+        outline-offset: 2px;
+    }
+    .o_journey_field {
+        margin-bottom: 12px;
+
+        label {
+            display: block;
+            font-size: 12.5px;
+            color: $journey-muted;
+            margin-bottom: 4px;
+        }
+        input {
+            width: 100%;
+            border: 1px solid $journey-line;
+            border-radius: 12px;
+            padding: 0 12px;
+            min-height: 46px;
+            background-color: $journey-ground;
+            color: $journey-ink;
+            font-size: 15px;
+
+            &:focus {
+                outline: 2px solid $journey-ox;
+                outline-offset: 2px;
+            }
+        }
+        &.o_journey_field_bad input {
+            border-color: $journey-err;
+        }
+    }
+    .o_journey_field_error {
+        color: $journey-err;
+        font-size: 12px;
+        margin-top: 4px;
+
+        &:empty {
+            display: none;
+        }
+    }
+    .o_journey_minimap + .o_journey_field_error {
+        margin: -6px 0 12px;
+    }
+    .o_journey_sheet_msg {
+        font-size: 13px;
+        margin: 0 0 12px;
+        padding: 8px 10px;
+        border-radius: 10px;
+        background-color: #FFF3DC;
+        color: #9A5A00;
+    }
+    .o_journey_sheet_btn {
+        display: block;
+        width: 100%;
+        border: 0;
+        border-radius: 12px;
+        background-color: $journey-ox;
+        color: $white;
+        font-weight: 700;
+        padding: 0 16px;
+        min-height: 44px;
+
+        &:hover, &:focus {
+            background-color: darken($journey-ox, 6%);
+        }
+    }
+
+    // Desktop: in the middle of the screen, 480px wide
+    @media (min-width: 1024px) {
+        .modal-dialog {
+            max-width: 480px;
+            display: flex;
+            align-items: center;
+            min-height: calc(100% - #{$modal-dialog-margin-y-sm-up * 2});
+        }
+    }
+    // Phones and tablets: a sheet from the bottom, like the prototype
+    @media (max-width: 1023.98px) {
+        .modal-dialog {
+            position: absolute;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            max-width: 440px;
+            margin: 0 auto;
+        }
+        &.fade .modal-dialog {
+            transform: translateY(24px);
+            transition: transform .22s ease-out;
+        }
+        &.show .modal-dialog {
+            transform: none;
+        }
+        .modal-content {
+            border-radius: 22px 22px 0 0;
+            padding-bottom: calc(18px + env(safe-area-inset-bottom, 0px));
+        }
+    }
+}
