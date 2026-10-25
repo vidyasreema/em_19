@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+
+        <record id="mail_template_out_for_delivery" model="mail.template">
+            <field name="name">Online Orders: On the way</field>
+            <field name="model_id" ref="sale.model_sale_order"/>
+            <field name="subject">Your order {{ object.name }} is on the way</field>
+            <field name="email_from">{{ (object.company_id.email_formatted or user.email_formatted) }}</field>
+            <field name="partner_to">{{ object.partner_id.id }}</field>
+            <field name="lang">{{ object.partner_id.lang }}</field>
+            <field name="auto_delete" eval="True"/>
+            <field name="use_default_to" eval="False"/>
+            <field name="description">Sent when an online order goes out for delivery</field>
+            <field name="body_html" type="html">
+<div style="margin: 0px; padding: 0px;">
+    <p>Hello <t t-out="object.partner_id.name or ''">Customer</t>,</p>
+    <p>Your order <strong t-out="object.name or ''">S00001</strong> is on the way.</p>
+    <p t-if="object.delivery_promise_message">
+        <t t-out="object.delivery_promise_message">Delivered today within 3 hours</t>
+    </p>
+    <p>Delivery address: <t t-out="object.partner_shipping_id.contact_address_inline or ''">Abu Dhabi</t></p>
+    <p>Thank you for shopping with <t t-out="object.company_id.name or ''">The Cut</t>!</p>
+</div>
+            </field>
+        </record>
+
+        <record id="mail_template_delivered" model="mail.template">
+            <field name="name">Online Orders: Delivered</field>
+            <field name="model_id" ref="sale.model_sale_order"/>
+            <field name="subject">Thank you for your order {{ object.name }}</field>
+            <field name="email_from">{{ (object.company_id.email_formatted or user.email_formatted) }}</field>
+            <field name="partner_to">{{ object.partner_id.id }}</field>
+            <field name="lang">{{ object.partner_id.lang }}</field>
+            <field name="auto_delete" eval="True"/>
+            <field name="use_default_to" eval="False"/>
+            <field name="description">Sent when an online order is delivered</field>
+            <field name="body_html" type="html">
+<div style="margin: 0px; padding: 0px;">
+    <p>Hello <t t-out="object.partner_id.name or ''">Customer</t>,</p>
+    <p>Your order <strong t-out="object.name or ''">S00001</strong> has been delivered. Enjoy!</p>
+    <t t-if="object.online_next_order_coupons">
+        <p>Your coupon for your next order:
+            <strong t-out="object.online_next_order_coupons">CODE</strong></p>
+    </t>
+    <p>Thank you for shopping with <t t-out="object.company_id.name or ''">The Cut</t>!</p>
+</div>
+            </field>
+        </record>
+
+        <record id="mail_template_cancelled" model="mail.template">
+            <field name="name">Online Orders: Cancelled</field>
+            <field name="model_id" ref="sale.model_sale_order"/>
+            <field name="subject">Your order {{ object.name }} has been cancelled</field>
+            <field name="email_from">{{ (object.company_id.email_formatted or user.email_formatted) }}</field>
+            <field name="partner_to">{{ object.partner_id.id }}</field>
+            <field name="lang">{{ object.partner_id.lang }}</field>
+            <field name="auto_delete" eval="True"/>
+            <field name="use_default_to" eval="False"/>
+            <field name="description">Sent when an online order is cancelled</field>
+            <field name="body_html" type="html">
+<div style="margin: 0px; padding: 0px;">
+    <p>Hello <t t-out="object.partner_id.name or ''">Customer</t>,</p>
+    <p>Your order <strong t-out="object.name or ''">S00001</strong> has been cancelled.</p>
+    <p>If you already paid, the refund will be made within 48 hours.</p>
+    <p>We are sorry for the inconvenience.<br/><t t-out="object.company_id.name or ''">The Cut</t></p>
+</div>
+            </field>
+        </record>
+
+        <record id="mail_template_address_updated" model="mail.template">
+            <field name="name">Online Orders: Your address was updated</field>
+            <field name="model_id" ref="base.model_res_partner"/>
+            <field name="subject">Your delivery address was updated</field>
+            <field name="email_from">{{ (object.company_id.email_formatted or user.company_id.email_formatted or user.email_formatted) }}</field>
+            <field name="partner_to">{{ (object.parent_id or object).id }}</field>
+            <field name="lang">{{ (object.parent_id or object).lang }}</field>
+            <field name="auto_delete" eval="True"/>
+            <field name="use_default_to" eval="False"/>
+            <field name="description">Sent when our team adds or edits a delivery address of a customer</field>
+            <field name="body_html" type="html">
+<div style="margin: 0px; padding: 0px;">
+    <p>Hello <t t-out="(object.parent_id or object).name or ''">Customer</t>,</p>
+    <p>Our team has updated a delivery address on your account:</p>
+    <p>
+        <strong t-out="object.name or ''">Receiver</strong><br/>
+        <t t-out="object.contact_address_inline or ''">Abu Dhabi</t>
+    </p>
+    <p>You can see and change your addresses in My Account.</p>
+</div>
+            </field>
+        </record>
+
+    </data>
+</odoo>

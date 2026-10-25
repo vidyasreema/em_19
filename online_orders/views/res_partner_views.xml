@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Customer card: "Contacts & Addresses" tab -->
+    <record id="view_partner_form_online_orders" model="ir.ui.view">
+        <field name="name">res.partner.form.online.orders</field>
+        <field name="model">res.partner</field>
+        <field name="inherit_id" ref="base.view_partner_form"/>
+        <field name="arch" type="xml">
+            <!-- A new address of a person (online customer) is a delivery address -->
+            <xpath expr="//field[@name='child_ids']" position="attributes">
+                <attribute name="context">{'default_parent_id': id, 'default_street': street, 'default_street2': street2, 'default_city': city, 'default_state_id': state_id, 'default_zip': zip, 'default_country_id': country_id, 'default_lang': lang, 'default_user_id': user_id, 'default_type': is_company and 'contact' or 'delivery'}</attribute>
+            </xpath>
+
+            <!-- Address cards -->
+            <xpath expr="//field[@name='child_ids']/kanban//field[@name='country_id']" position="after">
+                <div class="d-flex flex-wrap gap-1 mt-1">
+                    <field name="address_label" widget="badge" invisible="not address_label"/>
+                    <span invisible="not added_by_staff" class="badge text-bg-info">Added by staff</span>
+                </div>
+                <field name="partner_coordinates" widget="CopyClipboardChar" invisible="not partner_coordinates"/>
+                <field name="added_by_staff" invisible="1"/>
+            </xpath>
+
+            <!-- Address form (same fields as the address form of the website) -->
+            <xpath expr="//field[@name='child_ids']/form//field[@name='street2']" position="attributes">
+                <attribute name="required">type == 'delivery'</attribute>
+                <attribute name="placeholder">Apartment / Villa...</attribute>
+            </xpath>
+            <xpath expr="//field[@name='child_ids']/form//group[@name='other_info']/group" position="after">
+                <group string="Delivery" invisible="type != 'delivery'">
+                    <field name="address_label" widget="radio" options="{'horizontal': true}"/>
+                    <field name="delivery_directions" placeholder="Landmark, gate, parking..."/>
+                    <field name="coordinates_input" placeholder="25.0719120, 55.1527595 or a Google Maps link"/>
+                    <field name="partner_coordinates" widget="CopyClipboardChar" invisible="not partner_coordinates"/>
+                    <field name="google_maps_url" widget="url" string="Check on the Map" invisible="not google_maps_url"/>
+                    <field name="added_by_staff" invisible="not added_by_staff"/>
+                </group>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Contacts: delivery addresses are hidden by default (shown in the customer card) -->
+    <record id="view_res_partner_filter_online_orders" model="ir.ui.view">
+        <field name="name">res.partner.search.online.orders</field>
+        <field name="model">res.partner</field>
+        <field name="inherit_id" ref="base.view_res_partner_filter"/>
+        <field name="arch" type="xml">
+            <xpath expr="//filter[@name='type_company']" position="after">
+                <separator/>
+                <filter name="hide_delivery_addresses" string="Without Delivery Addresses"
+                        domain="['|', ('parent_id', '=', False), ('type', '!=', 'delivery')]"/>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="contacts.action_contacts" model="ir.actions.act_window">
+        <field name="context">{'default_is_company': True, 'search_default_hide_delivery_addresses': 1}</field>
+    </record>
+</odoo>

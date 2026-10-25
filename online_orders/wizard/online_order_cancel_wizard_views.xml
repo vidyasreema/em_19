@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="online_order_cancel_wizard_view_form" model="ir.ui.view">
+        <field name="name">online.order.cancel.wizard.form</field>
+        <field name="model">online.order.cancel.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Cancel Order">
+                <p>
+                    The order is cancelled in Odoo, the customer receives the cancellation
+                    email (refund within 48 hours) and Accounts are notified.
+                </p>
+                <group>
+                    <field name="order_id"/>
+                    <field name="reason" widget="radio"/>
+                    <field name="note" placeholder="Details for Accounts and the team..."/>
+                </group>
+                <footer>
+                    <button name="action_cancel_order" type="object" string="Cancel Order"
+                            class="btn-danger" data-hotkey="q"/>
+                    <button string="Keep Order" special="cancel" class="btn-secondary" data-hotkey="x"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_online_order_cancel_wizard" model="ir.actions.act_window">
+        <field name="name">Cancel Order</field>
+        <field name="res_model">online.order.cancel.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+</odoo>

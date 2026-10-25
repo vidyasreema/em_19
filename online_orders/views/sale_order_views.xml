@@ -1,0 +1,220 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- ── Board ──────────────────────────────────────────────────────── -->
+    <record id="sale_order_view_kanban_online" model="ir.ui.view">
+        <field name="name">sale.order.kanban.online.orders</field>
+        <field name="model">sale.order</field>
+        <field name="priority">100</field>
+        <field name="arch" type="xml">
+            <kanban default_group_by="stage_id" js_class="online_orders_kanban" highlight_color="online_delivery_day_color"
+                    create="false" group_create="false" group_delete="false" group_edit="false"
+                    quick_create="false" sample="1">
+                <field name="stage_id"/>
+                <field name="stage_code"/>
+                <field name="currency_id"/>
+                <field name="online_time_status"/>
+                <field name="online_next_stage_id"/>
+                <field name="online_delivery_day"/>
+                <field name="online_delivery_day_label"/>
+                <field name="online_delivery_day_color"/>
+                <templates>
+                    <t t-name="card">
+                        <div class="d-flex justify-content-between align-items-baseline">
+                            <field name="name" class="fw-bold fs-5"/>
+                            <field name="amount_total" widget="monetary" class="fw-bold"/>
+                        </div>
+                        <div t-if="record.online_delivery_day.raw_value === 'today'">
+                            <span class="badge rounded-pill border border-primary bg-primary-subtle text-primary-emphasis o_online_day_badge o_online_day_today">
+                                <i class="fa fa-truck me-1" role="presentation"/>Today
+                            </span>
+                        </div>
+                        <div t-elif="record.online_delivery_day.raw_value === 'scheduled'">
+                            <span class="badge rounded-pill border border-info bg-info-subtle text-info-emphasis o_online_day_badge o_online_day_scheduled">
+                                <i class="fa fa-calendar me-1" role="presentation"/>Scheduled ·
+                                <t t-out="record.online_delivery_day_label.value"/>
+                            </span>
+                        </div>
+                        <field name="partner_id" class="text-truncate"/>
+                        <div class="text-muted small d-flex gap-2">
+                            <span><i class="fa fa-map-marker me-1" title="Area"/><field name="online_area"/></span>
+                            <field name="online_zone_id" class="text-truncate"/>
+                        </div>
+                        <div class="small" t-if="record.delivery_promise_until.raw_value">
+                            <i class="fa fa-clock-o me-1" title="Promised by"/>
+                            <field name="delivery_promise_until" widget="datetime"/>
+                        </div>
+                        <footer class="pt-1">
+                            <span t-if="record.online_time_status.raw_value === 'late'"
+                                  class="badge text-bg-danger o_online_time_badge">Late</span>
+                            <span t-elif="record.online_time_status.raw_value === 'soon'"
+                                  class="badge text-bg-warning o_online_time_badge">Under 45 min</span>
+                            <span t-elif="record.online_time_status.raw_value === 'normal'"
+                                  class="badge text-bg-success o_online_time_badge">On time</span>
+                            <button t-if="record.online_next_stage_id.raw_value"
+                                    name="action_online_next_stage" type="object"
+                                    class="btn btn-sm btn-primary ms-auto o_online_next_stage"
+                                    confirm="Move this order to the next stage?">
+                                <i class="fa fa-arrow-right me-1"/><t t-out="record.online_next_stage_id.value"/>
+                            </button>
+                        </footer>
+                    </t>
+                </templates>
+            </kanban>
+        </field>
+    </record>
+
+    <record id="sale_order_view_list_online" model="ir.ui.view">
+        <field name="name">sale.order.list.online.orders</field>
+        <field name="model">sale.order</field>
+        <field name="priority">100</field>
+        <field name="arch" type="xml">
+            <list string="Online Orders" create="false" decoration-danger="online_is_late">
+                <field name="name"/>
+                <field name="date_order"/>
+                <field name="partner_id"/>
+                <field name="online_area"/>
+                <field name="online_zone_id" optional="show"/>
+                <field name="stage_id"/>
+                <field name="delivery_promise_until"/>
+                <field name="online_delivered_date" optional="show"/>
+                <field name="amount_total" sum="Total"/>
+                <field name="currency_id" column_invisible="1"/>
+                <field name="online_is_late" column_invisible="1"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- ── Order page ─────────────────────────────────────────────────── -->
+    <record id="sale_order_view_form_online" model="ir.ui.view">
+        <field name="name">sale.order.form.online.orders</field>
+        <field name="model">sale.order</field>
+        <field name="priority">100</field>
+        <field name="arch" type="xml">
+            <form string="Online Order" create="false" delete="false" duplicate="false">
+                <header>
+                    <button name="action_online_next_stage" type="object" class="btn-primary"
+                            string="Next Stage" invisible="not online_next_stage_id"
+                            confirm="Move this order to the next stage?"/>
+                    <button name="action_online_cancel_wizard" type="object" string="Cancel Order"
+                            invisible="not stage_id or stage_code in ('completed', 'cancelled')"/>
+                    <field name="stage_id" widget="statusbar" options="{'clickable': '0'}"/>
+                </header>
+                <sheet>
+                    <field name="currency_id" invisible="1"/>
+                    <field name="state" invisible="1"/>
+                    <field name="stage_code" invisible="1"/>
+                    <field name="online_next_stage_id" invisible="1"/>
+                    <field name="company_id" invisible="1"/>
+                    <div class="oe_title">
+                        <h1><field name="name" readonly="1"/></h1>
+                        <field name="online_time_status" widget="badge" readonly="1"
+                               decoration-danger="online_time_status == 'late'"
+                               decoration-warning="online_time_status == 'soon'"
+                               decoration-success="online_time_status == 'normal'"
+                               invisible="online_time_status == 'done'"/>
+                    </div>
+                    <group>
+                        <group string="Address" name="online_address">
+                            <field name="online_coordinates" widget="CopyClipboardChar"/>
+                            <field name="online_address_text" widget="CopyClipboardChar"/>
+                            <field name="online_address_label"/>
+                            <field name="online_driver_notes" widget="CopyClipboardText"/>
+                            <field name="order_note" string="Note for This Order" widget="CopyClipboardText"
+                                   readonly="1" invisible="not order_note"/>
+                            <field name="delivery_leave_at_door" readonly="1" invisible="not delivery_leave_at_door"/>
+                            <field name="delivery_call_on_arrival" readonly="1" invisible="not delivery_call_on_arrival"/>
+                            <field name="online_zone_id" readonly="1"/>
+                        </group>
+                        <group string="Customer and Receiver" name="online_customer">
+                            <field name="name" string="Order ID" widget="CopyClipboardChar" readonly="1"/>
+                            <field name="online_receiver_name" widget="CopyClipboardChar"/>
+                            <field name="online_receiver_phone" widget="CopyClipboardChar"/>
+                            <field name="partner_id" string="Account Holder" readonly="1"/>
+                            <field name="online_cash_to_collect_text" string="Cash to Collect" widget="CopyClipboardChar"/>
+                        </group>
+                        <group string="Promise" name="online_promise">
+                            <field name="delivery_promise_message"/>
+                            <field name="delivery_promise_type"/>
+                            <field name="delivery_promise_until"/>
+                        </group>
+                        <group string="Timeline" name="online_timeline">
+                            <field name="date_order" string="Ordered At" readonly="1"/>
+                            <field name="online_out_for_delivery_date" invisible="not online_out_for_delivery_date"/>
+                            <field name="online_delivered_date" invisible="not online_delivered_date"/>
+                            <field name="online_completed_date" invisible="not online_completed_date"/>
+                            <field name="online_cancel_date" invisible="not online_cancel_date"/>
+                            <field name="online_cancel_reason" invisible="not online_cancel_reason"/>
+                            <field name="online_cancel_note" invisible="not online_cancel_note"/>
+                        </group>
+                    </group>
+                    <field name="order_line" readonly="1" nolabel="1">
+                        <list string="Order Lines" create="false" delete="false">
+                            <field name="display_type" column_invisible="1"/>
+                            <field name="currency_id" column_invisible="1"/>
+                            <field name="product_id"/>
+                            <field name="name" optional="hide"/>
+                            <field name="product_uom_qty" string="Quantity"/>
+                            <field name="product_uom_id" string="Unit" groups="uom.group_uom"/>
+                            <field name="price_unit"/>
+                            <field name="discount" optional="hide"/>
+                            <field name="price_total" string="Total (incl. VAT)"/>
+                        </list>
+                    </field>
+                    <group class="oe_subtotal_footer">
+                        <field name="amount_untaxed"/>
+                        <field name="amount_tax"/>
+                        <field name="amount_total" class="fw-bold"/>
+                    </group>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <!-- ── Search ─────────────────────────────────────────────────────── -->
+    <record id="sale_order_view_search_online" model="ir.ui.view">
+        <field name="name">sale.order.search.online.orders</field>
+        <field name="model">sale.order</field>
+        <field name="priority">100</field>
+        <field name="arch" type="xml">
+            <search string="Online Orders">
+                <field name="name" string="Order"/>
+                <field name="partner_id"/>
+                <field name="partner_shipping_id" string="Receiver / Address"/>
+                <filter name="filter_open" string="Open"
+                        domain="[('online_delivered_date', '=', False), ('stage_code', 'not in', ['delivered', 'completed', 'cancelled'])]"/>
+                <filter name="filter_overdue" string="Overdue" domain="[('online_is_late', '=', True)]"/>
+                <separator/>
+                <filter name="filter_ordered_today" string="Ordered Today"
+                        domain="[('date_order', '&gt;=', context_today().strftime('%Y-%m-%d'))]"/>
+                <filter name="filter_delivered_today" string="Delivered Today"
+                        domain="[('online_delivered_date', '&gt;=', context_today().strftime('%Y-%m-%d'))]"/>
+                <group>
+                    <filter name="group_stage" string="Stage" context="{'group_by': 'stage_id'}"/>
+                    <filter name="group_zone" string="Zone" context="{'group_by': 'online_zone_id'}"/>
+                    <filter name="group_reason" string="Cancellation Reason" context="{'group_by': 'online_cancel_reason'}"/>
+                </group>
+                <searchpanel>
+                    <field name="online_zone_id" icon="fa-map-marker" string="Zone" enable_counters="1"/>
+                </searchpanel>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_online_orders_board" model="ir.actions.act_window">
+        <field name="name">Orders Board</field>
+        <field name="res_model">sale.order</field>
+        <field name="view_mode">kanban,list,form</field>
+        <field name="domain">[('website_id', '!=', False), ('stage_id', '!=', False)]</field>
+        <field name="context">{'create': False}</field>
+        <field name="search_view_id" ref="sale_order_view_search_online"/>
+        <field name="view_ids" eval="[(5, 0, 0),
+            (0, 0, {'view_mode': 'kanban', 'view_id': ref('sale_order_view_kanban_online')}),
+            (0, 0, {'view_mode': 'list', 'view_id': ref('sale_order_view_list_online')}),
+            (0, 0, {'view_mode': 'form', 'view_id': ref('sale_order_view_form_online')})]"/>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">No online orders yet</p>
+            <p>Website orders appear in "New" as soon as they are confirmed.</p>
+        </field>
+    </record>
+</odoo>
