@@ -16,7 +16,7 @@
         <xpath expr="//t[@t-set='information_block']" position="replace"/>
 
         <!-- 3. Inject shipping address directly at top of page content -->
-        <xpath expr="//div[contains(@class,'page')]//div[contains(@class,'oe_structure')][1]" position="before">
+        <xpath expr="//div[hasclass('page')]//div[hasclass('oe_structure')][1]" position="before">
             <div class="row mb-4">
                 <div class="col-6">
                     <strong>Shipping Address</strong>

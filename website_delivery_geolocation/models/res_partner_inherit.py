@@ -1,4 +1,4 @@
-from odoo import models, api
+from odoo import api, fields, models
 import logging
 
 _logger = logging.getLogger(__name__)
@@ -7,10 +7,26 @@ _logger = logging.getLogger(__name__)
 class ResPartner(models.Model):
     _inherit = 'res.partner'
 
+    address_label = fields.Selection(
+        [('home', 'Home'), ('work', 'Work'), ('other', 'Other')],
+        string='Address Label',
+    )
+    delivery_directions = fields.Text(
+        string='Driver Directions',
+        help='How to find the door: landmark, gate, parking... Shown to the driver.',
+    )
+
+    def _address_label_name(self):
+        """'Home' / 'Work' / 'Other' in the language of the customer (empty if none)."""
+        self.ensure_one()
+        selection = dict(self._fields['address_label']._description_selection(self.env))
+        return selection.get(self.address_label, '')
+
     def _get_frontend_writable_fields(self):
-        """Allow the checkout address form to save the map pin (hidden inputs)."""
+        """Allow the checkout address form to save the map pin (hidden inputs),
+        the label and the driver directions."""
         fields_set = super()._get_frontend_writable_fields()
-        fields_set.update({'partner_latitude', 'partner_longitude'})
+        fields_set.update({'partner_latitude', 'partner_longitude', 'address_label', 'delivery_directions'})
         return fields_set
 
     def _geo_localize_if_address(self):

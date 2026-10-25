@@ -3,11 +3,13 @@
 import publicWidget from "@web/legacy/js/public/public_widget";
 
 publicWidget.registry.MapAddressCheckout = publicWidget.Widget.extend({
-    selector: '.oe_website_sale',
+    // The map block: checkout address and My Account > Addresses
+    selector: '.o_map_address_selector',
 
     config: {
-        defaultLat: 25.2048,
-        defaultLng: 55.2708,
+        // Abu Dhabi
+        defaultLat: 24.4539,
+        defaultLng: 54.3773,
         defaultZoom: 12,
         // The address under the pin is looked up again only when the map moved
         // at least this far (avoids extra Google requests for small nudges/zooms).
@@ -64,6 +66,8 @@ publicWidget.registry.MapAddressCheckout = publicWidget.Widget.extend({
 
     _showError: function (message) {
         $('.o_geo_map_wrap').removeClass('o_geo_ready');
+        // No map: the address is typed (no "Pick on map" button)
+        $('#div_geo_pick').addClass('d-none');
         $('#o_delivery_map').html('<div class="alert alert-danger">' + message + '</div>');
     },
 
@@ -255,6 +259,14 @@ publicWidget.registry.MapAddressCheckout = publicWidget.Widget.extend({
             self._setExpanded(false);
         });
 
+        // Account details: "Pick on map" opens the full-screen picker
+        $('#o_map_open_btn').off('click').on('click', function () {
+            self._setExpanded(true);
+        });
+        $('.o_geo_backdrop').off('click').on('click', function () {
+            self._setExpanded(false);
+        });
+
         this._onKeydown = function (e) {
             if (e.key === 'Escape' && self.expanded) {
                 self._setExpanded(false);
@@ -289,7 +301,7 @@ publicWidget.registry.MapAddressCheckout = publicWidget.Widget.extend({
     // ---------------------------------------------------------------
     _setFormBusy: function (busy) {
         const buttons = document.querySelectorAll(
-            'a[name="website_sale_main_button"], button[name="website_sale_main_button"], .oe_website_sale form button[type="submit"]'
+            'a[name="website_sale_main_button"], button[name="website_sale_main_button"], .oe_website_sale form button[type="submit"], #save_address'
         );
         buttons.forEach(function (btn) {
             if (busy) {
@@ -373,6 +385,7 @@ publicWidget.registry.MapAddressCheckout = publicWidget.Widget.extend({
     _setExpanded: function (expanded) {
         this.expanded = expanded;
         $('.o_map_address_selector').toggleClass('o_geo_expanded', expanded);
+        $('.o_geo_backdrop').toggleClass('o_geo_backdrop_show', expanded);
         if (this.expandBtn) {
             this.expandBtn.innerHTML = expanded ? '<i class="fa fa-compress"></i>' : '<i class="fa fa-expand"></i>';
             this.expandBtn.title = expanded ? 'Exit full screen' : 'Full screen';
@@ -380,11 +393,24 @@ publicWidget.registry.MapAddressCheckout = publicWidget.Widget.extend({
         }
         $('body').toggleClass('o_geo_noscroll', expanded);
         // Keep the same point under the pin while the map changes size.
+        var self = this;
         var center = this.map.getCenter();
         google.maps.event.trigger(this.map, 'resize');
         this.map.setCenter(center);
+        // Once the new size is laid out (the "Pick on map" popup starts hidden)
+        setTimeout(function () {
+            google.maps.event.trigger(self.map, 'resize');
+            self.map.setCenter(center);
+        }, 100);
         if (!expanded) {
-            var block = document.querySelector('.o_map_address_selector');
+            var picked = $('#o_map_selected_address').text().trim();
+            if (picked) {
+                $('#o_map_open_hint').empty().append(
+                    $('<i class="fa fa-check-circle text-success me-1" role="presentation"/>'),
+                    document.createTextNode(picked));
+            }
+            var block = document.querySelector('.o_map_address_selector:not(.o_geo_picker_only)')
+                || document.getElementById('div_geo_pick');
             if (block) {
                 block.scrollIntoView({ block: 'nearest' });
             }

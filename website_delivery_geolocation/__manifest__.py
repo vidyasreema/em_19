@@ -1,6 +1,6 @@
 {
     "name": "Website Delivery Geolocation",
-    "version": "19.0.1.0.0",
+    "version": "19.0.1.4.0",
     "summary": "Automatically calculates latitude and longitude for customers and enables distance-based delivery",
     "description": """
         This module automatically calculates the latitude and longitude of a customer when their address is updated.

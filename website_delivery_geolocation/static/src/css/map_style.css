@@ -107,6 +107,11 @@
     display: none !important;
 }
 
+/* Account details: the map only opens full screen ("Pick on map") */
+.o_map_address_selector.o_geo_picker_only:not(.o_geo_expanded) {
+    display: none !important;
+}
+
 .o_map_address_selector.o_geo_expanded {
     position: fixed;
     inset: 0;
@@ -139,6 +144,37 @@
 
 body.o_geo_noscroll {
     overflow: hidden;
+}
+
+/* "Pick on map" (Account details): a popup on computers and tablets, full
+   screen on phones. Its own expand button is not needed. */
+.o_geo_picker_only #o_map_expand_btn {
+    display: none;
+}
+
+@media (min-width: 768px) and (min-height: 560px) {
+    .o_map_address_selector.o_geo_picker_only.o_geo_expanded {
+        inset: auto;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: min(860px, 92vw);
+        height: min(640px, 88vh);
+        padding: 16px;
+        border-radius: 12px;
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.25);
+    }
+    .o_geo_backdrop.o_geo_backdrop_show {
+        display: block;
+    }
+}
+
+.o_geo_backdrop {
+    display: none;
+    position: fixed;
+    inset: 0;
+    z-index: 1049;
+    background: rgba(0, 0, 0, 0.5);
 }
 
 /* Full screen on short, wide screens (phone in landscape): map over the whole
