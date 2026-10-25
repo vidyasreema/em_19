@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="res_config_settings_view_form_my_account" model="ir.ui.view">
+        <field name="name">res.config.settings.form.my.account</field>
+        <field name="model">res.config.settings</field>
+        <field name="inherit_id" ref="website_purchase_journey.res_config_settings_view_form_purchase_journey"/>
+        <field name="arch" type="xml">
+            <setting id="purchase_journey_setting" position="after">
+                <setting id="my_account_page_setting" string="App-style My Account page"
+                         help="My Account as one column of cards: profile, orders, coupons, settings and help. Untick to go back to the standard page at once.">
+                    <field name="my_account_page"/>
+                </setting>
+            </setting>
+        </field>
+    </record>
+</odoo>

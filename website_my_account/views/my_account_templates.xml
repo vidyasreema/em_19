@@ -1,0 +1,184 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- One row of a list card: icon, label, optional value, arrow -->
+    <template id="my_row" name="My Account: row">
+        <a t-att-href="url" t-att-target="target" t-att-rel="target and 'noopener'"
+           t-attf-class="o_my_row #{row_class or ''}">
+            <i t-attf-class="fa fa-fw #{icon} o_my_icon" role="presentation"/>
+            <span class="o_my_label" t-out="label"/>
+            <span class="o_my_end">
+                <span t-if="value" class="o_my_value" t-out="value"/>
+                <i class="fa fa-angle-right o_my_chevron" role="presentation"/>
+            </span>
+        </a>
+    </template>
+
+    <!-- My Account (/my), in the style of shopping apps -->
+    <template id="my_home" name="My Account">
+        <t t-call="website.layout">
+            <t t-set="additional_title">My Account</t>
+            <div id="wrap" class="o_my_account">
+                <div class="o_my_column mx-auto px-3 py-4">
+                    <h1 class="visually-hidden">My Account</h1>
+
+                    <!-- Profile -->
+                    <section class="o_my_card o_my_profile">
+                        <div class="d-flex align-items-center gap-3 p-3">
+                            <span class="o_my_avatar" t-out="profile['initial']"/>
+                            <div class="flex-grow-1 overflow-hidden">
+                                <div class="o_my_name text-truncate" t-out="partner.name"/>
+                                <div class="o_my_email text-truncate" t-out="partner.email"/>
+                            </div>
+                            <a href="/my/account" class="btn btn-sm rounded-pill px-3 o_my_edit">Edit</a>
+                        </div>
+                        <a t-if="profile['missing']" href="/my/account" class="d-block px-3 pb-3 o_my_progress">
+                            <div class="d-flex align-items-center gap-2">
+                                <div class="progress flex-grow-1" role="progressbar" aria-label="Profile completed"
+                                     t-att-aria-valuenow="profile['percent']" aria-valuemin="0" aria-valuemax="100">
+                                    <div class="progress-bar" t-attf-style="width: #{profile['percent']}%"/>
+                                </div>
+                                <span class="o_my_percent"><t t-out="profile['percent']"/>%</span>
+                            </div>
+                            <div class="o_my_hint">Add <t t-out="profile['missing']"/> for a faster checkout.</div>
+                        </a>
+                        <a t-if="coupon_count" href="/my/coupons" class="o_my_strip">
+                            <span>
+                                <t t-if="coupon_count == 1">You have <strong>1 coupon</strong> ready to use</t>
+                                <t t-else="">You have <strong><t t-out="coupon_count"/> coupons</strong> ready to use</t>
+                            </span>
+                            <span class="o_my_strip_action">Use now <i class="fa fa-angle-right o_my_chevron" role="presentation"/></span>
+                        </a>
+                        <div t-elif="saved" class="o_my_strip">
+                            <span>You've saved
+                                <strong t-out="saved" t-options="{'widget': 'monetary', 'display_currency': website.company_id.currency_id}"/>
+                                with <t t-out="website.name"/></span>
+                        </div>
+                    </section>
+
+                    <!-- Orders and coupons -->
+                    <div class="row g-2 mt-1">
+                        <div t-att-class="'col-6' if coupons_enabled else 'col-12'">
+                            <a href="/my/orders" class="o_my_tile o_my_tile_orders">
+                                <i class="fa fa-shopping-basket" role="presentation"/>
+                                <span>My Orders</span>
+                                <small t-if="last_order" class="o_my_tile_note text-truncate">
+                                    <t t-out="last_order.name"/><t t-if="last_order_status"> · <t t-out="last_order_status"/></t>
+                                </small>
+                            </a>
+                        </div>
+                        <div t-if="coupons_enabled" class="col-6">
+                            <a href="/my/coupons" class="o_my_tile o_my_tile_coupons">
+                                <i class="fa fa-ticket" role="presentation"/>
+                                <span>My Coupons</span>
+                                <small t-if="coupon_count" class="o_my_tile_note"><t t-out="coupon_count"/> ready to use</small>
+                            </a>
+                        </div>
+                    </div>
+
+                    <!-- My Account -->
+                    <h2 class="o_my_heading">My Account</h2>
+                    <div class="o_my_card">
+                        <t t-call="website_my_account.my_row">
+                            <t t-set="url" t-value="'/my/addresses'"/>
+                            <t t-set="icon" t-value="'fa-map-marker'"/>
+                            <t t-set="label">Addresses</t>
+                        </t>
+                        <t t-call="website_my_account.my_row">
+                            <t t-set="url" t-value="'/my/payment_method'"/>
+                            <t t-set="icon" t-value="'fa-credit-card'"/>
+                            <t t-set="label">Payment methods</t>
+                        </t>
+                        <t t-call="website_my_account.my_row">
+                            <t t-set="url" t-value="'/shop/wishlist'"/>
+                            <t t-set="icon" t-value="'fa-heart-o'"/>
+                            <t t-set="label">Favourites</t>
+                            <t t-set="value" t-value="favourite_count or ''"/>
+                        </t>
+                        <t t-if="invoice_count" t-call="website_my_account.my_row">
+                            <t t-set="url" t-value="'/my/invoices'"/>
+                            <t t-set="icon" t-value="'fa-file-text-o'"/>
+                            <t t-set="label">Invoices</t>
+                            <t t-set="value" t-value="invoice_count"/>
+                        </t>
+                        <t t-if="ticket_count" t-call="website_my_account.my_row">
+                            <t t-set="url" t-value="'/my/tickets'"/>
+                            <t t-set="icon" t-value="'fa-life-ring'"/>
+                            <t t-set="label">Support tickets</t>
+                            <t t-set="value" t-value="ticket_count"/>
+                        </t>
+                    </div>
+
+                    <!-- Staff (employee portal, when installed) -->
+                    <t t-if="ep_employee or ep_is_admin">
+                        <h2 class="o_my_heading">Work</h2>
+                        <div class="o_my_card">
+                            <t t-if="ep_employee" t-call="website_my_account.my_row">
+                                <t t-set="url" t-value="'/my/employee'"/>
+                                <t t-set="icon" t-value="'fa-id-badge'"/>
+                                <t t-set="label">My employee portal</t>
+                            </t>
+                            <t t-if="ep_is_admin" t-call="website_my_account.my_row">
+                                <t t-set="url" t-value="'/my/hr/dashboard'"/>
+                                <t t-set="icon" t-value="'fa-users'"/>
+                                <t t-set="label">HR dashboard</t>
+                            </t>
+                        </div>
+                    </t>
+
+                    <!-- Settings -->
+                    <h2 class="o_my_heading">Settings</h2>
+                    <div class="o_my_card">
+                        <t t-call="website_my_account.my_row">
+                            <t t-set="url" t-value="'/my/account'"/>
+                            <t t-set="icon" t-value="'fa-user-o'"/>
+                            <t t-set="label">Account details</t>
+                        </t>
+                        <t t-call="website_my_account.my_row">
+                            <t t-set="url" t-value="'/my/security'"/>
+                            <t t-set="icon" t-value="'fa-lock'"/>
+                            <t t-set="label">Password &amp; sign-in</t>
+                        </t>
+                        <t t-if="language_url" t-call="website_my_account.my_row">
+                            <t t-set="url" t-value="language_url"/>
+                            <t t-set="icon" t-value="'fa-globe'"/>
+                            <t t-set="label">Language</t>
+                            <t t-set="value" t-value="language.name"/>
+                            <t t-set="row_class" t-value="'o_my_language'"/>
+                        </t>
+                    </div>
+
+                    <!-- Help -->
+                    <h2 class="o_my_heading">Help</h2>
+                    <div class="o_my_card">
+                        <t t-if="whatsapp_url" t-call="website_my_account.my_row">
+                            <t t-set="url" t-value="whatsapp_url"/>
+                            <t t-set="icon" t-value="'fa-whatsapp'"/>
+                            <t t-set="label">Chat with us on WhatsApp</t>
+                            <t t-set="target" t-value="'_blank'"/>
+                            <t t-set="row_class" t-value="'o_my_whatsapp'"/>
+                        </t>
+                        <t t-call="website_my_account.my_row">
+                            <t t-set="url" t-value="'/contactus'"/>
+                            <t t-set="icon" t-value="'fa-envelope-o'"/>
+                            <t t-set="label">Contact us</t>
+                        </t>
+                        <t t-call="website_my_account.my_row">
+                            <t t-set="url" t-value="'/web/session/logout?redirect=/'"/>
+                            <t t-set="icon" t-value="'fa-sign-out'"/>
+                            <t t-set="label">Sign out</t>
+                            <t t-set="row_class" t-value="'o_my_logout'"/>
+                        </t>
+                    </div>
+                </div>
+            </div>
+        </t>
+    </template>
+    <!-- Account details (Edit): no company name and VAT for home customers -->
+    <template id="address_form_no_b2b_fields" inherit_id="portal.address_form_fields"
+              name="Account details without business fields">
+        <xpath expr="//t[@name='b2b_fields']" position="attributes">
+            <attribute name="t-if">not my_account_simple</attribute>
+        </xpath>
+    </template>
+
+</odoo>
