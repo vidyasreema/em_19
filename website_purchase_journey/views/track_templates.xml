@@ -160,11 +160,51 @@
                     t-att-data-order-id="sale_order.id" t-att-data-access-token="request.params.get('access_token')">
                 <i class="fa fa-rotate-right me-1" role="presentation"/>Order again
             </button>
-            <a t-if="website.journey_enabled and sale_order.website_id and sale_order.state == 'sale'"
+            <a t-if="website.journey_enabled and sale_order.website_id and sale_order.state == 'sale' and sale_order._journey_track_step() != 2"
                t-att-href="'/my/orders/%s/track%s' % (sale_order.id, '?access_token=%s' % sale_order.access_token if website.is_public_user() and sale_order.access_token else '')"
                class="btn btn-primary o_journey_track_btn">
                 <i class="fa fa-truck me-1" role="presentation"/>Track your order
             </a>
         </div>
+    </template>
+
+    <!-- Order page: "Download invoice" (the invoice PDF) instead of "View Details"
+         (the order PDF, kept as "Download order" until the order is invoiced) -->
+    <template id="sale_order_portal_download_invoice" inherit_id="sale.sale_order_portal_template"
+              name="Purchase Journey: Download invoice on the order page">
+        <xpath expr="//a[@id='print_invoice_report']" position="attributes">
+            <attribute name="t-if">not website.journey_enabled</attribute>
+        </xpath>
+        <xpath expr="//a[@id='print_invoice_report']" position="before">
+            <t t-if="website.journey_enabled">
+                <t t-set="journey_invoice" t-value="sale_order.invoice_ids.filtered(lambda i: i.state == 'posted' and i.move_type == 'out_invoice').sorted('invoice_date', reverse=True)[:1]"/>
+                <a t-if="journey_invoice" t-att-href="journey_invoice.get_portal_url(report_type='pdf', download=True)"
+                   class="btn btn-light flex-grow-1 o_journey_download_invoice" role="button">
+                    <i class="fa fa-download me-1" role="presentation"/>Download invoice
+                </a>
+                <a t-else="" t-att-href="sale_order.get_portal_url(report_type='pdf', download=True)"
+                   class="btn btn-light flex-grow-1 o_journey_download_order" role="button">
+                    <i class="fa fa-download me-1" role="presentation"/>Download order
+                </a>
+            </t>
+        </xpath>
+        <!-- No messages on the order page: help is on WhatsApp -->
+        <xpath expr="//div[@id='sale_order_communication']" position="attributes">
+            <attribute name="t-if">not website.journey_enabled</attribute>
+        </xpath>
+        <xpath expr="//div[@id='sale_order_communication']/preceding-sibling::hr[1]" position="attributes">
+            <attribute name="t-if">not website.journey_enabled</attribute>
+        </xpath>
+    </template>
+
+    <!-- Order page: no Terms &amp; Conditions and Payment terms for shop orders -->
+    <template id="sale_order_portal_content_journey" inherit_id="sale.sale_order_portal_content"
+              name="Purchase Journey: order page without terms">
+        <xpath expr="//section[@id='terms']" position="attributes">
+            <attribute name="t-if" add="not (website and website.journey_enabled)" separator=" and "/>
+        </xpath>
+        <xpath expr="//section[@t-if='sale_order.payment_term_id']" position="attributes">
+            <attribute name="t-if" add="not (website and website.journey_enabled)" separator=" and "/>
+        </xpath>
     </template>
 </odoo>

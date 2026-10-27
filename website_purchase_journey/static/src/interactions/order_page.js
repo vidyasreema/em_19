@@ -35,6 +35,7 @@ export class JourneyOrderPage extends Interaction {
         ".o_journey_guest_go": { "t-on-click": () => this.setGuest(true) },
         ".o_journey_show_signup": { "t-on-click": () => this.setGuest(false) },
         ".o_journey_chip": { "t-on-click": this.toggleChip },
+        ".o_journey_email": { "t-on-input": this.clearEmailError },
         ".o_journey_address_pick": { "t-on-change": this.locked(this.pickAddress, true) },
         ".o_journey_sumtog": { "t-on-click": this.onSummaryToggle },
     };
@@ -170,6 +171,7 @@ export class JourneyOrderPage extends Interaction {
     // ── Before the payment ───────────────────────────────────────────────
 
     showError(message, field) {
+        this.errorField = field;
         const error = this.el.querySelector(".o_journey_form_error");
         error.textContent = message;
         error.classList.remove("d-none");
@@ -183,6 +185,15 @@ export class JourneyOrderPage extends Interaction {
         }
     }
 
+    /** The email is being changed (typed or filled in by the browser): its error goes away. */
+    clearEmailError() {
+        this.el.querySelector(".o_journey_email")?.classList.remove("is-invalid");
+        if (this.errorField === "email") {
+            this.el.querySelector(".o_journey_form_error").classList.add("d-none");
+            this.errorField = null;
+        }
+    }
+
     async beforePayment(ev) {
         const button = ev.target.closest('button[name="o_payment_submit_button"]');
         if (!button || !this.el.contains(button) || this.validated) {
@@ -193,8 +204,8 @@ export class JourneyOrderPage extends Interaction {
         const pressed = (key) => this.el.querySelector(`.o_journey_chip[data-key="${key}"]`)?.getAttribute("aria-pressed") === "true";
         const result = await this.waitFor(rpc("/shop/order/prepare", {
             email: this.el.querySelector(".o_journey_email")?.value || "",
-            consent: this.el.querySelector(".o_journey_consent")?.checked || false,
-            leave_at_door: pressed("leave_at_door"),
+            // Not shown to returning customers: null keeps their choice
+            consent: this.el.querySelector(".o_journey_consent")?.checked ?? null,
             call_on_arrival: pressed("call_on_arrival"),
             note: this.el.querySelector(".o_journey_note")?.value || "",
             save_note: this.el.querySelector(".o_journey_save_note")?.checked || false,

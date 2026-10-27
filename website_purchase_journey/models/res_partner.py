@@ -26,6 +26,16 @@ class ResPartner(models.Model):
                 'marketing_consent_date': fields.Datetime.now(),
             })
 
+    def _journey_is_new_customer(self, order):
+        """No confirmed order yet (other than this one): "Email me with news
+        and offers" is only asked to new customers."""
+        self.ensure_one()
+        return not self.env['sale.order'].sudo().search_count([
+            ('partner_id', 'child_of', self.commercial_partner_id.id),
+            ('state', '=', 'sale'),
+            ('id', '!=', order.id),
+        ], limit=1)
+
     def _journey_lifetime_savings(self, website):
         """Coupons and free delivery on all the customer's confirmed orders of
         the website (Annex 3 C7, shown on the customer card of My Account)."""

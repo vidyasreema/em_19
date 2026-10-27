@@ -64,3 +64,27 @@ class TestAccount(OrderCommon):
         result = self.url_open('/my/address/submit', data=dict(form, phone='050 111 2233')).json()
         self.assertNotIn('invalid_fields', result)
         self.assertEqual(partner.phone, '+971 50 111 2233')
+
+    def test_order_page(self):
+        """Download invoice, no terms / payment terms / messages, no Track once delivered."""
+        self.order.payment_term_id = self.env.ref('account.account_payment_term_immediate')
+        page = self.url_open('/my/orders/%s' % self.order.id).text
+        self.assertIn('o_journey_download_order', page, "not invoiced yet: the order PDF")
+        self.assertNotIn('View Details', page)
+        self.assertNotIn('sale_order_communication', page)
+        self.assertNotIn('Payment terms', page)
+        self.assertIn('o_journey_track_btn', page)
+
+        invoice = self.order._create_invoices()
+        invoice.action_post()
+        page = self.url_open('/my/orders/%s' % self.order.id).text
+        self.assertIn('o_journey_download_invoice', page)
+        self.assertIn('/my/invoices/%s' % invoice.id, page)
+
+        # Stage straight in the database (the delivery rules are tested in Online Orders)
+        stage = self.env['online.order.stage']._get_by_code('delivered')
+        self.env.cr.execute("UPDATE sale_order SET stage_id = %s WHERE id = %s", (stage.id, self.order.id))
+        self.order.invalidate_recordset(['stage_id'])
+        page = self.url_open('/my/orders/%s' % self.order.id).text
+        self.assertNotIn('o_journey_track_btn', page, "delivered: nothing to track")
+

@@ -94,7 +94,7 @@ class Website(models.Model):
     # ──────────────────────────────────────────────────────────────────────────
 
     def _journey_active_order(self):
-        """Open online order of the visitor, for the tracking bar of the shop:
+        """Open online order of the visitor, for the tracking bar:
         their latest one not delivered yet (guests: the order just placed)."""
         self.ensure_one()
         Order = self.env['sale.order'].sudo()
@@ -114,6 +114,16 @@ class Website(models.Model):
         else:
             domain &= Domain('partner_id', 'child_of', self.env.user.partner_id.commercial_partner_id.id)
         return Order.search(domain, order='date_order desc, id desc', limit=1)
+
+    def _journey_track_bar_order(self):
+        """Order of the green tracking bar under the header of every page:
+        not during checkout, nor on the Track page itself."""
+        if not (request and self.journey_enabled):
+            return self.env['sale.order']
+        path = request.httprequest.path
+        if any(page in path for page in CHECKOUT_PATHS) or path.endswith('/track'):
+            return self.env['sale.order']
+        return self._journey_active_order()
 
     def _journey_show_location_bar(self):
         if not (request and self.journey_enabled):

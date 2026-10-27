@@ -184,6 +184,7 @@ class JourneyCheckout(WebsiteSale):
             'coupon_error': request.session.pop(SESSION_COUPON_ERROR, None),
             'contact_email': '' if is_public and not has_address else order_sudo.partner_id.email or '',
             'consent': order_sudo.partner_id.marketing_consent if has_address or not is_public else False,
+            'show_consent': is_public or order_sudo.partner_id._journey_is_new_customer(order_sudo),
             'only_services': order_sudo.only_services,
         })
         return values
@@ -220,8 +221,7 @@ class JourneyCheckout(WebsiteSale):
         return {'ok': True}
 
     @route('/shop/order/prepare', type='jsonrpc', auth='public', website=True, methods=['POST'])
-    def journey_order_prepare(self, email=None, consent=False, leave_at_door=False,
-                              call_on_arrival=False, note='', save_note=False):
+    def journey_order_prepare(self, email=None, consent=None, call_on_arrival=False, note='', save_note=False):
         """Save the form and check the order before the payment starts."""
         order_sudo = request.cart
         if not order_sudo or order_sudo.state != 'draft' or not order_sudo.website_order_line:
@@ -235,12 +235,12 @@ class JourneyCheckout(WebsiteSale):
                 return {'error': _("Enter a valid email address."), 'field': 'email'}
             if partner_sudo.email != email:
                 partner_sudo.email = email
-        partner_sudo._journey_set_marketing_consent(consent)
+        if consent is not None:  # not asked to returning customers: their choice stays
+            partner_sudo._journey_set_marketing_consent(consent)
 
         note = (note or '').strip()[:1000]
         order_sudo.write({
             'order_note': note,
-            'delivery_leave_at_door': bool(leave_at_door),
             'delivery_call_on_arrival': bool(call_on_arrival),
         })
         shipping_sudo = order_sudo.partner_shipping_id

@@ -29,6 +29,18 @@ class TestAfterOrder(OrderCommon):
     def _sign_up(self):
         return self.url_open('/shop/order/signup', data={'csrf_token': http.Request.csrf_token(self)})
 
+    def test_confirmation_addresses_compact(self):
+        order = self._guest_order()
+        self._guest_session(order)
+        page = self.url_open('/shop/confirmation').text
+        self.assertIn('o_journey_conf_addresses', page, "one small box")
+        self.assertNotIn('id="delivery_and_billing"', page, "instead of Odoo's tall card")
+        self.assertIn('Guest After', page)
+        self.assertIn('Tower A, Apt 5, Abu Dhabi, United Arab Emirates', page, "the address on one line")
+
+        self.website.journey_enabled = False
+        self.assertIn('id="delivery_and_billing"', self.url_open('/shop/confirmation').text)
+
     # ── Sign up from the confirmation page ────────────────────────────────
 
     def test_guest_signs_up_after_ordering(self):
@@ -109,6 +121,21 @@ class TestAfterOrder(OrderCommon):
         self._guest_session(self._guest_order())
         self.assertNotIn('o_journey_track_bar', self.url_open('/shop').text)
 
+    def test_tracking_bar_on_every_page(self):
+        user = new_test_user(self.env, login='everywhere', groups='base.group_portal')
+        order = self._order(420, self.island, user.partner_id)
+        order.action_confirm()
+        self.authenticate('everywhere', 'everywhere')
+        for path in ('/', '/contactus', '/my', '/my/orders', '/my/orders/%s' % order.id):
+            self.assertIn('o_journey_track_bar', self.url_open(path).text, "shown on %s" % path)
+        self.assertNotIn('o_journey_track_bar', self.url_open('/my/orders/%s/track' % order.id).text,
+                         "not on the Track page itself")
+
+        self._set_stage(order, 'out_for_delivery')
+        self.assertIn('o_journey_track_bar', self.url_open('/').text, "until it is delivered")
+        self._set_stage(order, 'delivered')
+        self.assertNotIn('o_journey_track_bar', self.url_open('/').text, "gone once delivered")
+
     # ── Track / Order details, Order again (C6, C7) ──────────────────────
 
     def _set_stage(self, order, code):
@@ -157,7 +184,7 @@ class TestAfterOrder(OrderCommon):
         page = self.url_open('/my/orders/%s' % order.id).text
         self.assertIn('o_journey_reorder', page, "Odoo's order page: our Order again")
         self.assertNotIn('reorder_sidebar_button', page, "instead of Odoo's (it only adds)")
-        self.assertIn('/my/orders/%s/track' % order.id, page)
+        self.assertNotIn('o_journey_track_btn', page, "delivered: no Track button on the order page")
 
     def test_track_page_access(self):
         order = self._guest_order()

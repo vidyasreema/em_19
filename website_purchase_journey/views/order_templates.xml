@@ -249,8 +249,8 @@
             Signed in as <b t-out="website_sale_order.partner_id.email or website_sale_order.partner_id.name"/>
         </section>
 
-        <!-- Contact (Version 2 §1.4, §3) -->
-        <section class="o_journey_blk">
+        <!-- Contact (Version 2 §1.4, §3); news and offers: new customers only -->
+        <section t-if="is_public or show_consent" class="o_journey_blk">
             <t t-if="is_public">
                 <h3 class="o_journey_h">Contact</h3>
                 <label for="o_journey_email" class="form-label small">Email (required, for your order confirmation)</label>
@@ -258,7 +258,7 @@
                        t-att-value="contact_email" autocomplete="email"/>
                 <div class="invalid-feedback">Enter a valid email address</div>
             </t>
-            <div class="form-check mt-2 mb-0">
+            <div t-if="show_consent" class="form-check mt-2 mb-0">
                 <input id="o_journey_consent" type="checkbox" class="form-check-input o_journey_consent" t-att-checked="consent or None"/>
                 <label for="o_journey_consent" class="form-check-label">Email me with news and offers</label>
             </div>
@@ -268,10 +268,6 @@
         <section class="o_journey_blk">
             <h3 class="o_journey_h">Instructions for the driver</h3>
             <div class="d-flex flex-wrap gap-2 mb-2">
-                <button type="button" class="btn btn-sm rounded-pill o_journey_chip"
-                        data-key="leave_at_door" t-att-aria-pressed="'true' if website_sale_order.delivery_leave_at_door else 'false'">
-                    Leave at my door
-                </button>
                 <button type="button" class="btn btn-sm rounded-pill o_journey_chip"
                         data-key="call_on_arrival" t-att-aria-pressed="'true' if website_sale_order.delivery_call_on_arrival else 'false'">
                     Call me on arrival

@@ -209,15 +209,14 @@ class TestOrderPage(OrderCommon):
         result = self.make_jsonrpc_request('/shop/order/prepare', {'email': 'not-an-email'})
         self.assertEqual(result['field'], 'email', "the email is required for guests")
         result = self.make_jsonrpc_request('/shop/order/prepare', {
-            'email': 'buyer@example.com', 'consent': True, 'leave_at_door': True,
+            'email': 'buyer@example.com', 'consent': True, 'call_on_arrival': True,
             'note': 'Gate 2, then the lift', 'save_note': True,
         })
         self.assertTrue(result.get('ok'), result)
         self.assertEqual(guest.email, 'buyer@example.com')
         self.assertTrue(guest.marketing_consent, "explicit consent saved on the customer")
         self.assertTrue(guest.marketing_consent_date)
-        self.assertTrue(order.delivery_leave_at_door)
-        self.assertFalse(order.delivery_call_on_arrival)
+        self.assertTrue(order.delivery_call_on_arrival)
         self.assertEqual(order.order_note, 'Gate 2, then the lift')
         self.assertEqual(guest.delivery_directions, 'Gate 2, then the lift', "saved for this address")
 
@@ -261,6 +260,31 @@ class TestOrderPage(OrderCommon):
         self.assertTrue(order.order_line.filtered(lambda l: l.reward_id.program_id == self.welcome),
                         "the welcome coupon is applied after signing up")
         self.assertIn('applied on the full amount', page)
+
+    def _member_cart(self, login):
+        user = new_test_user(self.env, login=login, groups='base.group_portal', email='%s@example.com' % login)
+        user.partner_id.write({'street': 'Villa 1', 'city': 'Abu Dhabi', 'country_id': self.env.ref('base.ae').id,
+                               'partner_latitude': 24.4539, 'partner_longitude': 54.3773, 'phone': '+971500000001'})
+        order = self._order(10, self.island, user.partner_id)
+        self.authenticate(login, login)
+        return user, order
+
+    def test_news_and_offers_for_new_customers(self):
+        user, _order = self._member_cart('newbuyer')
+        page = self.url_open('/shop/order').text
+        self.assertIn('o_journey_consent', page, "first order: asked")
+        self.make_jsonrpc_request('/shop/order/prepare', {'consent': True})
+        self.assertTrue(user.partner_id.marketing_consent)
+
+    def test_news_and_offers_not_asked_again(self):
+        user, _order = self._member_cart('regular')
+        user.partner_id._journey_set_marketing_consent(True)
+        self._order(10, self.island, user.partner_id).action_confirm()
+        page = self.url_open('/shop/order').text
+        self.assertIn('Signed in as', page)
+        self.assertNotIn('o_journey_consent', page, "returning customer: not asked")
+        self.assertTrue(self.make_jsonrpc_request('/shop/order/prepare', {}).get('ok'))
+        self.assertTrue(user.partner_id.marketing_consent, "their choice stays")
 
 
 @tagged('post_install', '-at_install')

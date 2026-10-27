@@ -394,6 +394,32 @@ $journey-shadow: 0 1px 2px rgba(30, 27, 25, .06), 0 6px 18px rgba(30, 27, 25, .0
         .list-group {
             border-radius: 12px;
         }
+        // Compact: one short row per method, small fields, no "Secured by" line
+        .list-group-item {
+            padding: .55rem .75rem !important;
+            gap: .25rem !important;
+        }
+        .o_payment_option_label {
+            font-size: .95rem;
+        }
+        [name^="o_payment_secured_by"] {
+            display: none !important;
+        }
+        [name="o_payment_inline_form"] {
+            font-size: .85rem;
+
+            .form-label, label {
+                margin-bottom: .15rem;
+            }
+            .form-control, .form-select {
+                padding: .3rem .6rem;
+                font-size: .85rem;
+                min-height: 0;
+            }
+            .mb-3 {
+                margin-bottom: .5rem !important;
+            }
+        }
     }
     .o_journey_place,
     .o_journey_add_address.btn-primary {
@@ -419,11 +445,16 @@ $journey-shadow: 0 1px 2px rgba(30, 27, 25, .06), 0 6px 18px rgba(30, 27, 25, .0
             left: 0;
             right: 0;
             bottom: 0;
-            z-index: $zindex-fixed;
+            // Under the header: its phone menu (account at the bottom) opens over the bar
+            z-index: $zindex-fixed - 1;
             background-color: $white;
             border-top: 1px solid $journey-line;
             box-shadow: 0 -6px 18px rgba(30, 27, 25, .08);
             padding: map-get($spacers, 2) map-get($spacers, 3) calc(#{map-get($spacers, 2)} + env(safe-area-inset-bottom, 0px));
+        }
+        // Phone menu open: no order bar under it
+        body:has(.o_navbar_mobile.show, .o_navbar_mobile.showing) & .o_journey_dock {
+            display: none;
         }
     }
 }
@@ -438,15 +469,16 @@ main:has(.o_journey_track_page) {
     box-shadow: $journey-shadow;
 }
 
-// Tracking bar of the open order (shop)
+// Tracking strip of the open order, under the menu of every page: solid
+// green, so it is not mistaken for the light "free delivery" strip
 .o_journey_track_bar {
-    min-height: 52px;
-    background-color: rgba($success, .12);
-    color: darken($success, 10%);
+    font-size: .9rem;
+    background-color: $journey-save;
+    color: $white;
 
     &:hover, &:focus {
-        background-color: rgba($success, .2);
-        color: darken($success, 15%);
+        background-color: darken($journey-save, 5%);
+        color: $white;
     }
 }
 
@@ -793,5 +825,42 @@ body:has(.o_journey_address_modal.show) .modal-backdrop {
             border-radius: 22px 22px 0 0;
             padding-bottom: calc(18px + env(safe-area-inset-bottom, 0px));
         }
+    }
+}
+
+// Footer logo row (website footer), phones: a small logo on the left and
+// the links beside it, one short row instead of the full-width logo
+@include media-breakpoint-down(lg) {
+    footer#bottom section:has(.o_footer_logo) {
+        padding-top: 1.25rem !important;
+        padding-bottom: 1.25rem !important;
+    }
+    footer#bottom .row:has(> div > .o_footer_logo) {
+        flex-wrap: nowrap;
+        align-items: center;
+
+        > div {
+            padding-bottom: 0 !important;
+        }
+        > div:has(> .o_footer_logo) {
+            flex: 0 0 auto;
+            width: auto;
+        }
+        > div:not(:has(> .o_footer_logo)) {
+            flex: 1 1 0;
+            min-width: 0;
+            padding-left: .25rem;
+            text-align: left !important;  // next to the logo, no gap
+            font-size: .8rem;
+            line-height: 1.6;
+        }
+        .list-inline-item:not(:last-child) {
+            margin-right: .3rem;
+        }
+    }
+    footer#bottom .o_footer_logo img {
+        max-width: 72px;
+        margin-left: 0 !important;
+        margin-right: 0 !important;
     }
 }

@@ -48,25 +48,58 @@
         </xpath>
     </template>
 
-    <!-- Shop: tracking bar for the open order (Annex 3 C6) -->
-    <template id="products_tracking_bar" inherit_id="website_sale.products"
-              name="Purchase Journey: tracking bar">
-        <xpath expr="//div[@id='o_wsale_container']" position="before">
-            <t t-set="journey_active_order" t-value="website._journey_active_order()"/>
-            <div t-if="journey_active_order" class="container mt-3">
-                <a t-att-href="journey_active_order._journey_track_url()"
-                   class="d-flex align-items-center gap-3 rounded-3 px-3 py-2 text-decoration-none o_journey_track_bar">
-                    <i class="fa fa-truck fa-lg" role="presentation"/>
-                    <span class="flex-grow-1 min-w-0">
-                        <small class="d-block">
-                            Order <t t-out="journey_active_order.name"/>
-                            <t t-if="journey_active_order.delivery_promise_date_label"> · <t t-out="journey_active_order.delivery_promise_date_label"/></t>
-                        </small>
-                        <strong class="o_journey_track_stage" t-out="journey_active_order._journey_track_stage()"/>
-                    </span>
-                    <span class="fw-bold text-decoration-underline">Track</span>
-                </a>
+    <!-- Confirmation page: the addresses in one small box instead of Odoo's tall card -->
+    <template id="confirmation_address_compact" inherit_id="website_sale.confirmation"
+              name="Purchase Journey: compact addresses after ordering">
+        <xpath expr="//t[@t-call='website_sale.address_on_checkout']" position="attributes">
+            <attribute name="t-if">not website.journey_enabled</attribute>
+        </xpath>
+        <xpath expr="//t[@t-call='website_sale.address_on_checkout']" position="after">
+            <t t-if="website.journey_enabled" t-call="website_purchase_journey.confirmation_addresses"/>
+        </xpath>
+    </template>
+
+    <template id="confirmation_addresses" name="Purchase Journey: addresses (one line each)">
+        <t t-set="journey_rows" t-value="[]"/>
+        <t t-set="journey_same" t-value="order.partner_invoice_id == order.partner_shipping_id"/>
+        <t t-if="order._has_deliverable_products()"
+           t-set="journey_rows" t-value="[('fa-map-marker', 'Delivery &amp; billing' if journey_same else 'Delivery', order.partner_shipping_id)]"/>
+        <t t-if="not journey_rows or not journey_same"
+           t-set="journey_rows" t-value="journey_rows + [('fa-file-text-o', 'Billing', order.partner_invoice_id)]"/>
+        <div class="border rounded-3 small o_journey_conf_addresses">
+            <div t-foreach="journey_rows" t-as="row"
+                 t-attf-class="d-flex align-items-start gap-2 px-3 py-2 o_journey_conf_address #{'border-top' if not row_first else ''}">
+                <i t-attf-class="fa #{row[0]} fa-fw text-muted mt-1" role="presentation"/>
+                <div class="min-w-0">
+                    <b t-out="row[2].name"/> <span class="text-muted">· <t t-out="row[1]"/></span>
+                    <div class="text-muted"
+                         t-out="', '.join(filter(None, [row[2].street, row[2].street2, row[2].city, row[2].country_id.name]))"/>
+                </div>
             </div>
+        </div>
+    </template>
+
+    <!-- Every page (home, shop, account...): green tracking bar of the open
+         order until it is delivered (Annex 3 C6) -->
+    <template id="layout_tracking_bar" inherit_id="website.layout"
+              name="Purchase Journey: tracking bar">
+        <xpath expr="//header[@id='top']" position="after">
+            <t t-set="journey_active_order" t-value="website._journey_track_bar_order()"/>
+            <!-- A slim strip the full width of the page, under the menu -->
+            <a t-if="journey_active_order" t-att-href="journey_active_order._journey_track_url()"
+               class="d-block text-decoration-none o_journey_track_bar">
+                <div class="container d-flex align-items-center gap-2 py-2">
+                    <i class="fa fa-truck" role="presentation"/>
+                    <span class="flex-grow-1 min-w-0 text-truncate">
+                        <strong class="o_journey_track_stage" t-out="journey_active_order._journey_track_stage()"/>
+                        · Order <t t-out="journey_active_order.name"/>
+                        <span t-if="journey_active_order.delivery_promise_date_label" class="d-none d-sm-inline">
+                            · <t t-out="journey_active_order.delivery_promise_date_label"/>
+                        </span>
+                    </span>
+                    <span class="fw-semibold text-nowrap">Track <i class="fa fa-angle-right ms-1" role="presentation"/></span>
+                </div>
+            </a>
         </xpath>
     </template>
 </odoo>

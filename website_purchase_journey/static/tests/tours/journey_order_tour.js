@@ -121,11 +121,11 @@ registry.category("web_tour.tours").add("journey_order", {
         },
         {
             content: "Instructions for the driver",
-            trigger: ".o_journey_chip[data-key='leave_at_door']",
+            trigger: ".o_journey_chip[data-key='call_on_arrival']",
             run: "click",
         },
         {
-            trigger: ".o_journey_chip[data-key='leave_at_door'][aria-pressed='true']",
+            trigger: ".o_journey_chip[data-key='call_on_arrival'][aria-pressed='true']",
         },
         {
             trigger: ".o_journey_note",
