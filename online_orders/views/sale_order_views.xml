@@ -118,19 +118,24 @@
                             <field name="online_coordinates" widget="CopyClipboardChar"/>
                             <field name="online_address_text" widget="CopyClipboardChar"/>
                             <field name="online_address_label"/>
-                            <field name="online_driver_notes" widget="CopyClipboardText"/>
-                            <field name="order_note" string="Note for This Order" widget="CopyClipboardText"
-                                   readonly="1" invisible="not order_note"/>
-                            <field name="delivery_leave_at_door" readonly="1" invisible="not delivery_leave_at_door"/>
-                            <field name="delivery_call_on_arrival" readonly="1" invisible="not delivery_call_on_arrival"/>
-                            <field name="online_zone_id" readonly="1"/>
+                            <field name="online_zone_id" readonly="1" options="{'no_open': True}"/>
                         </group>
                         <group string="Customer and Receiver" name="online_customer">
                             <field name="name" string="Order ID" widget="CopyClipboardChar" readonly="1"/>
                             <field name="online_receiver_name" widget="CopyClipboardChar"/>
                             <field name="online_receiver_phone" widget="CopyClipboardChar"/>
                             <field name="partner_id" string="Account Holder" readonly="1"/>
+                            <field name="online_customer_email" widget="CopyClipboardChar" invisible="not online_customer_email"/>
                             <field name="online_cash_to_collect_text" string="Cash to Collect" widget="CopyClipboardChar"/>
+                        </group>
+                        <group string="Delivery Instructions" name="online_delivery_instructions">
+                            <field name="online_driver_notes" widget="CopyClipboardText"/>
+                            <!-- Shown only when it adds something: the order page starts
+                                 with the driver notes of the address -->
+                            <field name="order_note" string="Note for This Order" widget="CopyClipboardText"
+                                   readonly="1" invisible="not order_note or order_note == online_driver_notes"/>
+                            <field name="delivery_leave_at_door" readonly="1" invisible="not delivery_leave_at_door"/>
+                            <field name="delivery_call_on_arrival" readonly="1" invisible="not delivery_call_on_arrival"/>
                         </group>
                         <group string="Promise" name="online_promise">
                             <field name="delivery_promise_message"/>

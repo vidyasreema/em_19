@@ -207,6 +207,8 @@ class TestOnlineOrderStages(OnlineOrdersCommon):
         self.assertEqual(order.online_receiver_name, 'Receiver')
         self.assertEqual(order.online_receiver_phone, '+971500000002')
         self.assertEqual(order.online_driver_notes, 'Gate 2, next to the pharmacy')
+        self.assertEqual(order.online_customer_email, order.partner_id.email)
+        self.assertTrue(order.online_customer_email)
         self.assertEqual(order.online_cash_to_collect, order.amount_total, "nothing paid online")
         self.assertEqual(order.online_cash_to_collect_text, '%.2f' % order.amount_total)
 

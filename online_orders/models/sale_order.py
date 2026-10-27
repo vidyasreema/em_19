@@ -87,6 +87,7 @@ class SaleOrder(models.Model):
     online_driver_notes = fields.Text(related='partner_shipping_id.delivery_directions', string='Driver Notes', tracking=False)
     online_receiver_name = fields.Char(related='partner_shipping_id.name', string='Receiver', tracking=False)
     online_receiver_phone = fields.Char(related='partner_shipping_id.phone', string='Receiver Mobile', tracking=False)
+    online_customer_email = fields.Char(related='partner_id.email', string='Customer Email', tracking=False)
     online_area = fields.Char('Area', compute='_compute_online_dispatch')
     online_cash_to_collect = fields.Monetary('Cash to Collect', compute='_compute_online_dispatch')
     online_cash_to_collect_text = fields.Char('Cash to Collect (copy)', compute='_compute_online_dispatch')
