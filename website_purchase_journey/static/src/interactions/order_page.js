@@ -145,7 +145,11 @@ export class JourneyOrderPage extends Interaction {
     updateSticky() {
         const summary = this.el.querySelector(".o_journey_summary");
         if (summary) {
-            summary.classList.toggle("o_journey_sticky", summary.offsetHeight + SUMMARY_MARGIN < window.innerHeight);
+            // Header kept at the top ("Fixed" scroll effect): pinned under it
+            const header = document.querySelector("header#top.o_header_fixed");
+            const headerHeight = header ? header.offsetHeight : 0;
+            summary.style.top = header ? `${headerHeight + 16}px` : "";
+            summary.classList.toggle("o_journey_sticky", summary.offsetHeight + SUMMARY_MARGIN + headerHeight < window.innerHeight);
         }
     }
 
