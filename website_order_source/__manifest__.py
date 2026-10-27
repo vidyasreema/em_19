@@ -1,6 +1,6 @@
 {
     'name': 'Website Order Source',
-    'version': '19.0.1.0.0',
+    'version': '19.0.1.0.3',
     'category': 'Website/eCommerce',
     'summary': 'The Cut: "How did you hear about us?" after the order, kept on the order',
     'description': """
@@ -13,8 +13,8 @@ A friend...).
 
 - The answer is saved on the order (field "Heard About Us") and written
   in its history (chatter), by the customer.
-- Answered once on the website (then only the answer is shown); the sales
-  team can change it on the order (tracked in the history).
+- Answered once on the website (then only the answer is shown); read-only
+  on the order.
 - Online Orders > Reporting > Orders by Source: orders and amounts by answer.
 - Online Orders > Configuration > Order Sources: the answers shown (order,
   names, archive).

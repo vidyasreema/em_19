@@ -17,8 +17,7 @@ class SaleOrder(models.Model):
 
     def _order_source_answer(self, source):
         """The customer's answer (website): saved on the order and written in
-        its history by the customer. Answered once; the sales team can change
-        it on the order (tracked)."""
+        its history by the customer. Answered once; read-only on the order."""
         self.ensure_one()
         order = self.sudo()
         if order.order_source_id:

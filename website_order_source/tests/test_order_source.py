@@ -35,13 +35,12 @@ class TestOrderSource(OrderCommon):
     def test_one_tap_answer(self):
         page = self.url_open('/shop/confirmation').text
         self.assertIn('How did you hear about us?', page)
-        self.assertIn('One tap is enough.', page)
+        self.assertIn('o_order_source_compact', page, "small, like on the order page")
         for name in ('Instagram', 'Facebook', 'A friend'):
             self.assertIn(name, page)
 
         response = self._answer(self.instagram)
         self.assertEqual(self.order.order_source_id, self.instagram)
-        self.assertIn('Thank you!', response.text)
         self.assertIn('o_order_source_answer', response.text, "only the answer is shown")
         self.assertNotIn('o_order_source_option', response.text, "no more buttons")
         note = self._notes()
@@ -104,12 +103,13 @@ class TestOrderSourceOrderPage(OrderCommon):
         self.authenticate('source.customer', 'source.customer')
         page = self.url_open('/my/orders/%s' % self.order.id).text
         self.assertIn('How did you hear about us?', page)
-        self.assertIn('One tap is enough.', page)
+        self.assertIn('o_order_source_compact', page, "a small section on the order page")
+        self.assertLess(page.index('id="total"'), page.index('id="o_order_source"'),
+                        "after the products and totals")
 
         response = self._answer(self.facebook)
         self.assertEqual(self.order.order_source_id, self.facebook)
-        self.assertIn('Thank you!', response.text, "back on the order page")
-        self.assertIn('o_order_source_answer', response.text)
+        self.assertIn('o_order_source_answer', response.text, "back on the order page")
         self.assertNotIn('o_order_source_option', response.text)
         note = self.order.message_ids.filtered(lambda m: 'How did you hear about us?' in (m.body or ''))
         self.assertIn('Facebook', note.body, "in the order history")

@@ -7,7 +7,7 @@
         <field name="inherit_id" ref="online_orders.sale_order_view_form_online"/>
         <field name="arch" type="xml">
             <field name="online_cash_to_collect_text" position="after">
-                <field name="order_source_id" options="{'no_create': True, 'no_open': True}"/>
+                <field name="order_source_id" readonly="1" options="{'no_open': True}"/>
             </field>
         </field>
     </record>
@@ -44,7 +44,7 @@
         <field name="inherit_id" ref="sale.view_order_form"/>
         <field name="arch" type="xml">
             <field name="source_id" position="after">
-                <field name="order_source_id" options="{'no_create': True, 'no_open': True}"/>
+                <field name="order_source_id" readonly="1" options="{'no_open': True}"/>
             </field>
         </field>
     </record>
