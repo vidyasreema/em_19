@@ -54,6 +54,8 @@ $journey-shadow: 0 1px 2px rgba(30, 27, 25, .06), 0 6px 18px rgba(30, 27, 25, .0
 .o_journey_location_modal,
 .o_journey_weight_sheet,
 .o_journey_promise_modal,
+.o_journey_coupon_modal,
+.o_journey_mycoupons_modal,
 .o_journey_track_page,
 .o_journey_tile_actions,
 .o_journey_track_bar {
@@ -456,6 +458,36 @@ $journey-shadow: 0 1px 2px rgba(30, 27, 25, .06), 0 6px 18px rgba(30, 27, 25, .0
         body:has(.o_navbar_mobile.show, .o_navbar_mobile.showing) & .o_journey_dock {
             display: none;
         }
+    }
+}
+
+// "My coupons" popup of the order page
+.o_journey_mycoupons_modal {
+    .modal-content {
+        border: 0;
+        border-radius: 18px;
+    }
+    .o_journey_mycoupon {
+        border: 1px dashed $journey-ox;
+        background-color: $journey-ox-soft;
+    }
+}
+
+// "Congratulations" popup of the next-order coupon (confirmation page)
+.o_journey_coupon_modal {
+    .modal-content {
+        border: 0;
+        border-radius: 18px;
+    }
+    .o_journey_coupon_icon {
+        width: 64px;
+        height: 64px;
+        background-color: $journey-save-soft;
+        color: $journey-save;
+    }
+    .o_journey_coupon_code_box {
+        border: 1px dashed $journey-ox;
+        background-color: $journey-ox-soft;
     }
 }
 
@@ -862,5 +894,45 @@ body:has(.o_journey_address_modal.show) .modal-backdrop {
         max-width: 72px;
         margin-left: 0 !important;
         margin-right: 0 !important;
+    }
+
+    // Contact part (How can we help / Call us / Send us a message / Follow
+    // us): two columns, small text, little padding instead of four tall blocks
+    footer#bottom section:has(.s_social_media) {
+        padding-top: 1.25rem !important;
+        padding-bottom: .25rem !important;
+
+        .row > div {
+            padding-top: .35rem !important;
+            padding-bottom: .35rem !important;
+        }
+        .row > div:nth-child(-n+2) {
+            flex: 0 0 50%;
+            max-width: 50%;
+        }
+        p {
+            font-size: .75rem;
+            margin-bottom: .1rem !important;
+            opacity: .8;
+        }
+        h4, h5 {
+            font-size: .95rem;
+            margin-bottom: 0;
+            overflow-wrap: anywhere;
+        }
+        .s_social_media {
+            display: flex;
+            align-items: center;
+            gap: .25rem;
+            text-align: left !important;
+
+            .s_social_media_title {
+                margin: 0 .25rem 0 0 !important;
+            }
+        }
+    }
+    footer#bottom .s_hr {
+        padding-top: .25rem !important;
+        padding-bottom: .25rem !important;
     }
 }

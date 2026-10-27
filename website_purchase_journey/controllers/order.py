@@ -186,6 +186,9 @@ class JourneyCheckout(WebsiteSale):
             'consent': order_sudo.partner_id.marketing_consent if has_address or not is_public else False,
             'show_consent': is_public or order_sudo.partner_id._journey_is_new_customer(order_sudo),
             'only_services': order_sudo.only_services,
+            # "View my coupons" popup: the coupons ready to use or waiting for a payment
+            'my_coupons': None if is_public else request.env['loyalty.card']._journey_portal_coupons(
+                request.env.user.partner_id, cart=order_sudo)[0],
         })
         return values
 

@@ -8,6 +8,15 @@ const PROMISE_CHECK_MS = 60000;
 const SUMMARY_MARGIN = 32;
 // Promise shown before the page reloaded itself (null when the customer opened it)
 const RELOAD_PROMISE_KEY = "journey_reload_promise";
+// Parts of the page with amounts, taken again from the server after a cart change
+const REFRESHED_PARTS = [
+    ".o_journey_savebar_wrap",
+    ".o_journey_sumtog_total",
+    "#o_journey_summary",
+    ".o_journey_mycoupons_list",
+    ".o_journey_payment",
+    ".o_journey_dock",
+];
 
 function popReloadPromise() {
     try {
@@ -20,9 +29,11 @@ function popReloadPromise() {
 }
 
 /**
- * Single order page. Every change of the cart (quantity, coupon, address)
- * reloads the page, so that the amount given to the payment form is always
- * the amount of the order.
+ * Single order page. A change of the cart (quantity, coupon) takes the parts
+ * with amounts (summary, payment form, order button) from the server again,
+ * without reloading the page: the summary stays open, the form keeps what was
+ * typed and the payment form always has the amount of the order. A change of
+ * address reloads the page.
  */
 export class JourneyOrderPage extends Interaction {
     static selector = ".o_journey_order";
@@ -38,6 +49,8 @@ export class JourneyOrderPage extends Interaction {
         ".o_journey_email": { "t-on-input": this.clearEmailError },
         ".o_journey_address_pick": { "t-on-change": this.locked(this.pickAddress, true) },
         ".o_journey_sumtog": { "t-on-click": this.onSummaryToggle },
+        ".o_journey_mycoupon_copy": { "t-on-click": this.copyCoupon },
+        ".o_journey_mycoupon_apply": { "t-on-click": this.locked(this.applyMyCoupon, true) },
     };
 
     setup() {
@@ -76,13 +89,57 @@ export class JourneyOrderPage extends Interaction {
         window.location.reload();
     }
 
+    /** Cart changed: the parts with amounts again, the page stays where it is. */
+    async refresh() {
+        let doc;
+        try {
+            const response = await this.waitFor(fetch(window.location.pathname));
+            doc = new DOMParser().parseFromString(await this.waitFor(response.text()), "text/html");
+        } catch {
+            this.reload();
+            return;
+        }
+        const newPage = doc.querySelector(".o_journey_order");
+        const pairs = REFRESHED_PARTS.map((sel) => [this.el.querySelector(sel), newPage?.querySelector(sel)]);
+        if (!newPage || pairs.some(([oldEl, newEl]) => !oldEl !== !newEl)) {
+            this.reload(); // e.g. the cart is empty now
+            return;
+        }
+        // All the parts first, then their interactions: the payment form of Odoo
+        // must start with the new order button already in the page
+        const interactions = this.services["public.interactions"];
+        const replaced = pairs.filter(([oldEl]) => oldEl);
+        for (const [oldEl, newEl] of replaced) {
+            interactions.stopInteractions(oldEl);
+            // Same element, new content: the summary stays open or closed (phones)
+            oldEl.replaceChildren(...newEl.childNodes);
+        }
+        for (const [oldEl] of replaced) {
+            interactions.startInteractions(oldEl);
+        }
+        // Cart icon of the header
+        const quantity = doc.querySelector(".my_cart_quantity")?.textContent.trim();
+        if (quantity) {
+            for (const el of document.querySelectorAll(".my_cart_quantity")) {
+                el.textContent = quantity;
+            }
+            try {
+                sessionStorage.setItem("website_sale_cart_quantity", quantity);
+            } catch {
+                // Storage blocked: the icon is right on the next page
+            }
+        }
+        this.updateContent();
+        this.updateSticky();
+    }
+
     // ── Cart ──────────────────────────────────────────────────────────────
 
     async changeLine(ev, delta) {
         const line = ev.currentTarget.closest(".o_journey_cart_line");
         const quantity = Math.max((parseFloat(line.dataset.qty) || 0) + delta, 0);
         await this.waitFor(rpc("/shop/cart/update", { line_id: parseInt(line.dataset.lineId), quantity }));
-        this.reload();
+        await this.refresh();
     }
 
     onCouponKeydown(ev) {
@@ -98,12 +155,37 @@ export class JourneyOrderPage extends Interaction {
             return;
         }
         await this.waitFor(rpc("/shop/order/coupon", { code }));
-        this.reload();
+        await this.refresh();
+        // Wrong code: it stays in the field, under the message
+        const input = this.el.querySelector(".o_journey_coupon_code");
+        if (input && this.el.querySelector(".o_journey_coupon_error")) {
+            input.value = code;
+        }
     }
 
     async removeCoupon(ev) {
         await this.waitFor(rpc("/shop/order/coupon/remove", { line_id: parseInt(ev.currentTarget.dataset.lineId) }));
-        this.reload();
+        await this.refresh();
+    }
+
+    // ── My coupons popup ─────────────────────────────────────────────────
+
+    async copyCoupon(ev) {
+        const button = ev.currentTarget;
+        try {
+            await this.waitFor(navigator.clipboard.writeText(button.dataset.code));
+            button.textContent = _t("Copied");
+        } catch {
+            // No clipboard (old browser, http): the code stays visible to copy by hand
+        }
+    }
+
+    async applyMyCoupon(ev) {
+        const modalEl = this.el.querySelector(".o_journey_mycoupons_modal");
+        await this.waitFor(rpc("/shop/order/coupon", { code: ev.currentTarget.dataset.code }));
+        window.Modal.getOrCreateInstance(modalEl).hide();
+        await this.refresh();
+        this.el.querySelector(".o_journey_coupon")?.scrollIntoView({ behavior: "smooth", block: "center" });
     }
 
     // ── Sign-up box / guest ──────────────────────────────────────────────

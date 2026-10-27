@@ -29,6 +29,54 @@ class TestAfterOrder(OrderCommon):
     def _sign_up(self):
         return self.url_open('/shop/order/signup', data={'csrf_token': http.Request.csrf_token(self)})
 
+    def _next_order_program(self, minimum=300):
+        self.env['loyalty.program'].search([('program_type', '=', 'next_order_coupons')]).active = False
+        return self.env['loyalty.program'].create({
+            'name': 'Next Order 10%', 'program_type': 'next_order_coupons', 'trigger': 'auto',
+            'applies_on': 'future',
+            'rule_ids': [Command.create({'minimum_amount': minimum, 'reward_point_mode': 'order', 'reward_point_amount': 1})],
+            'reward_ids': [Command.create({
+                'reward_type': 'discount', 'discount': 10, 'discount_mode': 'percent',
+                'discount_applicability': 'order', 'required_points': 1, 'description': '10% off your order'})],
+        })
+
+    def _coupon_order(self, amount, confirm=True):
+        order = self._order(amount, self.island, self._address(24.4539, 54.3773, name='Coupon Guest', email='coupon.guest@example.com'))
+        order._update_programs_and_rewards()
+        if confirm:
+            order.action_confirm()
+        self._guest_session(order)
+        return order
+
+    def test_next_order_coupon_on_confirmation(self):
+        self._next_order_program()
+        order = self._coupon_order(420)
+        coupon = order.coupon_point_ids.coupon_id
+        self.assertEqual(len(coupon), 1)
+        page = self.url_open('/shop/confirmation').text
+        self.assertIn('You earned a coupon for your next order', page)
+        self.assertIn('10% off your order', page)
+        self.assertIn(coupon.code, page, "ready: the code is shown")
+        self.assertIn('coupon.guest@example.com', page, "guests: saved for their email")
+        self.assertIn('o_journey_coupon_modal', page, "the Congratulations popup")
+        self.assertIn('Congratulations!', page)
+
+    def test_next_order_coupon_waits_for_payment(self):
+        self._next_order_program()
+        order = self._coupon_order(420, confirm=False)
+        coupon = order.coupon_point_ids.coupon_id
+        page = self.url_open('/shop/confirmation').text
+        self.assertIn('You earned a coupon for your next order', page)
+        self.assertIn('Ready once this order is paid.', page)
+        self.assertNotIn(coupon.code, page, "no code before the payment")
+
+    def test_no_next_order_coupon_below_minimum(self):
+        self._next_order_program(minimum=1000)
+        self._coupon_order(420)
+        page = self.url_open('/shop/confirmation').text
+        self.assertNotIn('o_journey_next_coupon', page)
+        self.assertNotIn('o_journey_coupon_modal', page, "no popup")
+
     def test_confirmation_addresses_compact(self):
         order = self._guest_order()
         self._guest_session(order)

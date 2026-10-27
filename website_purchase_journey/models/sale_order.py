@@ -193,6 +193,24 @@ class SaleOrder(models.Model):
             _logger.warning("Password link not sent to the new customer %s", user.login)
         return user
 
+    def _journey_next_order_coupon(self):
+        """Coupon this order earns for the next one (a "Next Order Coupons"
+        program), for the confirmation page: {'title', 'code', 'ready'} or None.
+        The coupon is made with the cart; its point is given when the order is
+        confirmed (paid)."""
+        self.ensure_one()
+        entry = self.sudo().coupon_point_ids.filtered(
+            lambda p: p.points > 0 and p.coupon_id.program_id.program_type == 'next_order_coupons')[:1]
+        if not entry:
+            return None
+        coupon = entry.coupon_id
+        program = coupon.program_id
+        return {
+            'title': program.reward_ids[:1].description or program.name,
+            'code': coupon.code,
+            'ready': self.state == 'sale',
+        }
+
     def _journey_track_stage(self):
         """Stage shown in the tracking bar (Online Orders stage)."""
         self.ensure_one()

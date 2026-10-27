@@ -74,6 +74,8 @@ class TestAccount(OrderCommon):
         self.assertNotIn('sale_order_communication', page)
         self.assertNotIn('Payment terms', page)
         self.assertIn('o_journey_track_btn', page)
+        self.assertIn('o_journey_conf_addresses', page, "the addresses in one small box")
+        self.assertNotIn('id="customer_info"', page)
 
         invoice = self.order._create_invoices()
         invoice.action_post()

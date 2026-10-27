@@ -269,6 +269,18 @@ class TestOrderPage(OrderCommon):
         self.authenticate(login, login)
         return user, order
 
+    def test_my_coupons_popup(self):
+        user, order = self._member_cart('popupbuyer')
+        card = self.env['loyalty.card'].create({
+            'program_id': self.promo.id, 'partner_id': user.partner_id.id, 'points': 1})
+        self.promo.program_type = 'coupons'
+        page = self.url_open('/shop/order').text
+        self.assertIn('o_journey_mycoupons_modal', page, "the popup is on the order page")
+        self.assertIn('View my coupons (1)', page)
+        self.assertIn(card.code, page, "with the code to copy")
+        self.assertIn('o_journey_mycoupon_apply', page, "and Apply")
+        self.assertNotIn('href="/my/coupons" class="small d-inline-block', page, "no link away from the page")
+
     def test_news_and_offers_for_new_customers(self):
         user, _order = self._member_cart('newbuyer')
         page = self.url_open('/shop/order').text

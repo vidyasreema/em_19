@@ -27,12 +27,14 @@
                  t-att-data-is-public="'1' if is_public else '0'">
 
                 <!-- Savings / free delivery bar -->
-                <div t-if="summary['savings']" class="o_journey_savebar text-center small py-2">
-                    Your savings on this order
-                    <b t-out="summary['savings']" t-options="money_options"/>
-                </div>
-                <div t-elif="summary['threshold'] and summary['left_for_free']" class="o_journey_savebar text-center small py-2">
-                    Add <b t-out="summary['left_for_free']" t-options="money_options"/> to get free delivery
+                <div class="o_journey_savebar_wrap">
+                    <div t-if="summary['savings']" class="o_journey_savebar text-center small py-2">
+                        Your savings on this order
+                        <b t-out="summary['savings']" t-options="money_options"/>
+                    </div>
+                    <div t-elif="summary['threshold'] and summary['left_for_free']" class="o_journey_savebar text-center small py-2">
+                        Add <b t-out="summary['left_for_free']" t-options="money_options"/> to get free delivery
+                    </div>
                 </div>
 
                 <div class="container py-3 pb-5 o_journey_order_container">
@@ -54,7 +56,7 @@
                             type="button" data-bs-toggle="collapse" data-bs-target="#o_journey_summary"
                             aria-expanded="false" aria-controls="o_journey_summary">
                         <span><i class="fa fa-shopping-basket me-2"/><span class="o_journey_sumtog_label">Show order summary</span></span>
-                        <b t-out="summary['total']" t-options="money_options"/>
+                        <b class="o_journey_sumtog_total" t-out="summary['total']" t-options="money_options"/>
                     </button>
 
                     <div class="row g-4 align-items-start">
@@ -83,6 +85,41 @@
                             </div>
                             <div class="modal-footer justify-content-center border-0 pt-0">
                                 <button type="button" class="btn btn-primary rounded-pill px-4" data-bs-dismiss="modal">Got it</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <!-- My coupons (signed in): copy or apply a coupon without leaving the page -->
+                <div t-if="my_coupons is not None" class="modal fade o_journey_mycoupons_modal" id="o_journey_mycoupons_modal"
+                     tabindex="-1" aria-labelledby="o_journey_mycoupons_title" aria-hidden="true">
+                    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+                        <div class="modal-content">
+                            <div class="modal-header border-0 pb-0">
+                                <h5 class="modal-title" id="o_journey_mycoupons_title">My coupons</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"/>
+                            </div>
+                            <div class="modal-body o_journey_mycoupons_list">
+                                <div t-foreach="my_coupons" t-as="coupon" class="rounded-3 p-3 mb-2 o_journey_mycoupon">
+                                    <div class="d-flex justify-content-between align-items-start gap-2">
+                                        <b t-out="coupon['title']"/>
+                                        <span t-attf-class="badge rounded-pill #{'text-bg-success' if coupon['state'] == 'current' else 'text-bg-warning'}"
+                                              t-out="coupon['status']"/>
+                                    </div>
+                                    <div class="small text-muted" t-out="coupon['rule']"/>
+                                    <div class="d-flex align-items-center gap-2 mt-2">
+                                        <span class="font-monospace fw-bold flex-grow-1 text-truncate" t-out="coupon['code']"/>
+                                        <button type="button" class="btn btn-sm btn-outline-primary rounded-pill o_journey_mycoupon_copy"
+                                                t-att-data-code="coupon['code']">Copy</button>
+                                        <span t-if="coupon['applied']" class="small text-success text-nowrap">
+                                            <i class="fa fa-check me-1" role="presentation"/>Applied
+                                        </span>
+                                        <button t-elif="coupon['can_apply']" type="button"
+                                                class="btn btn-sm btn-primary rounded-pill o_journey_mycoupon_apply"
+                                                t-att-data-code="coupon['code']">Apply</button>
+                                    </div>
+                                </div>
+                                <p t-if="not my_coupons" class="text-muted mb-2">You have no coupons right now.</p>
+                                <a href="/my/coupons" class="small">All my coupons (used and expired too)</a>
                             </div>
                         </div>
                     </div>
@@ -150,7 +187,10 @@
                 <button t-if="coupon['removable']" type="button" class="btn btn-link btn-sm p-0 ms-1 align-baseline o_journey_coupon_remove"
                         t-att-data-line-id="coupon['line'].id">Remove</button>
             </div>
-            <a t-if="not is_public" href="/my/coupons" class="small d-inline-block mt-2">View my coupons</a>
+            <button t-if="my_coupons" type="button" class="btn btn-link btn-sm p-0 mt-2 o_journey_mycoupons_open"
+                    data-bs-toggle="modal" data-bs-target="#o_journey_mycoupons_modal">
+                View my coupons (<t t-out="len(my_coupons)"/>)
+            </button>
         </section>
 
         <!-- Payment summary -->

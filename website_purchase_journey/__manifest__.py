@@ -1,6 +1,6 @@
 {
     'name': 'Website Purchase Journey',
-    'version': '19.0.1.5.3',
+    'version': '19.0.1.5.8',
     'category': 'Website/eCommerce',
     'summary': 'The Cut purchase journey: add from the shop, weight choice, location on entry',
     'description': """

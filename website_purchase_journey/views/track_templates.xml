@@ -206,5 +206,19 @@
         <xpath expr="//section[@t-if='sale_order.payment_term_id']" position="attributes">
             <attribute name="t-if" add="not (website and website.journey_enabled)" separator=" and "/>
         </xpath>
+        <!-- Addresses: one small box (like the confirmation page) instead of the tall contact blocks -->
+        <xpath expr="//div[@id='customer_info']" position="attributes">
+            <attribute name="t-if">not (website and website.journey_enabled)</attribute>
+        </xpath>
+        <xpath expr="//div[@id='customer_info']" position="after">
+            <div t-if="website and website.journey_enabled" id="customer_info_journey" class="col-12 col-lg-6 mb-4">
+                <h5 class="mb-1">Address</h5>
+                <hr class="mt-1 mb-2"/>
+                <t t-call="website_purchase_journey.confirmation_addresses">
+                    <t t-set="order" t-value="sale_order"/>
+                    <t t-set="journey_address_phone" t-value="True"/>
+                </t>
+            </div>
+        </xpath>
     </template>
 </odoo>

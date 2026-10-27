@@ -35,14 +35,21 @@ registry.category("web_tour.tours").add("journey_order", {
             trigger: ".o_journey_promise_line:contains('Delivered today within 3 hours')",
         },
         {
-            content: "One more unit from the cart of the page",
+            content: "One more unit from the cart of the page (marked: a reload would lose the mark)",
             trigger: ".o_journey_cart_line .o_journey_line_plus",
-            run: "click",
-            expectUnloadPage: true,
+            run(helpers) {
+                window.journeyNoReload = true;
+                return helpers.click();
+            },
         },
         {
-            content: "After the reload: same promise, no popup again",
+            content: "Updated without reloading the page: no popup again",
             trigger: ".o_journey_cart_line .o_journey_row_in_cart:contains('381')",
+            run() {
+                if (!window.journeyNoReload) {
+                    throw new Error("The order page was reloaded");
+                }
+            },
         },
         {
             trigger: "body:not(:has(.o_journey_promise_modal.show))",
@@ -113,11 +120,40 @@ registry.category("web_tour.tours").add("journey_order", {
         },
         {
             trigger: ".o_journey_coupon_apply",
-            run: "click",
-            expectUnloadPage: true,
+            run(helpers) {
+                window.journeyNoReload = true;
+                return helpers.click();
+            },
         },
         {
             trigger: ".o_journey_coupon_error:contains('Check the spelling')",
+        },
+        {
+            content: "The page was not reloaded; the wrong code stays in the field",
+            trigger: ".o_journey_coupon_code:value(NOPE)",
+            run() {
+                if (!window.journeyNoReload) {
+                    throw new Error("The order page was reloaded");
+                }
+            },
+        },
+        {
+            content: "My coupons opens in a popup on the same page",
+            trigger: ".o_journey_mycoupons_open",
+            run: "click",
+        },
+        {
+            trigger: ".o_journey_mycoupons_modal.show .o_journey_mycoupon:contains('Applied') .o_journey_mycoupon_copy",
+        },
+        {
+            trigger: ".o_journey_mycoupons_modal.show .btn-close",
+            async run(helpers) {
+                await new Promise((resolve) => setTimeout(resolve, 500));
+                await helpers.click();
+            },
+        },
+        {
+            trigger: "body:not(:has(.modal.show))",
         },
         {
             content: "Instructions for the driver",
