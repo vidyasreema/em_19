@@ -1,0 +1,313 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- The Cut versions of the emails of website customers (Annex 2, 3.1 and 3.4).
+         The layout (logo, card, footer) is added when they are sent: here only the content. -->
+    <data noupdate="1">
+
+        <!-- Orders: from "Order emails from" (orders@) -->
+        <record id="mail_template_order_confirmation" model="mail.template">
+            <field name="name">The Cut: Order Confirmation</field>
+            <field name="model_id" ref="sale.model_sale_order"/>
+            <field name="brand_email" eval="True"/>
+            <field name="brand_original_id" ref="sale.mail_template_sale_confirmation"/>
+            <field name="subject">Your order {{ object.name }} is confirmed</field>
+            <field name="email_from">{{ object.website_id._brand_orders_from() }}</field>
+            <field name="partner_to">{{ object.partner_id.id }}</field>
+            <field name="use_default_to" eval="False"/>
+            <field name="lang">{{ object.partner_id.lang }}</field>
+            <field name="auto_delete" eval="True"/>
+            <field name="description">Sent to website customers when their order is paid (instead of Sales: Order Confirmation)</field>
+            <field name="body_html" type="html">
+<div>
+    <h2 style="margin: 0 0 8px 0; font-size: 20px; color: #1E1B19;">Thank you for your order!</h2>
+    <p style="margin: 0 0 16px 0;">
+        Hello <t t-out="object.partner_id.name or ''">Sara</t>, we received your order
+        <strong t-out="object.name or ''">S00001</strong> and are preparing it.
+    </p>
+    <div t-if="object.delivery_promise_message" style="margin: 0 0 16px 0; padding: 12px 16px; background-color: #EAF4EC; border-radius: 12px; color: #1E5631;">
+        <strong t-out="object.delivery_promise_message or ''">Delivered today within 3 hours</strong>
+        <t t-if="object.delivery_promise_date_label"><br/><t t-out="object.delivery_promise_date_label">Wed 21 Oct · by 4:30 PM</t></t>
+    </div>
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse: collapse; font-size: 14px;">
+        <t t-foreach="object.website_order_line" t-as="line">
+            <tr t-if="not line.is_reward_line and not line.is_delivery">
+                <td style="padding: 8px 0; border-bottom: 1px solid #EEEBE6;">
+                    <t t-out="line.product_id.name or line.name">Ribeye</t>
+                    <span style="color: #6A635E;">
+                        · <t t-out="'%g' % line.product_uom_qty">1</t> <t t-out="line.product_uom_id.name or ''">Units</t>
+                    </span>
+                </td>
+                <td align="right" style="padding: 8px 0; border-bottom: 1px solid #EEEBE6; white-space: nowrap;"
+                    t-out="format_amount(line.price_total, object.currency_id)">100.00 AED</td>
+            </tr>
+        </t>
+        <t t-set="discount" t-value="sum(object.order_line.filtered('is_reward_line').mapped('price_total'))"/>
+        <tr t-if="discount">
+            <td style="padding: 6px 0; color: #1E5631;">Discount</td>
+            <td align="right" style="padding: 6px 0; color: #1E5631;" t-out="format_amount(discount, object.currency_id)">-10.00 AED</td>
+        </tr>
+        <tr>
+            <td style="padding: 6px 0; color: #6A635E;">Delivery</td>
+            <td align="right" style="padding: 6px 0; color: #6A635E;">
+                <t t-if="object.amount_delivery" t-out="format_amount(object.amount_delivery, object.currency_id)">20.00 AED</t>
+                <t t-else="">Free</t>
+            </td>
+        </tr>
+        <tr>
+            <td style="padding: 8px 0; font-size: 16px; font-weight: bold;">Total</td>
+            <td align="right" style="padding: 8px 0; font-size: 16px; font-weight: bold;"
+                t-out="format_amount(object.amount_total, object.currency_id)">110.00 AED</td>
+        </tr>
+    </table>
+    <p t-if="object.partner_shipping_id" style="margin: 16px 0; color: #6A635E;">
+        <strong style="color: #1E1B19;">Deliver to</strong><br/>
+        <t t-out="object.partner_shipping_id.name or ''">Sara</t> · <t t-out="object.partner_shipping_id.contact_address_inline or ''">Tower A, Abu Dhabi</t>
+    </p>
+    <p style="margin: 20px 0 4px 0; text-align: center;">
+        <a t-att-href="object.get_portal_url()" style="display: inline-block; padding: 12px 26px; background-color: #7A1F2B; color: #ffffff; border-radius: 24px; text-decoration: none; font-weight: bold;">View my order</a>
+    </p>
+</div>
+            </field>
+        </record>
+
+        <record id="mail_template_on_the_way" model="mail.template">
+            <field name="name">The Cut: On the way</field>
+            <field name="model_id" ref="sale.model_sale_order"/>
+            <field name="brand_email" eval="True"/>
+            <field name="brand_original_id" ref="online_orders.mail_template_out_for_delivery"/>
+            <field name="subject">Your order {{ object.name }} is on the way</field>
+            <field name="email_from">{{ object.website_id._brand_orders_from() }}</field>
+            <field name="partner_to">{{ object.partner_id.id }}</field>
+            <field name="use_default_to" eval="False"/>
+            <field name="lang">{{ object.partner_id.lang }}</field>
+            <field name="auto_delete" eval="True"/>
+            <field name="description">Sent to website customers when their order goes out for delivery</field>
+            <field name="body_html" type="html">
+<div>
+    <h2 style="margin: 0 0 8px 0; font-size: 20px; color: #1E1B19;">Your order is on the way</h2>
+    <p style="margin: 0 0 16px 0;">
+        Hello <t t-out="object.partner_id.name or ''">Sara</t>, our driver has left with your order
+        <strong t-out="object.name or ''">S00001</strong>.
+    </p>
+    <div t-if="object.delivery_promise_message" style="margin: 0 0 16px 0; padding: 12px 16px; background-color: #EAF4EC; border-radius: 12px; color: #1E5631;">
+        <strong t-out="object.delivery_promise_message or ''">Delivered today within 3 hours</strong>
+        <t t-if="object.delivery_promise_date_label"><br/><t t-out="object.delivery_promise_date_label">Wed 21 Oct · by 4:30 PM</t></t>
+    </div>
+    <p t-if="object.partner_shipping_id" style="margin: 0 0 16px 0; color: #6A635E;">
+        <strong style="color: #1E1B19;">Deliver to</strong><br/>
+        <t t-out="object.partner_shipping_id.name or ''">Sara</t> · <t t-out="object.partner_shipping_id.contact_address_inline or ''">Tower A, Abu Dhabi</t>
+    </p>
+    <p style="margin: 20px 0 4px 0; text-align: center;">
+        <a t-att-href="object.get_portal_url()" style="display: inline-block; padding: 12px 26px; background-color: #7A1F2B; color: #ffffff; border-radius: 24px; text-decoration: none; font-weight: bold;">Track my order</a>
+    </p>
+</div>
+            </field>
+        </record>
+
+        <record id="mail_template_delivered" model="mail.template">
+            <field name="name">The Cut: Delivered</field>
+            <field name="model_id" ref="sale.model_sale_order"/>
+            <field name="brand_email" eval="True"/>
+            <field name="brand_original_id" ref="online_orders.mail_template_delivered"/>
+            <field name="subject">Thank you for your order {{ object.name }}</field>
+            <field name="email_from">{{ object.website_id._brand_orders_from() }}</field>
+            <field name="partner_to">{{ object.partner_id.id }}</field>
+            <field name="use_default_to" eval="False"/>
+            <field name="lang">{{ object.partner_id.lang }}</field>
+            <field name="auto_delete" eval="True"/>
+            <field name="description">Sent to website customers when their order is delivered, with the next-order coupon</field>
+            <field name="body_html" type="html">
+<div>
+    <h2 style="margin: 0 0 8px 0; font-size: 20px; color: #1E1B19;">Your order has been delivered</h2>
+    <p style="margin: 0 0 16px 0;">
+        Hello <t t-out="object.partner_id.name or ''">Sara</t>, your order
+        <strong t-out="object.name or ''">S00001</strong> has been delivered.
+        Thank you for choosing <t t-out="object.website_id.name or object.company_id.name">The Cut</t>!
+    </p>
+    <t t-if="object.online_next_order_coupons">
+        <p style="margin: 0 0 8px 0; font-weight: bold;">A coupon for your next order</p>
+        <div style="margin: 0 0 16px 0; padding: 14px 0; background-color: #F6E9EA; border: 1px dashed #7A1F2B; border-radius: 12px; text-align: center; font-size: 22px; font-weight: bold; letter-spacing: 2px; color: #7A1F2B;"
+             t-out="object.online_next_order_coupons">0444-50e1-4cb5</div>
+        <p style="margin: 0 0 16px 0; font-size: 13px; color: #6A635E;">Enter this code on your next order, or find it in My coupons.</p>
+    </t>
+    <p style="margin: 20px 0 4px 0; text-align: center;">
+        <a href="/shop" style="display: inline-block; padding: 12px 26px; background-color: #7A1F2B; color: #ffffff; border-radius: 24px; text-decoration: none; font-weight: bold;">Order again</a>
+    </p>
+</div>
+            </field>
+        </record>
+
+        <record id="mail_template_cancelled" model="mail.template">
+            <field name="name">The Cut: Cancelled</field>
+            <field name="model_id" ref="sale.model_sale_order"/>
+            <field name="brand_email" eval="True"/>
+            <field name="brand_original_id" ref="online_orders.mail_template_cancelled"/>
+            <field name="subject">Your order {{ object.name }} has been cancelled</field>
+            <field name="email_from">{{ object.website_id._brand_orders_from() }}</field>
+            <field name="partner_to">{{ object.partner_id.id }}</field>
+            <field name="use_default_to" eval="False"/>
+            <field name="lang">{{ object.partner_id.lang }}</field>
+            <field name="auto_delete" eval="True"/>
+            <field name="description">Sent to website customers when their order is cancelled</field>
+            <field name="body_html" type="html">
+<div>
+    <h2 style="margin: 0 0 8px 0; font-size: 20px; color: #1E1B19;">Your order was cancelled</h2>
+    <p style="margin: 0 0 12px 0;">
+        Hello <t t-out="object.partner_id.name or ''">Sara</t>, your order
+        <strong t-out="object.name or ''">S00001</strong> was cancelled.
+    </p>
+    <p style="margin: 0 0 12px 0;">If you already paid, the refund will be made within 48 hours.</p>
+    <p style="margin: 0 0 4px 0; color: #6A635E;">We are sorry for the inconvenience.</p>
+</div>
+            </field>
+        </record>
+
+        <record id="mail_template_address_updated" model="mail.template">
+            <field name="name">The Cut: Your address was updated</field>
+            <field name="model_id" ref="base.model_res_partner"/>
+            <field name="brand_email" eval="True"/>
+            <field name="brand_original_id" ref="online_orders.mail_template_address_updated"/>
+            <field name="subject">Your delivery address was updated</field>
+            <field name="email_from">{{ (ctx.get('online_orders_email_from') or object.company_id.email_formatted or user.company_id.email_formatted or user.email_formatted) }}</field>
+            <field name="partner_to">{{ (object.parent_id or object).id }}</field>
+            <field name="use_default_to" eval="False"/>
+            <field name="lang">{{ (object.parent_id or object).lang }}</field>
+            <field name="auto_delete" eval="True"/>
+            <field name="description">Sent when our team adds or edits a delivery address of a website customer</field>
+            <field name="body_html" type="html">
+<div>
+    <h2 style="margin: 0 0 8px 0; font-size: 20px; color: #1E1B19;">Your delivery address was updated</h2>
+    <p style="margin: 0 0 12px 0;">
+        Hello <t t-out="(object.parent_id or object).name or ''">Sara</t>, our team has updated a delivery address on your account:
+    </p>
+    <div style="margin: 0 0 16px 0; padding: 12px 16px; background-color: #F6F4F1; border-radius: 12px;">
+        <strong t-out="object.name or ''">Receiver</strong><br/>
+        <span style="color: #6A635E;" t-out="object.contact_address_inline or ''">Tower A, Abu Dhabi</span>
+    </div>
+    <p style="margin: 0 0 4px 0; color: #6A635E;">You can see and change your addresses in My Account.</p>
+</div>
+            </field>
+        </record>
+
+        <!-- Account: from no-reply@ (set when sent) -->
+        <record id="mail_template_account_created" model="mail.template">
+            <field name="name">The Cut: Welcome</field>
+            <field name="model_id" ref="base.model_res_users"/>
+            <field name="brand_email" eval="True"/>
+            <field name="brand_original_id" ref="auth_signup.mail_template_user_signup_account_created"/>
+            <field name="subject">Welcome to {{ object.env['website'].sudo()._brand_website_for(object).name or object.company_id.name }}!</field>
+            <field name="email_to">{{ object.email_formatted }}</field>
+            <field name="use_default_to" eval="False"/>
+            <field name="lang">{{ object.lang }}</field>
+            <field name="auto_delete" eval="True"/>
+            <field name="description">Sent to website customers who created their account</field>
+            <field name="body_html" type="html">
+<div>
+    <t t-set="brand" t-value="object.env['website'].sudo()._brand_website_for(object)"/>
+    <h2 style="margin: 0 0 8px 0; font-size: 20px; color: #1E1B19;">Welcome, <t t-out="object.name or ''">Sara</t>!</h2>
+    <p style="margin: 0 0 12px 0;">
+        Your <t t-out="brand.name or object.company_id.name">The Cut</t> account is ready.
+        Sign in with <strong t-out="object.email or object.login or ''">sara@example.com</strong> to order faster,
+        follow your deliveries and find your coupons.
+    </p>
+    <p style="margin: 20px 0 4px 0; text-align: center;">
+        <a href="/shop" style="display: inline-block; padding: 12px 26px; background-color: #7A1F2B; color: #ffffff; border-radius: 24px; text-decoration: none; font-weight: bold;">Start shopping</a>
+    </p>
+</div>
+            </field>
+        </record>
+
+        <record id="mail_template_set_password" model="mail.template">
+            <field name="name">The Cut: Choose your password</field>
+            <field name="model_id" ref="base.model_res_users"/>
+            <field name="brand_email" eval="True"/>
+            <field name="brand_original_id" ref="auth_signup.portal_set_password_email"/>
+            <field name="subject">Your {{ object.env['website'].sudo()._brand_website_for(object).name or object.company_id.name }} account is ready</field>
+            <field name="email_to">{{ object.email_formatted }}</field>
+            <field name="use_default_to" eval="False"/>
+            <field name="lang">{{ object.lang }}</field>
+            <field name="auto_delete" eval="True"/>
+            <field name="description">Sent to website customers whose account was created for them (after an order, or by our team)</field>
+            <field name="body_html" type="html">
+<div>
+    <t t-set="brand" t-value="object.env['website'].sudo()._brand_website_for(object)"/>
+    <h2 style="margin: 0 0 8px 0; font-size: 20px; color: #1E1B19;">Your account is ready</h2>
+    <p style="margin: 0 0 12px 0;">
+        Hello <t t-out="object.name or ''">Sara</t>, your <t t-out="brand.name or object.company_id.name">The Cut</t>
+        account was created with <strong t-out="object.email or object.login or ''">sara@example.com</strong>.
+        Choose your password to sign in.
+    </p>
+    <p style="margin: 20px 0 12px 0; text-align: center;">
+        <a t-att-href="object.partner_id._get_signup_url()" style="display: inline-block; padding: 12px 26px; background-color: #7A1F2B; color: #ffffff; border-radius: 24px; text-decoration: none; font-weight: bold;">Choose my password</a>
+    </p>
+    <p style="margin: 0 0 4px 0; font-size: 13px; color: #6A635E;">
+        The link is valid for <t t-out="int(int(object.env['ir.config_parameter'].sudo().get_param('auth_signup.signup.validity.hours', 144)) / 24)">6</t> days.
+    </p>
+</div>
+            </field>
+        </record>
+
+        <record id="mail_template_reset_password" model="mail.template">
+            <field name="name">The Cut: Reset password</field>
+            <field name="model_id" ref="base.model_res_users"/>
+            <field name="brand_email" eval="True"/>
+            <field name="subject">Reset your {{ object.env['website'].sudo()._brand_website_for(object).name or object.company_id.name }} password</field>
+            <field name="email_to">{{ object.email_formatted }}</field>
+            <field name="use_default_to" eval="False"/>
+            <field name="lang">{{ object.lang }}</field>
+            <field name="auto_delete" eval="True"/>
+            <field name="description">Sent to website customers who asked to reset their password (instead of Odoo's reset email)</field>
+            <field name="body_html" type="html">
+<div>
+    <h2 style="margin: 0 0 8px 0; font-size: 20px; color: #1E1B19;">Reset your password</h2>
+    <p style="margin: 0 0 12px 0;">
+        Hello <t t-out="object.name or ''">Sara</t>, we received a request to reset the password of your account
+        <strong t-out="object.email or object.login or ''">sara@example.com</strong>.
+    </p>
+    <p style="margin: 20px 0 12px 0; text-align: center;">
+        <a t-att-href="object.partner_id._get_signup_url()" style="display: inline-block; padding: 12px 26px; background-color: #7A1F2B; color: #ffffff; border-radius: 24px; text-decoration: none; font-weight: bold;">Choose a new password</a>
+    </p>
+    <p style="margin: 0 0 4px 0; font-size: 13px; color: #6A635E;">
+        The link is valid for <t t-out="object.env['ir.config_parameter'].sudo().get_param('auth_signup.reset_password.validity.hours', 4)">4</t> hours.
+        If you did not ask for it, you can ignore this email: your password stays the same.
+    </p>
+</div>
+            </field>
+        </record>
+
+        <!-- Coupons of website programmes: from "Order emails from" (set when sent) -->
+        <record id="mail_template_coupon" model="mail.template">
+            <field name="name">The Cut: Your coupon</field>
+            <field name="model_id" ref="loyalty.model_loyalty_card"/>
+            <field name="brand_email" eval="True"/>
+            <field name="brand_original_id" ref="loyalty.mail_template_loyalty_card"/>
+            <field name="subject">You have a coupon: {{ object.program_id.reward_ids[:1].description or object.program_id.name }}</field>
+            <field name="partner_to">{{ object._mail_get_customer().id }}</field>
+            <field name="use_default_to" eval="False"/>
+            <field name="lang">{{ object._mail_get_customer().lang }}</field>
+            <field name="auto_delete" eval="True"/>
+            <field name="description">Sent to website customers who receive a coupon (instead of Coupon: Coupon Information)</field>
+            <field name="body_html" type="html">
+<div>
+    <t t-set="program" t-value="object.program_id"/>
+    <t t-set="minimum" t-value="min(program.rule_ids.mapped('minimum_amount') or [0.0])"/>
+    <t t-set="expiration" t-value="object.expiration_date or program.date_to"/>
+    <h2 style="margin: 0 0 8px 0; font-size: 20px; color: #1E1B19;">You have a coupon!</h2>
+    <p style="margin: 0 0 16px 0;">
+        Hello <t t-out="object._mail_get_customer().name or ''">Sara</t>, here is your coupon:
+        <strong t-out="program.reward_ids[:1].description or program.name">10% on your order</strong>.
+    </p>
+    <div style="margin: 0 0 12px 0; padding: 14px 0; background-color: #F6E9EA; border: 1px dashed #7A1F2B; border-radius: 12px; text-align: center; font-size: 22px; font-weight: bold; letter-spacing: 2px; color: #7A1F2B;"
+         t-out="object.code">0444-50e1-4cb5</div>
+    <p style="margin: 0 0 16px 0; font-size: 13px; color: #6A635E;">
+        Enter this code on your order<t t-if="minimum"> (minimum <t t-out="format_amount(minimum, program.currency_id)">300.00 AED</t>)</t><t t-if="expiration">, before <t t-out="format_date(expiration)">31/12/2026</t></t>.
+        You also find it in My coupons.
+    </p>
+    <p style="margin: 20px 0 4px 0; text-align: center;">
+        <a href="/shop" style="display: inline-block; padding: 12px 26px; background-color: #7A1F2B; color: #ffffff; border-radius: 24px; text-decoration: none; font-weight: bold;">Shop now</a>
+    </p>
+</div>
+            </field>
+        </record>
+    </data>
+</odoo>

@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="res_config_settings_view_form_brand_emails" model="ir.ui.view">
+        <field name="name">res.config.settings.form.brand.emails</field>
+        <field name="model">res.config.settings</field>
+        <field name="inherit_id" ref="online_orders.res_config_settings_view_form_online_orders"/>
+        <field name="arch" type="xml">
+            <setting id="online_orders_email_from_setting" position="after">
+                <setting id="brand_emails_setting" string="The Cut design for customer emails"
+                         help="Order, account and coupon emails of website customers in the design of this website (logo, card, footer). Untick to go back to the standard emails.">
+                    <field name="brand_emails"/>
+                </setting>
+            </setting>
+        </field>
+    </record>
+</odoo>
