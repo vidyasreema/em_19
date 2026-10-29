@@ -97,6 +97,37 @@ class TestSignupCode(SignupCommon):
         self.assertEqual(self.env['res.partner'].search_count([('email_normalized', '=', 'former.guest@example.com'),
                                                                ('parent_id', '=', False)]), 1, "no second record")
 
+    def _guest_cart_session(self, email=False):
+        """A visitor who saved the delivery address on the order page, not paid yet."""
+        address = self._address(24.4539, 54.3773, name='Cart Guest', email=email)
+        order = self._order(420, self.island, address)
+        session = self.authenticate(None, None)
+        session['sale_order_id'] = order.id
+        root.session_store.save(session)
+        return address, order
+
+    def test_address_of_the_cart_is_kept(self):
+        """Address typed on the order page, then sign-up before paying: the account
+        is created on that record, so the address stays the delivery address."""
+        address, order = self._guest_cart_session()
+        self._sign_up('cart.guest@example.com')
+        self._verify()
+        user = self.Users.search([('login', '=', 'cart.guest@example.com')])
+        self.assertEqual(user.partner_id, address)
+        self.assertEqual(address.email, 'cart.guest@example.com')
+        page = self.url_open('/shop/order').text
+        self.assertEqual(order.partner_shipping_id, address, "the address stays selected")
+        self.assertIn('Tower A', page)
+
+    def test_address_of_the_cart_with_another_email(self):
+        """The cart's record has another email: not taken for this account."""
+        address, _order = self._guest_cart_session(email='someone.else@example.com')
+        self._sign_up('cart.other@example.com')
+        self._verify()
+        user = self.Users.search([('login', '=', 'cart.other@example.com')])
+        self.assertNotEqual(user.partner_id, address)
+        self.assertEqual(address.email, 'someone.else@example.com')
+
     def test_several_guest_records(self):
         """4: the most recent record gets the account, the others are tagged for the daily check."""
         now = fields.Datetime.now()

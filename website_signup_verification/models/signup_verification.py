@@ -112,6 +112,7 @@ class WebsiteSignupVerification(models.TransientModel):
         Users = self.env['res.users'].sudo()
         if Users._signup_find_account(self.email):
             raise UserError(_("You already have an account. Sign in or reset your password."))
+        self.env['res.partner']._signup_claim_cart_record(self.email)
         records = self.env['res.partner']._signup_guest_records(self.email)
         values = {'login': self.email, 'email': self.email}
         if records:

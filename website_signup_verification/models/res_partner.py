@@ -1,10 +1,30 @@
 from markupsafe import Markup
 
 from odoo import Command, _, api, fields, models
+from odoo.http import request
 
 
 class ResPartner(models.Model):
     _inherit = 'res.partner'
+
+    @api.model
+    def _signup_claim_cart_record(self, email):
+        """A visitor who typed the delivery address on the order page, then signs
+        up before paying: the guest record of the cart has the address but no
+        email yet. It gets the email, so the account is created on it and the
+        address stays selected.
+        :param str email: normalized email"""
+        cart = getattr(request, 'cart', None) if request else None
+        partner = cart.partner_id.sudo() if cart else self.browse()
+        if (
+            not email or not partner or not partner.street or partner.parent_id
+            or partner == cart.website_id.user_id.partner_id
+            or partner.with_context(active_test=False).user_ids
+            or (partner.email_normalized and partner.email_normalized != email)
+        ):
+            return
+        if not partner.email_normalized:
+            partner.email = email
 
     @api.model
     def _signup_guest_records(self, email):

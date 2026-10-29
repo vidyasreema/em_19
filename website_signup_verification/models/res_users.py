@@ -78,6 +78,7 @@ class ResUsers(models.Model):
             _logger.info("Sign-in provider %s added to the account %s (same email)", provider, account.login)
             return account.login
 
+        self.env['res.partner']._signup_claim_cart_record(email)
         records = self.env['res.partner']._signup_guest_records(email)
         values = self._generate_signup_values(provider, validation, params)
         values.update(login=email, email=email)
