@@ -92,6 +92,10 @@ class SaleOrder(models.Model):
     online_cash_to_collect = fields.Monetary('Cash to Collect', compute='_compute_online_dispatch')
     online_cash_to_collect_text = fields.Char('Cash to Collect (copy)', compute='_compute_online_dispatch')
     online_next_order_coupons = fields.Char('Next Order Coupons', compute='_compute_online_next_order_coupons')
+    online_coupon_held = fields.Boolean(
+        'Next-Order Coupon on Hold', readonly=True, copy=False,
+        help='The next-order coupon earned by this order gets its point when the order is delivered '
+             '(it could still be cancelled or returned before). Its code is sent in the Delivered email.')
 
     # ──────────────────────────────────────────────────────────────────────────
     # Computes
@@ -217,11 +221,52 @@ class SaleOrder(models.Model):
             order.online_cash_to_collect = cash
             order.online_cash_to_collect_text = '%.2f' % cash
 
+    @api.depends('online_coupon_held')
     def _compute_online_next_order_coupons(self):
+        """Codes of the next-order coupons the order gave (none while they are on hold)."""
         for order in self:
-            coupons = order.sudo().coupon_point_ids.coupon_id.filtered(
-                lambda c: c.program_id.program_type == 'next_order_coupons')
+            coupons = self.env['loyalty.card']
+            if not order.online_coupon_held:
+                coupons = order._online_next_order_coupon_points().coupon_id
             order.online_next_order_coupons = ', '.join(coupons.mapped('code'))
+
+    # ──────────────────────────────────────────────────────────────────────────
+    # Next-order coupon: given at the delivery
+    # ──────────────────────────────────────────────────────────────────────────
+
+    def _online_next_order_coupon_points(self):
+        """Points the order gives to next-order coupons (sale.order.coupon.points)."""
+        self.ensure_one()
+        return self.sudo().coupon_point_ids.filtered(
+            lambda p: p.points and p.coupon_id.program_id.program_type == 'next_order_coupons')
+
+    def _get_point_changes(self):
+        # On hold: confirming or cancelling the order does not touch these coupons
+        changes = super()._get_point_changes()
+        for order in self.filtered('online_coupon_held'):
+            for entry in order._online_next_order_coupon_points():
+                changes[entry.coupon_id] -= entry.points
+        return changes
+
+    def _send_reward_coupon_mail(self):
+        # On hold: the code is sent in the Delivered email instead
+        return super(SaleOrder, self.filtered(lambda o: not o.online_coupon_held))._send_reward_coupon_mail()
+
+    def _try_apply_code(self, code):
+        # Odoo would say "already used" (no point yet): say when it can be used
+        coupon = self.env['loyalty.card'].sudo().search([('code', '=', code)], limit=1)
+        earned_on = coupon.order_id
+        if earned_on and earned_on != self and earned_on.online_coupon_held:
+            return {'error': _("This coupon can be used once your order %s is delivered.", earned_on.name)}
+        return super()._try_apply_code(code)
+
+    def _online_release_next_order_coupons(self):
+        """Delivered: the next-order coupons on hold get their points (no email of their
+        own, the Delivered email has the code)."""
+        for order in self.filtered('online_coupon_held'):
+            order.online_coupon_held = False
+            for entry in order._online_next_order_coupon_points():
+                entry.coupon_id.with_context(loyalty_no_mail=True).points += entry.points
 
     # ──────────────────────────────────────────────────────────────────────────
     # Stage changes
@@ -278,6 +323,7 @@ class SaleOrder(models.Model):
             self._online_validate_delivery()
             extra['online_out_for_delivery_date'] = now
         if new_stage._is_at_or_after(Stage._get_by_code('delivered')) and not self.online_delivered_date:
+            self._online_release_next_order_coupons()
             extra['online_delivered_date'] = now
         if new_stage.code == 'completed':
             extra['online_completed_date'] = now
@@ -359,8 +405,11 @@ class SaleOrder(models.Model):
         }
 
     def action_confirm(self):
-        res = super().action_confirm()
         new_stage = self.env['online.order.stage'].sudo()._get_by_code('new')
+        if new_stage:
+            # Before super: the coupon points are given there
+            self.filtered(lambda o: o.website_id and o.state in ('draft', 'sent')).online_coupon_held = True
+        res = super().action_confirm()
         for order in self.filtered(lambda o: o.website_id and not o.stage_id and o.state == 'sale'):
             order.online_zone_id = order._online_find_zone()
             if new_stage:

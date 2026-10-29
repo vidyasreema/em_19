@@ -1,6 +1,6 @@
 {
     'name': 'Online Orders',
-    'version': '19.0.1.2.0',
+    'version': '19.0.1.3.0',
     'category': 'Sales/Sales',
     'summary': 'Sales team board for website orders: stages, dispatch page, customer addresses',
     'description': """
