@@ -90,7 +90,8 @@ class JourneyCheckout(WebsiteSale):
         return request.render('website_purchase_journey.order_page', self._journey_order_values(order_sudo))
 
     def _journey_prepare_order(self, order_sudo):
-        """Delivery method of the address (zone), prices, rewards, welcome coupon."""
+        """Saved address, delivery method of the address (zone), prices, rewards, welcome coupon."""
+        order_sudo._journey_use_saved_address()
         if not order_sudo._is_anonymous_cart() and order_sudo._has_deliverable_products():
             available = order_sudo._get_delivery_methods()
             if delivery_method := order_sudo._get_preferred_delivery_method(available):
@@ -109,7 +110,7 @@ class JourneyCheckout(WebsiteSale):
     def _journey_apply_welcome_coupon(self, order_sudo):
         """Right after signing up, the welcome coupon is applied to the cart (once)."""
         user = request.env.user
-        program = request.website.sudo().journey_welcome_program_id.filtered('active')
+        program = request.website._journey_welcome_program()
         if user._is_public() or not program or request.session.get(SESSION_WELCOME_APPLIED):
             return
         request.session[SESSION_WELCOME_APPLIED] = True
@@ -160,11 +161,7 @@ class JourneyCheckout(WebsiteSale):
         promise, show_popup = self._journey_promise_values(order_sudo)
         addresses = request.env['res.partner']
         if not is_public:
-            commercial = order_sudo.partner_id.commercial_partner_id
-            addresses = request.env['res.partner'].sudo().search([
-                ('id', 'child_of', commercial.id), ('type', 'in', ('delivery', 'other')),
-            ]) | order_sudo.partner_id
-            addresses = addresses.filtered(lambda p: p.street)
+            addresses = order_sudo._journey_saved_addresses()
         values.update({
             'website': website,
             'summary': order_sudo._journey_summary(website),

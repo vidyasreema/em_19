@@ -96,9 +96,7 @@ class SaleOrder(models.Model):
     def _journey_signup_saving(self, website):
         """What a guest saves by signing up: the welcome coupon on this order."""
         self.ensure_one()
-        # sudo: website visitors cannot read the loyalty programs
-        # An archived program means no welcome coupon
-        reward = website.sudo().journey_welcome_program_id.filtered('active').reward_ids.filtered(
+        reward = website._journey_welcome_program().reward_ids.filtered(
             lambda r: r.reward_type == 'discount' and r.discount_mode == 'percent')[:1]
         if not reward:
             return 0.0
@@ -195,9 +193,9 @@ class SaleOrder(models.Model):
 
     def _journey_next_order_coupon(self):
         """Coupon this order earns for the next one (a "Next Order Coupons"
-        program), for the confirmation page: {'title', 'code', 'ready'} or None.
-        The coupon is made with the cart; its point is given when the order is
-        confirmed (paid)."""
+        program), for the confirmation page: {'title', 'code', 'ready',
+        'after_delivery'} or None. The coupon is made with the cart; its point is
+        given when the order is delivered (website orders) or confirmed."""
         self.ensure_one()
         entry = self.sudo().coupon_point_ids.filtered(
             lambda p: p.points > 0 and p.coupon_id.program_id.program_type == 'next_order_coupons')[:1]
@@ -208,8 +206,36 @@ class SaleOrder(models.Model):
         return {
             'title': program.reward_ids[:1].description or program.name,
             'code': coupon.code,
-            'ready': self.state == 'sale',
+            'ready': self.state == 'sale' and not self.online_coupon_held,
+            'after_delivery': self.state == 'sale' and self.online_coupon_held,
         }
+
+    def _journey_saved_addresses(self):
+        """Delivery addresses of the (signed-in) customer, for the order page.
+        An address added as "delivery and billing" has the type 'other'."""
+        self.ensure_one()
+        partner = self.partner_id
+        addresses = self.env['res.partner'].sudo().search([
+            ('id', 'child_of', partner.commercial_partner_id.id), ('type', 'in', ('delivery', 'other')),
+        ]) | partner
+        return addresses.filtered('street')
+
+    def _journey_use_saved_address(self):
+        """A signed-in customer's cart without a street (Odoo only takes 'delivery'
+        addresses for a new cart) gets the address of their last order, or else the
+        newest one."""
+        self.ensure_one()
+        if self._is_anonymous_cart() or self.partner_shipping_id.street:
+            return
+        addresses = self._journey_saved_addresses()
+        if not addresses:
+            return
+        last_order = self.sudo().search([
+            ('partner_id', '=', self.partner_id.id), ('state', '=', 'sale'),
+            ('partner_shipping_id', 'in', addresses.ids),
+        ], order='date_order desc, id desc', limit=1)
+        address = last_order.partner_shipping_id or addresses.sorted('id', reverse=True)[:1]
+        self._update_address(address.id, {'partner_shipping_id'})
 
     def _journey_track_stage(self):
         """Stage shown in the tracking bar (Online Orders stage)."""

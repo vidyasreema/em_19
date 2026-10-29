@@ -497,6 +497,30 @@ class TestAddressSheet(OrderCommon):
         self.assertEqual(user.partner_id.street, 'Apt 1204, Floor 12, Silver Wave Tower', "also the billing address")
         self.assertEqual(user.partner_id.phone.replace(' ', ''), '+971501112233')
 
+    def test_member_saved_address_is_selected(self):
+        user = new_test_user(self.env, login='saved', groups='base.group_portal', email='saved@example.com')
+        # Added as "delivery and billing" (type 'other'): Odoo does not take it for a new cart
+        saved = self._address(24.4539, 54.3773, parent=user.partner_id, type='other', street='Saved Tower')
+        self.authenticate('saved', 'saved')
+        order = self._cart()
+        self.assertEqual(order.partner_shipping_id, user.partner_id)
+        page = self.url_open('/shop/order').text
+        self.assertEqual(order.partner_shipping_id, saved, "the saved address is selected")
+        self.assertIn('Saved Tower', page)
+
+    def test_member_last_order_address_is_selected(self):
+        user = new_test_user(self.env, login='twice', groups='base.group_portal', email='twice@example.com')
+        used = self._address(24.4539, 54.3773, parent=user.partner_id, street='Used Tower')
+        self._address(24.4539, 54.3773, parent=user.partner_id, street='Newer Tower', type='other')
+        previous = self._order(10, self.island, partner=user.partner_id)
+        previous.partner_shipping_id = used
+        previous.action_confirm()
+        self.authenticate('twice', 'twice')
+        order = self._cart()
+        order.partner_shipping_id = user.partner_id
+        self.url_open('/shop/order')
+        self.assertEqual(order.partner_shipping_id, used, "the address of the last order")
+
     def test_member_other_receiver(self):
         user = new_test_user(self.env, login='gift', groups='base.group_portal', email='gift@example.com')
         user.partner_id.phone = '+971500000009'

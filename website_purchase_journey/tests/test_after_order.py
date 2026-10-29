@@ -56,10 +56,13 @@ class TestAfterOrder(OrderCommon):
         page = self.url_open('/shop/confirmation').text
         self.assertIn('You earned a coupon for your next order', page)
         self.assertIn('10% off your order', page)
-        self.assertIn(coupon.code, page, "ready: the code is shown")
+        self.assertNotIn(coupon.code, page, "the code comes with the delivery")
+        self.assertIn('Your code comes with the delivery of this order.', page)
         self.assertIn('coupon.guest@example.com', page, "guests: saved for their email")
         self.assertIn('o_journey_coupon_modal', page, "the Congratulations popup")
         self.assertIn('Congratulations!', page)
+        current, _past = self.env['loyalty.card']._journey_portal_coupons(order.partner_id)
+        self.assertEqual([c['status'] for c in current if c['card'] == coupon], ['After delivery'])
 
     def test_next_order_coupon_waits_for_payment(self):
         self._next_order_program()

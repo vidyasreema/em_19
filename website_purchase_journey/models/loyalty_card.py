@@ -17,7 +17,7 @@ class LoyaltyCard(models.Model):
         """Coupons of a customer for My coupons (Annex 3 C5).
 
         :return: (current, past) lists of dicts; current = ready to use or
-            waiting for the payment of the order that earned it
+            waiting for the payment / delivery of the order that earned it
         """
         today = fields.Date.context_today(self)
         cards = self.sudo().search([
@@ -37,6 +37,8 @@ class LoyaltyCard(models.Model):
                 status, state = _("Ready to use"), 'current'
             elif earned_on and earned_on.state == 'sent':
                 status, state = _("After payment"), 'waiting'
+            elif earned_on and earned_on.state == 'sale' and earned_on.online_coupon_held:
+                status, state = _("After delivery"), 'waiting'
             elif earned_on and earned_on.state in ('draft', 'cancel'):
                 continue  # never earned (cart not paid, or cancelled)
             else:

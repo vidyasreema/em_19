@@ -10,6 +10,7 @@ class ResUsers(models.Model):
         user = super()._create_user_from_template(values)
         websites = self.env['website'].sudo().search([
             ('journey_enabled', '=', True), ('journey_welcome_program_id', '!=', False)])
-        for program in websites.journey_welcome_program_id.filtered('active'):
+        programs = self.env['loyalty.program'].union(*(website._journey_welcome_program() for website in websites))
+        for program in programs:
             program._journey_give_welcome_coupon(user.partner_id)
         return user

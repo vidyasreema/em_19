@@ -55,6 +55,17 @@ class Website(models.Model):
         url = 'https://wa.me/%s' % digits
         return '%s?text=%s' % (url, quote(text)) if text else url
 
+    def _journey_welcome_program(self):
+        """The programme whose coupon every new account gets (empty: none)."""
+        self.ensure_one()
+        # sudo: website visitors cannot read the loyalty programs; archived: no coupon
+        return self.sudo().journey_welcome_program_id.filtered('active')
+
+    def _journey_signup_offer(self):
+        """The programme of what a customer gets for signing up (empty: nothing),
+        for the texts of the confirmation page."""
+        return self._journey_welcome_program()
+
     @api.model
     def _journey_set_default_welcome_program(self):
         program = self.env.ref('website_purchase_journey.loyalty_program_welcome_signup', raise_if_not_found=False)
