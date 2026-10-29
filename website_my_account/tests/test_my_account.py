@@ -29,6 +29,16 @@ class TestMyAccount(HttpCase):
             self.assertIn(url, page)
         self.assertNotIn('/my/invoices', page, "no invoices: no row")
 
+    def test_no_invoices_row(self):
+        invoice = self.env['account.move'].create({
+            'move_type': 'out_invoice', 'partner_id': self.user.partner_id.id,
+            'invoice_line_ids': [Command.create({'product_id': self.product.id, 'price_unit': 50})],
+        })
+        invoice.action_post()
+        page = self._page()
+        self.assertNotIn('/my/invoices', page, "invoices are not shown in My Account")
+        self.assertNotIn('>Invoices<', page)
+
     def test_profile_completion(self):
         page = self._page()
         self.assertIn('50%', page, "name and email of 4 steps")

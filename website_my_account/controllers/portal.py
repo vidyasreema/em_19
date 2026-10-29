@@ -12,7 +12,7 @@ class MyAccountPortal(CustomerPortal):
         if not request.website.my_account_page:
             return super().home(**kw)
         values = self._prepare_portal_layout_values()
-        values.update(self._prepare_home_portal_values(['order_count', 'invoice_count', 'ticket_count']))
+        values.update(self._prepare_home_portal_values(['order_count', 'ticket_count']))
         values.update(self._my_account_values())
         return request.render('website_my_account.my_home', values)
 

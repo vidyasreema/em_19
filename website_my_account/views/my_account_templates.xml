@@ -94,12 +94,7 @@
                             <t t-set="label">Favourites</t>
                             <t t-set="value" t-value="favourite_count or ''"/>
                         </t>
-                        <t t-if="invoice_count" t-call="website_my_account.my_row">
-                            <t t-set="url" t-value="'/my/invoices'"/>
-                            <t t-set="icon" t-value="'fa-file-text-o'"/>
-                            <t t-set="label">Invoices</t>
-                            <t t-set="value" t-value="invoice_count"/>
-                        </t>
+                        <!-- No Invoices row: home customers do not get their invoices here -->
                         <t t-if="ticket_count" t-call="website_my_account.my_row">
                             <t t-set="url" t-value="'/my/tickets'"/>
                             <t t-set="icon" t-value="'fa-life-ring'"/>

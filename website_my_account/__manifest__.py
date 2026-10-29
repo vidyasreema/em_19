@@ -1,6 +1,6 @@
 {
     'name': 'Website My Account',
-    'version': '19.0.1.1.1',
+    'version': '19.0.1.1.2',
     'category': 'Website/Website',
     'summary': 'The Cut: app-style My Account page (profile card, orders, coupons, settings)',
     'description': """
@@ -13,7 +13,7 @@ The My Account page (/my) of the shop in the style of shopping apps:
   profile is (mobile number, delivery address);
 - coupons ready to use, or what the customer saved;
 - My Orders (last order and its status) and My Coupons;
-- My Account: addresses, payment methods, favourites, invoices, tickets;
+- My Account: addresses, payment methods, favourites, tickets (no invoices);
 - Settings: account details, password and sign-in, language;
 - Help: WhatsApp, contact us, sign out.
 
