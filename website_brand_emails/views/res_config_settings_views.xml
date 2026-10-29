@@ -10,6 +10,10 @@
                          help="Order, account and coupon emails of website customers in the design of this website (logo, card, footer). Untick to go back to the standard emails.">
                     <field name="brand_emails"/>
                 </setting>
+                <setting id="brand_email_logo_setting" string="Email logo" invisible="not brand_emails"
+                         help="Logo at the top of the customer emails, as PNG or JPG (email apps do not show SVG). Empty: the website logo when it is not an SVG, else the website name.">
+                    <field name="brand_email_logo" widget="image" class="w-auto" options="{'size': [0, 60]}"/>
+                </setting>
             </setting>
         </field>
     </record>

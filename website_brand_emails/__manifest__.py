@@ -1,6 +1,6 @@
 {
     'name': 'The Cut Customer Emails',
-    'version': '19.0.1.0.1',
+    'version': '19.0.1.0.2',
     'category': 'Website/eCommerce',
     'summary': 'The Cut design for the emails of website customers (orders, account, coupons)',
     'description': """

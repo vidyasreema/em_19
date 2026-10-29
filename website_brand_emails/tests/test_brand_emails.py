@@ -1,3 +1,4 @@
+import base64
 from email.utils import formataddr
 
 from odoo import Command
@@ -8,6 +9,8 @@ from odoo.addons.mail.tests.common import MockEmail
 from odoo.addons.online_orders.tests.common import OnlineOrdersCommon
 
 BRAND_MARK = 'border-top: 4px solid #7A1F2B'
+PNG = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg=='
+SVG = base64.b64encode(b'<svg xmlns="http://www.w3.org/2000/svg" width="10" height="10"></svg>')
 
 
 @tagged('post_install', '-at_install')
@@ -108,3 +111,21 @@ class TestBrandEmails(OnlineOrdersCommon, MockEmail):
         self.assertIn(card.code, mail.body_html)
         self.assertEqual(mail.email_from, self.orders_from)
         self._assert_brand(mail)
+
+    def _confirmation_body(self):
+        order = self._create_order()
+        with self.mock_mail_gateway():
+            order._send_order_notification_mail(order._get_confirmation_template())
+        return self._mails_with('is confirmed').body_html
+
+    def test_svg_logo_is_not_used(self):
+        """Gmail and Outlook do not show SVG images: the name of the website instead."""
+        self.website.write({'logo': SVG, 'brand_email_logo': False})
+        body = self._confirmation_body()
+        self.assertNotIn('/web/image/website/%s/logo' % self.website.id, body)
+        self.assertIn(self.website.name, body)
+
+    def test_email_logo(self):
+        self.website.write({'logo': SVG, 'brand_email_logo': PNG})
+        body = self._confirmation_body()
+        self.assertIn('/web/image/website/%s/brand_email_logo' % self.website.id, body)

@@ -1,6 +1,8 @@
+import base64
 from email.utils import formataddr
 
 from odoo import api, fields, models
+from odoo.tools.mimetypes import guess_mimetype
 
 # The customer emails of these records take The Cut design (others keep the standard one)
 BRAND_MODELS = ('sale.order', 'res.users', 'res.partner', 'loyalty.card')
@@ -13,6 +15,11 @@ class Website(models.Model):
         "The Cut design for customer emails", default=True,
         help="Order, account and coupon emails of website customers get the design of this "
              "website. Untick to go back to the standard emails at once.")
+    brand_email_logo = fields.Image(
+        "Email logo", max_width=600, max_height=200,
+        help="Logo at the top of the customer emails, as PNG or JPG: email apps (Gmail, Outlook) "
+             "do not show SVG images. Empty: the website logo when it is not an SVG, else the "
+             "name of the website.")
 
     @api.model
     def _brand_website_for(self, record):
@@ -58,8 +65,15 @@ class Website(models.Model):
         return email if '<' in email else formataddr((self.name, email.strip()))
 
     def _brand_logo_url(self):
+        """Logo of the emails ('' when there is none an email app can show)."""
         self.ensure_one()
-        return '%s/web/image/website/%s/logo' % (self.get_base_url(), self.id)
+        if self.brand_email_logo:
+            field = 'brand_email_logo'
+        elif self.logo and guess_mimetype(base64.b64decode(self.logo)) != 'image/svg+xml':
+            field = 'logo'
+        else:
+            return ''
+        return '%s/web/image/website/%s/%s' % (self.get_base_url(), self.id, field)
 
     def _brand_contact(self):
         """WhatsApp of the shop (the help number of the order page), else the company phone."""

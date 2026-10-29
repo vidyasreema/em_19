@@ -17,7 +17,8 @@
            style="max-width: 560px; margin: 0 auto; background-color: #ffffff; border-radius: 18px; border-top: 4px solid #7A1F2B; border-collapse: separate;">
         <tr>
             <td align="center" style="padding: 24px 24px 4px 24px;">
-                <img t-if="brand and brand.logo" t-att-src="brand._brand_logo_url()" t-att-alt="brand_name"
+                <t t-set="brand_logo_url" t-value="brand._brand_logo_url() if brand else ''"/>
+                <img t-if="brand_logo_url" t-att-src="brand_logo_url" t-att-alt="brand_name"
                      style="height: 64px; width: auto; border: 0;"/>
                 <div t-else="" style="font-size: 22px; font-weight: bold; color: #7A1F2B;" t-out="brand_name"/>
             </td>
