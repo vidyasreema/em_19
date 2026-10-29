@@ -148,8 +148,8 @@ class SignupVerificationCheckout(JourneyCheckout):
 
     def _journey_apply_welcome_coupon(self, order_sudo):
         """After signing up, the sign-up coupon (fixed code) is applied to the
-        cart once, instead of the welcome coupon (kept for the next order).
-        Accounts without it (or once it is used) keep the welcome coupon."""
+        cart once. It replaces the welcome coupon: a website with a sign-up
+        coupon gives no welcome coupon (one sign-up offer)."""
         code = request.website._signup_coupon_code()
         user = request.env.user
         if not code or user._is_public() or not user.sudo().signup_coupon_issued:

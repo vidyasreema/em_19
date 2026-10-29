@@ -30,6 +30,22 @@ class TestSignupCoupon(SignupCommon):
         result = order._apply_program_reward(rewards, coupon)
         return order, result.get('error', '')
 
+    def _new_account(self, login):
+        user = self.env['res.users'].with_context(signup_coupon_issue=True)._create_user_from_template(
+            {'login': login, 'email': login, 'name': 'New Account'})
+        return self.env['loyalty.card'].search([('partner_id', '=', user.partner_id.id)])
+
+    def test_one_signup_offer(self):
+        """The sign-up coupon replaces the welcome coupon: not both."""
+        welcome = self.env.ref('website_purchase_journey.loyalty_program_welcome_signup')
+        welcome.active = True
+        self.website.write({'journey_welcome_program_id': welcome.id, 'signup_coupon_program_id': self.program.id})
+        self.assertFalse(self._new_account('only.one@example.com'), "no welcome coupon as well")
+        self.assertEqual(self.website._journey_signup_offer(), self.program)
+        self.website.signup_coupon_program_id = False
+        self.assertEqual(self._new_account('welcome.only@example.com').program_id, welcome,
+                         "without a sign-up coupon: the welcome coupon")
+
     def test_guest_and_old_accounts_are_refused(self):
         """5.2: typed by hand by a visitor who is not signed in (a guest order) is refused."""
         _order, error = self._try(self._address(24.4539, 54.3773, email='walk.in@example.com'))

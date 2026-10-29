@@ -31,6 +31,15 @@ class Website(models.Model):
         # sudo: website visitors cannot read the loyalty programs
         return self.sudo().signup_coupon_program_id.filtered('active')
 
+    def _journey_welcome_program(self):
+        """One sign-up offer: with a sign-up coupon, no welcome coupon as well."""
+        if self._signup_coupon_program():
+            return self.env['loyalty.program']
+        return super()._journey_welcome_program()
+
+    def _journey_signup_offer(self):
+        return self._signup_coupon_program() or super()._journey_signup_offer()
+
     def _signup_coupon_code(self):
         rule = self._signup_coupon_program().rule_ids.filtered(lambda r: r.mode == 'with_code' and r.code)
         return rule[:1].code or ''

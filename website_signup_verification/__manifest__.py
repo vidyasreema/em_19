@@ -1,6 +1,6 @@
 {
     'name': 'Website Sign-up Verification',
-    'version': '19.0.1.1.1',
+    'version': '19.0.1.1.2',
     'category': 'Website/Website',
     'summary': 'The Cut: email code at sign-up, one account per customer, sign-up coupon rules',
     'description': """
