@@ -1,6 +1,6 @@
 {
     'name': 'Website My Account',
-    'version': '19.0.1.1.0',
+    'version': '19.0.1.1.1',
     'category': 'Website/Website',
     'summary': 'The Cut: app-style My Account page (profile card, orders, coupons, settings)',
     'description': """

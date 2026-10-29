@@ -24,6 +24,13 @@ class MyAccountPortal(CustomerPortal):
             values.update(my_account_simple=True, invoice_sending_methods={}, invoice_edi_formats={})
         return values
 
+    def _prepare_address_form_values(self, *args, **kwargs):
+        """Addresses (Add / Edit) of a home customer: no company name and VAT either."""
+        values = super()._prepare_address_form_values(*args, **kwargs)
+        if request.website.my_account_page:
+            values['my_account_simple'] = True
+        return values
+
     def _my_account_values(self):
         website = request.website
         partner = request.env.user.partner_id

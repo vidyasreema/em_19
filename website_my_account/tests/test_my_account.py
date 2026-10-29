@@ -61,3 +61,15 @@ class TestMyAccount(HttpCase):
 
         self.website.my_account_page = False
         self.assertIn('name="company_name"', self.url_open('/my/account').text, "switch off: the standard page")
+
+    def test_address_form_without_business_fields(self):
+        self.authenticate(self.user.login, self.user.login)
+        for url in ('/my/address?partner_id=%s' % self.user.partner_id.id, '/my/address'):
+            page = self.url_open(url).text
+            self.assertIn('name="street"', page, url)
+            self.assertNotIn('name="company_name"', page, url)
+            self.assertNotIn('name="vat"', page, url)
+
+        self.website.my_account_page = False
+        page = self.url_open('/my/address?partner_id=%s' % self.user.partner_id.id).text
+        self.assertIn('name="company_name"', page, "switch off: the standard form")
