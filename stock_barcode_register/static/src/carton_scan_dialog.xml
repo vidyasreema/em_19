@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+    <t t-name="stock_barcode_register.CartonScanDialog">
+        <Dialog title="title" size="'xl'" contentClass="'o_carton_scan_dialog'">
+            <div t-if="props.hint" class="alert alert-info py-2 mb-2">
+                <i class="fa fa-barcode me-1"/>Expected barcode type for this vendor: <strong t-esc="typeLabels[props.hint] or props.hint"/>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-sm align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th>Barcode</th>
+                            <th>Type</th>
+                            <th class="text-end">Quantity</th>
+                            <th class="text-end">Cartons</th>
+                            <th>Pack Date</th>
+                            <th t-if="isMoveCarton">Alert Date</th>
+                            <th t-else="">Register</th>
+                            <th/>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr t-foreach="state.rows" t-as="row" t-key="row.id">
+                            <td class="text-break"><t t-esc="row.barcode"/></td>
+                            <td><t t-esc="typeLabels[row.barcode_type]"/></td>
+                            <td class="text-end"><t t-esc="formatQuantity(row.quantity)"/></td>
+                            <td class="text-end"><t t-esc="row.carton_count"/></td>
+                            <td>
+                                <t t-esc="row.pack_date or ''"/>
+                                <span t-if="row.pack_date_estimated" class="badge text-bg-warning ms-1">Estimated</span>
+                            </td>
+                            <td t-if="isMoveCarton">
+                                <input t-if="!props.readonly" type="date" class="form-control form-control-sm d-inline-block w-auto"
+                                       t-att-value="row.alert_date or ''"
+                                       t-on-change="(ev) => this.updateRow(row, 'alert_date', ev.target.value)"/>
+                                <t t-else="" t-esc="row.alert_date or ''"/>
+                                <span t-if="row.alert_date_manual" class="badge text-bg-info ms-1">Manually edited</span>
+                            </td>
+                            <td t-else="">
+                                <t t-if="row.register_id" t-esc="row.register_id[1]"/>
+                                <span t-else="" class="badge text-bg-warning">No record</span>
+                            </td>
+                            <td class="text-end">
+                                <button t-if="!props.readonly" class="btn btn-link text-danger p-0" title="Delete"
+                                        t-on-click="() => this.deleteRow(row)">
+                                    <i class="fa fa-trash"/>
+                                </button>
+                            </td>
+                        </tr>
+                        <tr t-if="!props.readonly" class="o_carton_entry_row table-light">
+                            <td>
+                                <input t-ref="barcode" type="text" class="form-control form-control-sm"
+                                       t-att-placeholder="props.isReceipt ? 'Scan, type, or leave empty to generate' : 'Scan or type the barcode'"
+                                       t-model="state.entry.barcode" t-on-keydown="onBarcodeKeydown"
+                                       t-on-change="() => this.readBarcode()"/>
+                            </td>
+                            <td>
+                                <t t-if="['gs1', 'template'].includes(state.entry.barcode_type)" t-esc="typeLabels[state.entry.barcode_type]"/>
+                                <select t-else="" class="form-select form-select-sm" t-model="state.entry.barcode_type">
+                                    <option value="manual">Manual</option>
+                                    <option value="fixed">Fixed</option>
+                                </select>
+                            </td>
+                            <td>
+                                <input t-ref="quantity" type="number" step="any" inputmode="decimal" min="0"
+                                       class="form-control form-control-sm text-end"
+                                       t-model="state.entry.quantity" t-on-keydown="onEntryKeydown"/>
+                            </td>
+                            <td>
+                                <input type="number" min="1" step="1" inputmode="numeric" class="form-control form-control-sm text-end"
+                                       t-att-disabled="state.entry.barcode_type !== 'fixed'"
+                                       t-model="state.entry.carton_count" t-on-keydown="onEntryKeydown"/>
+                            </td>
+                            <td>
+                                <input type="date" class="form-control form-control-sm" t-model="state.entry.pack_date" t-on-keydown="onEntryKeydown"/>
+                            </td>
+                            <td t-if="isMoveCarton">
+                                <input type="date" class="form-control form-control-sm" t-model="state.entry.alert_date" t-on-keydown="onEntryKeydown"
+                                       title="Leave empty to compute from the pack date"/>
+                            </td>
+                            <td t-else=""/>
+                            <td class="text-end">
+                                <button class="btn btn-primary btn-sm" t-att-disabled="state.busy" t-on-click="() => this.saveEntry()" title="Confirm row">
+                                    <i class="fa fa-check"/>
+                                </button>
+                            </td>
+                        </tr>
+                    </tbody>
+                    <tfoot>
+                        <tr class="fw-bold">
+                            <td colspan="2">Total</td>
+                            <td class="text-end"><t t-esc="formatQuantity(totals.quantity)"/></td>
+                            <td class="text-end"><t t-esc="totals.cartons"/></td>
+                            <td colspan="3"/>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+            <t t-set-slot="footer">
+                <button class="btn btn-primary" t-on-click="onDone">Done</button>
+            </t>
+        </Dialog>
+    </t>
+
+</templates>

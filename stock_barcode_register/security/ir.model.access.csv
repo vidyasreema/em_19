@@ -1,0 +1,13 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_stock_barcode_register_user,stock.barcode.register user,model_stock_barcode_register,stock.group_stock_user,1,1,1,0
+access_stock_barcode_register_manager,stock.barcode.register manager,model_stock_barcode_register,stock.group_stock_manager,1,1,1,1
+access_stock_move_carton_user,stock.move.carton user,model_stock_move_carton,stock.group_stock_user,1,1,1,1
+access_stock_count_session_user,stock.count.session user,model_stock_count_session,stock.group_stock_user,1,1,1,1
+access_stock_count_line_user,stock.count.line user,model_stock_count_line,stock.group_stock_user,1,1,1,1
+access_stock_count_carton_user,stock.count.carton user,model_stock_count_carton,stock.group_stock_user,1,1,1,1
+access_stock_count_scan_wizard_user,stock.count.scan.wizard user,model_stock_count_scan_wizard,stock.group_stock_user,1,1,1,1
+access_stock_barcode_template_user,stock.barcode.template user,model_stock_barcode_template,stock.group_stock_user,1,0,0,0
+access_stock_barcode_template_manager,stock.barcode.template manager,model_stock_barcode_template,stock.group_stock_manager,1,1,1,1
+access_stock_barcode_template_sample_user,stock.barcode.template.sample user,model_stock_barcode_template_sample,stock.group_stock_user,1,0,0,0
+access_stock_barcode_template_sample_manager,stock.barcode.template.sample manager,model_stock_barcode_template_sample,stock.group_stock_manager,1,1,1,1
+access_stock_barcode_product_wizard,stock.barcode.product.wizard,model_stock_barcode_product_wizard,group_barcode_product_creator,1,1,1,1

@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="1">
+    <!-- Firstlight / Greenlea (NZ), confirmed on the 1 October 2026 label check:
+         20 digits, digit 1 fixed prefix 2, digits 2-6 product code, digits 7-11 weight
+         with three decimals, the rest the carton number.
+         28321410136230103824 = product 83214, 10.136 kg, carton 230103824 -->
+    <record id="template_firstlight" model="stock.barcode.template">
+        <field name="name">Firstlight / Greenlea</field>
+        <field name="length">20</field>
+        <field name="prefix">2</field>
+        <field name="product_code_start">2</field>
+        <field name="product_code_length">5</field>
+        <field name="qty_start">7</field>
+        <field name="qty_length">5</field>
+        <field name="qty_decimals">3</field>
+        <field name="carton_start">12</field>
+        <field name="carton_length">0</field>
+        <field name="pack_date_start">0</field>
+        <field name="state">approved</field>
+        <field name="test_barcode">28321410136230103824</field>
+    </record>
+    <record id="template_firstlight_sample_1" model="stock.barcode.template.sample">
+        <field name="template_id" ref="template_firstlight"/>
+        <field name="barcode">28321410136230103824</field>
+    </record>
+</odoo>

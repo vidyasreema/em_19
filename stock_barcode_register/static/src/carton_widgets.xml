@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+    <t t-name="stock_barcode_register.CartonScanButton">
+        <button class="btn btn-sm btn-secondary o_carton_scan_button text-nowrap" title="Scan cartons" t-on-click="onClick">
+            <i class="fa fa-barcode"/>
+            <span t-if="count" class="ms-1" t-esc="count"/>
+        </button>
+    </t>
+
+    <t t-name="stock_barcode_register.CartonPhotos">
+        <span class="o_carton_photos text-nowrap">
+            <button class="btn btn-sm btn-secondary" title="Take a photo" t-on-click="takePhoto">
+                <i class="fa fa-camera"/>
+            </button>
+            <button t-if="count" class="btn btn-sm btn-link px-1" title="See photos" t-on-click="openPhotos">
+                <i class="fa fa-picture-o me-1"/><t t-esc="count"/>
+            </button>
+            <button t-else="" class="btn btn-sm btn-link px-1 text-muted" title="Upload from gallery or files" t-on-click="openPhotos">
+                <i class="fa fa-picture-o"/>
+            </button>
+        </span>
+    </t>
+
+    <t t-name="stock_barcode_register.CartonPhotosDialog">
+        <Dialog title="props.title" size="'lg'">
+            <div t-if="!props.readonly" class="d-flex gap-2 mb-3">
+                <button class="btn btn-primary" t-on-click="() => this.add(true)"><i class="fa fa-camera me-1"/>Take Photo</button>
+                <button class="btn btn-secondary" t-on-click="() => this.add(false)"><i class="fa fa-upload me-1"/>Upload from Gallery or Files</button>
+            </div>
+            <p t-if="!state.photos.length" class="text-muted">No photos yet.</p>
+            <div class="d-flex flex-wrap gap-2">
+                <div t-foreach="state.photos" t-as="photo" t-key="photo.id" class="position-relative">
+                    <a t-att-href="'/web/image/' + photo.id" target="_blank">
+                        <img t-att-src="'/web/image/' + photo.id + '/160x160'" class="img-thumbnail" t-att-alt="photo.name"/>
+                    </a>
+                    <button t-if="!props.readonly" class="btn btn-sm btn-danger position-absolute top-0 end-0 m-1" title="Delete"
+                            t-on-click="() => this.remove(photo)">
+                        <i class="fa fa-trash"/>
+                    </button>
+                </div>
+            </div>
+            <t t-set-slot="footer">
+                <button class="btn btn-primary" t-on-click="() => this.props.close()">Done</button>
+            </t>
+        </Dialog>
+    </t>
+
+</templates>

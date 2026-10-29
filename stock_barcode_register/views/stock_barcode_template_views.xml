@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_stock_barcode_template_list" model="ir.ui.view">
+        <field name="name">stock.barcode.template.list</field>
+        <field name="model">stock.barcode.template</field>
+        <field name="arch" type="xml">
+            <list string="Reading Templates">
+                <field name="sequence" widget="handle"/>
+                <field name="name"/>
+                <field name="length"/>
+                <field name="prefix"/>
+                <field name="partner_id"/>
+                <field name="state" widget="badge" decoration-success="state == 'approved'" decoration-info="state == 'draft'"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_stock_barcode_template_form" model="ir.ui.view">
+        <field name="name">stock.barcode.template.form</field>
+        <field name="model">stock.barcode.template</field>
+        <field name="arch" type="xml">
+            <form string="Reading Template">
+                <header>
+                    <button name="action_approve" string="Approve" type="object" class="btn-primary" invisible="state == 'approved'"/>
+                    <button name="action_reset_draft" string="Reset to Draft" type="object" invisible="state == 'draft'"/>
+                    <field name="state" widget="statusbar"/>
+                </header>
+                <sheet>
+                    <widget name="web_ribbon" title="Archived" bg_color="text-bg-danger" invisible="active"/>
+                    <div class="oe_title">
+                        <h1><field name="name" placeholder="e.g. Firstlight / Greenlea"/></h1>
+                    </div>
+                    <group>
+                        <group string="Pattern">
+                            <field name="length"/>
+                            <field name="prefix"/>
+                            <field name="partner_id" help="For reference only: a template is tied to the barcode pattern, not to the vendor."/>
+                            <field name="active" invisible="1"/>
+                            <field name="company_id" groups="base.group_multi_company"/>
+                        </group>
+                        <group string="Positions (1 = first character)">
+                            <label for="product_code_start" string="Product Code"/>
+                            <div class="o_row">from <field name="product_code_start" class="oe_inline"/> length <field name="product_code_length" class="oe_inline"/></div>
+                            <label for="qty_start" string="Quantity"/>
+                            <div class="o_row">from <field name="qty_start" class="oe_inline"/> length <field name="qty_length" class="oe_inline"/> decimals <field name="qty_decimals" class="oe_inline"/></div>
+                            <field name="qty_uom_id" options="{'no_create': True}"/>
+                            <label for="carton_start" string="Carton Number"/>
+                            <div class="o_row">from <field name="carton_start" class="oe_inline"/> length <field name="carton_length" class="oe_inline"/> <span class="text-muted">(0 = to the end)</span></div>
+                            <label for="pack_date_start" string="Pack Date"/>
+                            <div class="o_row">from <field name="pack_date_start" class="oe_inline"/> <field name="pack_date_format" class="oe_inline" invisible="not pack_date_start"/> <span class="text-muted">(0 = none)</span></div>
+                        </group>
+                    </group>
+                    <group string="Test">
+                        <field name="test_barcode" placeholder="Paste a real barcode"/>
+                        <field name="test_result" nolabel="1" colspan="2" invisible="not test_barcode"/>
+                    </group>
+                    <separator string="Sample Labels (at least two, with different quantities, to approve)"/>
+                    <field name="sample_ids">
+                        <list editable="bottom" decoration-danger="not matches">
+                            <field name="barcode"/>
+                            <field name="quantity"/>
+                            <field name="carton_number"/>
+                            <field name="matches"/>
+                        </list>
+                    </field>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_stock_barcode_template" model="ir.actions.act_window">
+        <field name="name">Reading Templates</field>
+        <field name="res_model">stock.barcode.template</field>
+        <field name="view_mode">list,form</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">Define how a vendor's own barcode is read</p>
+            <p>GS1 barcodes are read as standard. A template reads other barcodes by fixed positions.</p>
+        </field>
+    </record>
+</odoo>

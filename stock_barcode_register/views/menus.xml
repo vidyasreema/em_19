@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <menuitem id="menu_operational_count"
+        name="Count"
+        parent="menu_operational_root"
+        action="action_stock_count_session"
+        sequence="30"/>
+
+    <menuitem id="menu_stock_count_session"
+        name="Count Sessions"
+        parent="stock.menu_stock_adjustments"
+        action="action_stock_count_session"
+        sequence="20"/>
+
+    <menuitem id="menu_stock_barcode_template"
+        name="Reading Templates"
+        parent="stock.menu_stock_config_settings"
+        action="action_stock_barcode_template"
+        groups="stock.group_stock_manager"
+        sequence="60"/>
+</odoo>

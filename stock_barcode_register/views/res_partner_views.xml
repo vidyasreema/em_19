@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_partner_form_barcode_register" model="ir.ui.view">
+        <field name="name">res.partner.form.barcode.register</field>
+        <field name="model">res.partner</field>
+        <field name="inherit_id" ref="base.view_partner_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//page[@name='sales_purchases']/group" position="inside">
+                <group string="Carton Barcodes" name="barcode_register" groups="stock.group_stock_user">
+                    <field name="barcode_expected_type"/>
+                    <field name="barcode_scan_requirement"/>
+                </group>
+            </xpath>
+        </field>
+    </record>
+</odoo>

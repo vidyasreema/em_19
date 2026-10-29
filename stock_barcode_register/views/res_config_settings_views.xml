@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="res_config_settings_view_form_barcode_register" model="ir.ui.view">
+        <field name="name">res.config.settings.view.form.barcode.register</field>
+        <field name="model">res.config.settings</field>
+        <field name="inherit_id" ref="stock.res_config_settings_view_form"/>
+        <field name="arch" type="xml">
+            <block name="barcode_setting_container" position="after">
+                <block title="Barcode Register" name="barcode_register_setting_container">
+                    <setting id="barcode_register_tolerance" company_dependent="1" string="Difference Tolerance"
+                             help="Difference allowed on an operation line without a note.">
+                        <field name="barcode_register_tolerance" class="o_light_label"/> %
+                    </setting>
+                    <setting id="barcode_register_followup" company_dependent="1" string="Difference Follow-up"
+                             help="Users receiving the Activity when a receipt difference exceeds the tolerance.">
+                        <field name="barcode_register_followup_user_ids" widget="many2many_tags" options="{'no_create': True}"/>
+                    </setting>
+                    <setting id="barcode_register_alert_age" company_dependent="1" string="Alert Age per Storage Type"
+                             help="Days added to the pack date to compute a carton's alert date.">
+                        <div class="content-group">
+                            <div class="row mt-2">
+                                <label for="barcode_alert_days_fresh" string="Fresh" class="col-lg-4 o_light_label"/>
+                                <field name="barcode_alert_days_fresh"/>
+                            </div>
+                            <div class="row">
+                                <label for="barcode_alert_days_chilled" string="Chilled" class="col-lg-4 o_light_label"/>
+                                <field name="barcode_alert_days_chilled"/>
+                            </div>
+                            <div class="row">
+                                <label for="barcode_alert_days_frozen" string="Frozen" class="col-lg-4 o_light_label"/>
+                                <field name="barcode_alert_days_frozen"/>
+                            </div>
+                        </div>
+                    </setting>
+                </block>
+            </block>
+        </field>
+    </record>
+</odoo>
