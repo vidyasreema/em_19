@@ -20,8 +20,19 @@ class JourneyPortal(CustomerPortal):
             'current_coupons': current,
             'past_coupons': past,
             'coupon_error': request.session.pop(SESSION_COUPON_ERROR, None),
+            'new_coupons': [coupon for coupon in current if coupon['new']],
         })
         return request.render('website_purchase_journey.portal_my_coupons', values)
+
+    @route('/my/coupons/celebrated', type='jsonrpc', auth='user', website=True, methods=['POST'])
+    def journey_my_coupons_celebrated(self, card_ids):
+        """The "new coupon" party was shown: not again for these coupons."""
+        partner = request.env.user.partner_id
+        request.env['loyalty.card'].sudo().search([
+            ('id', 'in', [int(card_id) for card_id in card_ids]),
+            ('partner_id', 'child_of', partner.commercial_partner_id.id),
+        ]).journey_celebrated = True
+        return True
 
     @route('/my/coupons/apply', type='http', auth='user', website=True, methods=['POST'])
     def journey_my_coupons_apply(self, card_id, **kwargs):

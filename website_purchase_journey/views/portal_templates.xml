@@ -35,7 +35,10 @@
                     <div t-foreach="current_coupons" t-as="coupon" class="col-md-6">
                         <div class="border rounded-3 p-3 h-100 d-flex flex-column gap-1 o_journey_coupon_card">
                             <div class="d-flex justify-content-between align-items-start gap-2">
-                                <h5 class="mb-0" t-out="coupon['title']"/>
+                                <h5 class="mb-0">
+                                    <t t-out="coupon['title']"/>
+                                    <span t-if="coupon['new']" class="badge rounded-pill text-bg-danger align-middle ms-1 o_journey_new_badge">New</span>
+                                </h5>
                                 <span t-attf-class="badge rounded-pill #{'text-bg-success' if coupon['state'] == 'current' else 'text-bg-warning'}"
                                       t-out="coupon['status']"/>
                             </div>
@@ -73,6 +76,36 @@
                         </tbody>
                     </t>
                 </t>
+                <!-- New coupon (earned since the last visit): party popup, once per coupon -->
+                <div t-if="new_coupons" class="modal fade o_journey_newcoupon_modal" tabindex="-1"
+                     aria-labelledby="o_journey_newcoupon_title" aria-hidden="true"
+                     t-att-data-card-ids="json.dumps([coupon['card'].id for coupon in new_coupons])">
+                    <div class="modal-dialog modal-dialog-centered">
+                        <div class="modal-content">
+                            <div class="modal-body text-center p-4">
+                                <span class="d-inline-flex align-items-center justify-content-center rounded-circle mb-3 o_journey_coupon_icon">
+                                    <i class="fa fa-gift fa-2x" role="presentation"/>
+                                </span>
+                                <h4 class="mb-1" id="o_journey_newcoupon_title">
+                                    <t t-if="len(new_coupons) == 1">🎉 You have a new coupon! 🎉</t>
+                                    <t t-else="">🎉 You have <t t-out="len(new_coupons)"/> new coupons! 🎉</t>
+                                </h4>
+                                <p class="text-muted mb-3">Use it on your next order</p>
+                                <div t-foreach="new_coupons" t-as="coupon" class="mb-3">
+                                    <p class="fs-5 fw-bold text-primary mb-2" t-out="coupon['title']"/>
+                                    <div class="d-flex align-items-center justify-content-between gap-2 rounded-3 px-3 py-2 o_journey_coupon_code_box">
+                                        <span class="font-monospace fw-bold text-truncate" t-out="coupon['code']"/>
+                                        <button type="button" class="btn btn-sm btn-outline-primary rounded-pill o_journey_coupon_copy"
+                                                t-att-data-code="coupon['code']">Copy</button>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="modal-footer justify-content-center border-0 pt-0 pb-4">
+                                <button type="button" class="btn btn-primary rounded-pill px-4" data-bs-dismiss="modal">Great!</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </t>
     </template>

@@ -352,6 +352,32 @@ class TestMyCoupons(OrderCommon):
         self.url_open('/my/coupons/apply', data={'card_id': other.id, 'csrf_token': http.Request.csrf_token(self)})
         self.assertNotIn(other, order.applied_coupon_ids)
 
+    def test_new_coupon_party(self):
+        other = self.welcome._journey_give_welcome_coupon(self.env['res.partner'].create({'name': 'Other'}))
+        self.authenticate('couponer', 'couponer')
+        page = self.url_open('/my/coupons').text
+        self.assertIn('o_journey_newcoupon_modal', page, "new coupon: party popup")
+        self.assertIn('You have a new coupon!', page)
+        self.assertIn('o_journey_new_badge', page)
+        self.assertTrue(self.make_jsonrpc_request('/my/coupons/celebrated', {'card_ids': [self.card.id, other.id]}))
+        self.assertTrue(self.card.journey_celebrated)
+        self.assertFalse(other.journey_celebrated, "not a coupon of this customer")
+        page = self.url_open('/my/coupons').text
+        self.assertIn(self.card.code, page)
+        self.assertNotIn('o_journey_newcoupon_modal', page, "once per coupon")
+        self.assertNotIn('o_journey_new_badge', page)
+
+    def test_new_coupon_on_order_page_popup(self):
+        self.env['sale.order'].create({
+            'partner_id': self.user.partner_id.id, 'website_id': self.website.id,
+            'order_line': [Command.create({'product_id': self.unit.id, 'product_uom_qty': 10})],
+        })
+        self.authenticate('couponer', 'couponer')
+        page = self.url_open('/shop/order').text
+        self.assertIn('data-new-card-ids="[%s]"' % self.card.id, page)
+        self.card.journey_celebrated = True
+        self.assertIn('data-new-card-ids="[]"', self.url_open('/shop/order').text)
+
     def test_order_page_link(self):
         self.authenticate('couponer', 'couponer')
         self.env['sale.order'].create({

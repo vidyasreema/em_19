@@ -1,6 +1,6 @@
 {
     'name': 'Website Purchase Journey',
-    'version': '19.0.1.5.8',
+    'version': '19.0.1.6.0',
     'category': 'Website/eCommerce',
     'summary': 'The Cut purchase journey: add from the shop, weight choice, location on entry',
     'description': """
@@ -54,6 +54,7 @@
     'assets': {
         'web.assets_frontend': [
             'website_purchase_journey/static/src/scss/journey.scss',
+            'website_purchase_journey/static/src/js/*.js',
             'website_purchase_journey/static/src/interactions/*.js',
         ],
         'web.assets_tests': [

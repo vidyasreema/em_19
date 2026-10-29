@@ -34,13 +34,14 @@
                             <span class="d-inline-flex align-items-center justify-content-center rounded-circle mb-3 o_journey_coupon_icon">
                                 <i class="fa fa-gift fa-2x" role="presentation"/>
                             </span>
-                            <h3 class="mb-1" id="o_journey_coupon_title">Congratulations!</h3>
+                            <h3 class="mb-1" id="o_journey_coupon_title">🎉 Congratulations! 🎉</h3>
                             <p class="text-muted mb-3">You earned a coupon for your next order</p>
                             <p class="fs-4 fw-bold text-primary mb-3" t-out="journey_next_coupon['title']"/>
                             <div t-if="journey_next_coupon['ready']"
                                  class="d-flex align-items-center justify-content-between gap-2 rounded-3 px-3 py-2 mb-2 o_journey_coupon_code_box">
                                 <span class="font-monospace fw-bold text-truncate o_journey_coupon_code" t-out="journey_next_coupon['code']"/>
-                                <button type="button" class="btn btn-sm btn-outline-primary rounded-pill o_journey_coupon_copy">Copy</button>
+                                <button type="button" class="btn btn-sm btn-outline-primary rounded-pill o_journey_coupon_copy"
+                                        t-att-data-code="journey_next_coupon['code']">Copy</button>
                             </div>
                             <p t-else="" class="small text-muted mb-2">Ready once this order is paid.</p>
                             <p t-if="website.is_public_user()" class="small text-muted mb-0">

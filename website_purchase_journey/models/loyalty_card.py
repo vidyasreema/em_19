@@ -8,6 +8,10 @@ PERSONAL_PROGRAM_TYPES = ('coupons', 'next_order_coupons')
 class LoyaltyCard(models.Model):
     _inherit = 'loyalty.card'
 
+    journey_celebrated = fields.Boolean(
+        "New coupon shown", copy=False,
+        help="The customer saw the \"You have a new coupon\" popup of My coupons.")
+
     @api.model
     def _journey_portal_coupons(self, partner, cart=None):
         """Coupons of a customer for My coupons (Annex 3 C5).
@@ -47,6 +51,7 @@ class LoyaltyCard(models.Model):
                 'state': state,
                 'applied': bool(cart) and card in cart.applied_coupon_ids,
                 'can_apply': state == 'current' and bool(cart and cart.website_order_line),
+                'new': state == 'current' and not card.journey_celebrated,
             }
             (past if state == 'past' else current).append(values)
         return current, past

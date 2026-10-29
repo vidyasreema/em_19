@@ -2,6 +2,7 @@ import { Interaction } from "@web/public/interaction";
 import { registry } from "@web/core/registry";
 import { rpc } from "@web/core/network/rpc";
 import { _t } from "@web/core/l10n/translation";
+import { throwConfetti } from "@website_purchase_journey/js/confetti";
 
 // The promise is checked again every minute (e.g. 19:00 passes while the page is open).
 const PROMISE_CHECK_MS = 60000;
@@ -51,6 +52,7 @@ export class JourneyOrderPage extends Interaction {
         ".o_journey_sumtog": { "t-on-click": this.onSummaryToggle },
         ".o_journey_mycoupon_copy": { "t-on-click": this.copyCoupon },
         ".o_journey_mycoupon_apply": { "t-on-click": this.locked(this.applyMyCoupon, true) },
+        ".o_journey_mycoupons_modal": { "t-on-shown.bs.modal": this.celebrateNewCoupons },
     };
 
     setup() {
@@ -178,6 +180,21 @@ export class JourneyOrderPage extends Interaction {
         } catch {
             // No clipboard (old browser, http): the code stays visible to copy by hand
         }
+    }
+
+    /**
+     * A coupon earned since the last look (badge "New"): confetti, once (the
+     * server remembers it).
+     */
+    celebrateNewCoupons() {
+        const list = this.el.querySelector(".o_journey_mycoupons_list");
+        const cardIds = JSON.parse(list?.dataset.newCardIds || "[]");
+        if (!cardIds.length) {
+            return;
+        }
+        list.dataset.newCardIds = "[]";
+        this.registerCleanup(throwConfetti());
+        rpc("/my/coupons/celebrated", { card_ids: cardIds });
     }
 
     async applyMyCoupon(ev) {

@@ -98,10 +98,14 @@
                                 <h5 class="modal-title" id="o_journey_mycoupons_title">My coupons</h5>
                                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"/>
                             </div>
-                            <div class="modal-body o_journey_mycoupons_list">
+                            <div class="modal-body o_journey_mycoupons_list"
+                                 t-att-data-new-card-ids="json.dumps([coupon['card'].id for coupon in my_coupons if coupon['new']])">
                                 <div t-foreach="my_coupons" t-as="coupon" class="rounded-3 p-3 mb-2 o_journey_mycoupon">
                                     <div class="d-flex justify-content-between align-items-start gap-2">
-                                        <b t-out="coupon['title']"/>
+                                        <b>
+                                            <t t-out="coupon['title']"/>
+                                            <span t-if="coupon['new']" class="badge rounded-pill text-bg-danger align-middle ms-1 o_journey_new_badge">New</span>
+                                        </b>
                                         <span t-attf-class="badge rounded-pill #{'text-bg-success' if coupon['state'] == 'current' else 'text-bg-warning'}"
                                               t-out="coupon['status']"/>
                                     </div>
