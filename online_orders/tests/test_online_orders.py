@@ -44,6 +44,19 @@ class TestOnlineOrderStages(OnlineOrdersCommon):
         self.assertTrue(self._messages_with_subject(order, 'Thank you for your order'))
         self.assertFalse(order.online_next_stage_id, "Completed is automatic only")
 
+    def test_03b_order_emails_from_the_website_setting(self):
+        self.env.company.email = 'info@example.com'
+        order = self._tracked(self._create_order())
+        order.action_online_next_stage()
+        self._flush_tracking()
+        message = self._messages_with_subject(order, 'is on the way')
+        self.assertEqual(message.email_from, self.env.company.email_formatted, "no setting: the company email")
+        self.website.online_orders_email_from = 'The Cut <orders@thecutuae.com>'
+        order.action_online_next_stage()
+        self._flush_tracking()
+        message = self._messages_with_subject(order, 'Thank you for your order')
+        self.assertEqual(message.email_from, 'The Cut <orders@thecutuae.com>', "the sender set on the website")
+
     def test_04_skipping_out_for_delivery_still_validates(self):
         order = self._create_order()
         order.stage_id = self.stage_delivered
@@ -250,6 +263,12 @@ class TestOnlineOrdersAddresses(OnlineOrdersCommon):
         self.assertTrue(log, "logged on the customer card")
         mail = self.env['mail.mail'].search([('subject', '=', 'Your delivery address was updated')])
         self.assertIn(self.customer, mail.recipient_ids, "the customer receives the email")
+
+    def test_address_email_from_the_website_setting(self):
+        self.website.online_orders_email_from = 'The Cut <orders@thecutuae.com>'
+        self._tracked(self.address).with_user(self.sales_user).street2 = 'Apt 1505'
+        mail = self.env['mail.mail'].search([('subject', '=', 'Your delivery address was updated')])
+        self.assertEqual(mail.email_from, 'The Cut <orders@thecutuae.com>')
 
     def test_staff_edits_address(self):
         self.address.with_user(self.sales_user).street2 = 'Apt 1505'

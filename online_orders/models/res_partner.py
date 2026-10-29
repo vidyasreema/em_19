@@ -126,7 +126,13 @@ class ResPartner(models.Model):
         )
         template = self.env.ref('online_orders.mail_template_address_updated', raise_if_not_found=False)
         if template and customer.email:
-            template.sudo().send_mail(self.id)
+            website = self.env['website'].sudo().search([
+                ('online_orders_email_from', '!=', False),
+                ('company_id', 'in', [False, (customer.company_id or self.env.company).id]),
+            ], limit=1)
+            template.sudo().with_context(
+                online_orders_email_from=website.online_orders_email_from,
+            ).send_mail(self.id)
 
     @api.model_create_multi
     def create(self, vals_list):

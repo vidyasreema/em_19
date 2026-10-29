@@ -1,6 +1,6 @@
 {
     'name': 'Online Orders',
-    'version': '19.0.1.1.0',
+    'version': '19.0.1.2.0',
     'category': 'Sales/Sales',
     'summary': 'Sales team board for website orders: stages, dispatch page, customer addresses',
     'description': """
@@ -41,6 +41,7 @@
         'views/res_partner_views.xml',
         'views/report_views.xml',
         'views/menus.xml',
+        'views/res_config_settings_views.xml',
         'views/portal_templates.xml',
     ],
     'assets': {
