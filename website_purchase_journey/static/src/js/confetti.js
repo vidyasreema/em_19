@@ -1,6 +1,6 @@
 // Burst of confetti over the page (above the popups, clicks go through), for
 // a coupon the customer just earned. Nothing when the device asks for less motion.
-const CONFETTI_COLOURS = ["#2e7d32", "#66bb6a", "#7a1f2b", "#e8b04b", "#f06292", "#42a5f5"];
+const CONFETTI_COLOURS = ["#2e7d32", "#66bb6a", "#7e1416", "#e8b04b", "#f06292", "#42a5f5"];
 const CONFETTI_PIECES = 90;
 const CONFETTI_DURATION = 4500; // ms, longest fall included
 
