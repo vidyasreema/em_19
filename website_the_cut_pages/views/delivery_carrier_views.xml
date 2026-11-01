@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="delivery_carrier_form_the_cut_pages" model="ir.ui.view">
+        <field name="name">delivery.carrier.form.the.cut.pages</field>
+        <field name="model">delivery.carrier</field>
+        <field name="inherit_id" ref="delivery.view_delivery_carrier_form"/>
+        <field name="arch" type="xml">
+            <page name="destination" position="after">
+                <page string="Website Pages" name="the_cut_pages">
+                    <group>
+                        <group string="Delivery &amp; Pickup page">
+                            <field name="cut_area"/>
+                            <field name="cut_website_name" placeholder="Abu Dhabi Island"/>
+                            <field name="cut_website_note" placeholder="For example Masdar City"/>
+                        </group>
+                        <div class="text-muted" colspan="2">
+                            The fee, the free-delivery amount and the times of the pages come from this method
+                            (Pricing and Delivery Timing).
+                        </div>
+                    </group>
+                </page>
+            </page>
+        </field>
+    </record>
+</odoo>

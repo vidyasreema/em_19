@@ -1,0 +1,228 @@
+// The Cut pages (approved design board): colours, fonts and motion.
+// The layout itself is in the templates, as on the board.
+// Fonts served by the website itself (Anton and Figtree: SIL Open Font License; latin)
+
+@font-face {
+    font-family: 'Anton';
+    src: url('/website_the_cut_pages/static/src/fonts/anton.woff2') format('woff2');
+    font-weight: 400;
+    font-display: swap;
+}
+@font-face {
+    font-family: 'Figtree';
+    src: url('/website_the_cut_pages/static/src/fonts/figtree.woff2') format('woff2');
+    font-weight: 300 900;
+    font-display: swap;
+}
+@font-face {
+    font-family: 'Capture it';
+    src: url('/website_the_cut_pages/static/src/fonts/capture_it.woff2') format('woff2');
+    font-display: swap;
+}
+
+.tc-header, .tc-footer, .tc-root {
+    font-family: Figtree, system-ui, sans-serif;
+    font-size: 16px;
+    line-height: 1.6;
+    a { color: #7E1416; }
+    a:hover { color: #5A0E10; }
+    h1, h2 { text-transform: none; }
+    summary {
+        cursor: pointer;
+        list-style: none;
+        &::-webkit-details-marker { display: none; }
+    }
+    details[open] > summary svg { transform: rotate(180deg); }
+}
+
+// Header and footer (every page of the site)
+.tc-header {
+    position: relative;
+    z-index: 10;
+    .tc-nav a { color: #FFFFFF; text-decoration: none; }
+    .tc-nav a:hover, .tc-nav a:focus { color: #F5A524; }
+    .tc-icons a { color: #FFFFFF; font-size: 20px; display: inline-flex; align-items: center; min-height: 44px; }
+    .tc-icons .o_wsale_my_cart a { position: relative; }
+    .tc-icons .o_wsale_my_cart { margin-right: 14px; } // room for the count
+    .tc-icons .fa-stack { width: auto; height: auto; line-height: 1; }
+    // The count beside the cart icon, not over it
+    .tc-icons .my_cart_quantity {
+        position: absolute;
+        top: 0;
+        right: auto;
+        left: calc(100% - 4px);
+        background: #F5A524 !important;
+        color: #1B1414;
+        font-family: Figtree, system-ui, sans-serif;
+    }
+}
+.tc-footer a { color: #FFFFFF; }
+.tc-footer a:hover { color: #F5A524; }
+
+@media (max-width: 575.98px) {
+    .tc-header .tc-nav { gap: 14px !important; font-size: 16px !important; }
+    .tc-header .tc-icons { gap: 12px !important; }
+    .tc-header .tc-icons .o_wsale_my_cart { margin-right: 10px; }
+}
+
+// The Odoo pages (shop, product, cart, checkout, contact, sign-in, My Account) in the
+// colours, fonts and buttons of the pages above, while "The Cut pages" is ticked.
+// On the body, so the pop-ups of the shop get them too.
+$tc-red: #7E1416;
+$tc-red-dark: #5A0E10;
+$tc-anton: Anton, Impact, 'Arial Narrow', sans-serif;
+$tc-figtree: Figtree, system-ui, sans-serif;
+
+body:has(#wrapwrap.tc-site) {
+    --#{$prefix}body-font-family: #{$tc-figtree};
+    --#{$prefix}primary: #{$tc-red};
+    --#{$prefix}primary-rgb: #{to-rgb($tc-red)};
+    --#{$prefix}link-color: #{$tc-red};
+    --#{$prefix}link-color-rgb: #{to-rgb($tc-red)};
+    --#{$prefix}link-hover-color: #{$tc-red-dark};
+    --#{$prefix}link-hover-color-rgb: #{to-rgb($tc-red-dark)};
+    font-family: $tc-figtree;
+
+    h1, h2, h3, h4, h5, h6, .h1, .h2, .h3, .h4, .h5, .h6,
+    .btn, input, select, textarea, .form-control, .form-select, .dropdown-menu, .modal, .popover {
+        font-family: $tc-figtree;
+    }
+    // Page titles in Anton, as on the new pages (the product names on the cards stay in Figtree)
+    main :is(h1, h2):not(.oe_product_cart *):not(.tc-root *) {
+        font-family: $tc-anton;
+        font-weight: 400;
+        letter-spacing: 0.02em;
+    }
+    main h1:not(.o_wsale_product_details_content_section *):not(.tc-root *) {
+        text-transform: uppercase;
+    }
+
+    .btn-primary {
+        @include button-variant($tc-red, $tc-red, #FFFFFF, $tc-red-dark, $tc-red-dark, #FFFFFF,
+            $tc-red-dark, $tc-red-dark, #FFFFFF, $tc-red, $tc-red, #FFFFFF);
+    }
+    .btn-outline-primary {
+        @include button-outline-variant($tc-red, #FFFFFF, $tc-red, $tc-red, #FFFFFF);
+    }
+    .btn-link {
+        --#{$prefix}btn-color: #{$tc-red};
+        --#{$prefix}btn-hover-color: #{$tc-red-dark};
+        --#{$prefix}btn-active-color: #{$tc-red-dark};
+    }
+    .text-primary { color: $tc-red !important; }
+    .bg-primary:not(.my_cart_quantity), .text-bg-primary { background-color: $tc-red !important; }
+    .border-primary { border-color: $tc-red !important; }
+    .form-check-input:checked {
+        background-color: $tc-red;
+        border-color: $tc-red;
+    }
+    .form-control:focus, .form-select:focus, .form-check-input:focus {
+        border-color: rgba($tc-red, 0.5);
+        box-shadow: 0 0 0 0.2rem rgba($tc-red, 0.2);
+    }
+    .pagination {
+        --#{$prefix}pagination-color: #{$tc-red};
+        --#{$prefix}pagination-hover-color: #{$tc-red-dark};
+        --#{$prefix}pagination-active-bg: #{$tc-red};
+        --#{$prefix}pagination-active-border-color: #{$tc-red};
+    }
+    .page-item.active .page-link {
+        background-color: $tc-red;
+        border-color: $tc-red;
+        color: #FFFFFF;
+    }
+
+    // The main button of each page, as "ORDER NOW" on the new pages: Anton capitals, pill
+    #add_to_cart, .o_we_buy_now, .o_journey_place, .o_journey_add_address.btn-primary, .o_journey_sheet_btn,
+    .oe_login_form .btn-primary, .oe_signup_form .btn-primary, .oe_reset_password_form .btn-primary,
+    .s_website_form_send {
+        font-family: $tc-anton;
+        font-weight: 400 !important;
+        font-size: 18px;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+        border-radius: 40px !important;
+    }
+
+    // "Deliver to" bar: part of the header
+    .o_journey_location_bar {
+        background-color: $tc-red-dark;
+        border-bottom-color: $tc-red-dark;
+        color: #FFFFFF;
+
+        .o_journey_promise { color: #F3DCDC; }
+        .o_journey_promise.text-danger { color: #F5A524 !important; }
+        @media (max-width: 767.98px) {
+            .o_journey_promise { white-space: normal; color: #F3DCDC; }
+        }
+    }
+
+    // Order tracking strip under the header: the yellow of the new pages, not green
+    .o_journey_track_bar {
+        background-color: #F4C430;
+        color: #1B1414;
+
+        &:hover, &:focus {
+            background-color: #F5A524;
+            color: #1B1414;
+        }
+    }
+
+    // "View cart" pill at the bottom of the shop: the same yellow, so it stands out from the red buttons
+    .o_journey_cart_bar {
+        background-color: #F4C430;
+        color: #1B1414;
+        box-shadow: 0 8px 24px rgba(27, 20, 20, 0.25);
+
+        &:hover, &:focus {
+            background-color: #F5A524;
+            color: #1B1414;
+        }
+    }
+
+    // Contact page: the top of the new pages replaces the photo banner
+    &:has(.tc-contact-hero) #wrap > section.s_title:first-child { display: none !important; }
+}
+
+// Motion (BRD 3.2 and 3.4)
+@keyframes tcFloat { 0%, 100% { transform: translateY(0) rotate(-4deg); } 50% { transform: translateY(-10px) rotate(-2.5deg); } }
+@keyframes tcBlob {
+    0%, 100% { border-radius: 46% 54% 42% 58% / 58% 40% 60% 42%; }
+    50% { border-radius: 54% 46% 56% 44% / 44% 58% 42% 56%; }
+}
+@keyframes tcCue { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(4px); } }
+@keyframes tcKb { from { transform: scale(1); } to { transform: scale(1.08); } }
+@keyframes tcMarq { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+// The two delivery cards swap about every 6 seconds
+@keyframes tcFront {
+    0%, 42% { transform: rotate(-2deg); z-index: 2; }
+    50%, 92% { transform: translate(20px, 34px) rotate(3deg); z-index: 1; }
+    100% { transform: rotate(-2deg); z-index: 2; }
+}
+@keyframes tcBack {
+    0%, 42% { transform: translate(20px, 34px) rotate(3deg); z-index: 1; }
+    50%, 92% { transform: rotate(-2deg); z-index: 2; }
+    100% { transform: translate(20px, 34px) rotate(3deg); z-index: 1; }
+}
+
+.tc-root {
+    .tc-float { animation: tcFloat 6s ease-in-out infinite; }
+    .tc-blob { animation: tcBlob 9s ease-in-out infinite; }
+    .tc-cue { animation: tcCue 2.4s ease-in-out infinite; }
+    .tc-kb { animation: tcKb 22s ease-in-out infinite alternate; transform-origin: 50% 60%; }
+    .tc-marquee { animation: tcMarq 45s linear infinite reverse; }
+    .tc-card { transition: transform .5s ease; }
+    .tc-card-a { animation: tcFront 12s ease-in-out infinite; }
+    .tc-card-b { animation: tcBack 12s ease-in-out infinite; }
+    // Paused under the pointer; a click or tap swaps them by hand
+    .tc-stack:hover .tc-card { animation-play-state: paused; }
+    .tc-swap:checked ~ .tc-card { animation: none; }
+    .tc-swap:checked ~ .tc-card-b { transform: rotate(-2deg) !important; z-index: 2 !important; }
+    .tc-swap:checked ~ .tc-card-a { transform: translate(20px, 34px) rotate(3deg) !important; z-index: 1 !important; }
+    .tc-swap:focus-visible ~ .tc-card-a { outline: 3px solid #FFFFFF; outline-offset: 3px; }
+}
+
+// "Reduce motion" on the device: everything stays still, the yellow card in front
+@media (prefers-reduced-motion: reduce) {
+    .tc-root .tc-anim { animation: none !important; }
+}

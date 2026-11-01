@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <template id="page_about" name="The Cut: About Us">
+        <t t-call="website.layout">
+            <t t-set="additional_title">About Us</t>
+            <t t-set="tc_h2" t-value="&quot;margin: 0 0 12px; font-family: Anton, Impact, 'Arial Narrow', sans-serif; font-weight: 400; font-size: 30px; letter-spacing: 0.02em; line-height: 1.1; color: #1B1414&quot;"/>
+            <t t-set="tc_claim" t-value="&quot;font-family: Anton, Impact, 'Arial Narrow', sans-serif; font-size: 22px; letter-spacing: 0.03em; line-height: 1.3; color: #1B1414&quot;"/>
+            <t t-set="tc_pill" t-value="'display: inline-block; padding: 2px 10px 0; margin-right: 6px; border-radius: 10px 4px 12px 5px / 5px 12px 4px 10px;'"/>
+            <div id="wrap" class="tc-root" style="background: #FFFFFF; color: #1B1414">
+                <section style="background: #7E1416; color: #FFFFFF; border-top: 1px solid #94262A">
+                    <div style="max-width: 1120px; margin: 0 auto; padding: 56px 24px 64px; display: flex; flex-wrap: wrap; gap: 48px; align-items: center">
+                        <div style="flex: 1 1 420px; min-width: 0">
+                            <h1 style="margin: 0; font-family: 'Capture it', Impact, sans-serif; font-weight: 400; font-size: clamp(38px, 9vw, 60px); line-height: 1.02; color: #FFFFFF">THE CUTS FIVE-STAR KITCHENS TRUST</h1>
+                            <p style="margin: 20px 0 0; max-width: 520px; font-size: 19px; color: #F3DCDC">The Cut is the home delivery shop of Excellence Meats, an Emirati-owned butchery that has supplied five-star hotel kitchens, restaurants and airlines across the UAE for 13 years. Now the same cuts come to your kitchen.</p>
+                        </div>
+                        <div style="flex: 1 1 420px; min-width: 0; position: relative; padding: 24px 12px">
+                            <div aria-hidden="true" style="position: absolute; top: 6%; right: -2%; bottom: 0; left: 10%; background: #F5A524; border-radius: 46% 54% 42% 58% / 58% 40% 60% 42%; transform: rotate(5deg)"/>
+                            <img src="/website_the_cut_pages/static/src/img/shop_front.webp" alt="The Cut shop counter at Mushrif Mall with three butchers" fetchpriority="high"
+                                 style="position: relative; width: 100%; height: 360px; object-fit: cover; object-position: 50% 45%; display: block; border-radius: 52% 48% 44% 56% / 46% 56% 44% 54%; transform: rotate(-3deg); box-shadow: 0 18px 30px rgba(40, 0, 0, 0.45)"/>
+                        </div>
+                    </div>
+                </section>
+
+                <div style="max-width: 1120px; margin: 0 auto; padding: 56px 24px; display: flex; flex-wrap: wrap; gap: 48px">
+                    <div style="flex: 1 1 300px; min-width: 0">
+                        <h2 t-att-style="tc_h2">WHAT WE SELL</h2>
+                        <p style="margin: 0; color: #2E2626">Wagyu beef and Red Deer Venison, cut by the same butchers who prepare our orders for professional kitchens.</p>
+                        <div style="margin-top: 20px; display: flex; flex-direction: column; align-items: flex-start; gap: 12px">
+                            <span t-att-style="tc_claim"><span t-attf-style="#{tc_pill} background: #5DB35F; color: #1B1414; transform: rotate(-1.5deg)">GRASS</span>FED</span>
+                            <span t-att-style="tc_claim"><span t-attf-style="#{tc_pill} background: #F5C518; color: #1B1414; transform: rotate(1.2deg)">NO</span>HORMONES</span>
+                            <span t-att-style="tc_claim"><span t-attf-style="#{tc_pill} background: #F5C518; color: #1B1414; transform: rotate(-1deg)">NO</span>ANTIBIOTICS</span>
+                            <span t-att-style="tc_claim"><span t-attf-style="#{tc_pill} background: #7E1416; color: #FFFFFF; transform: rotate(1.3deg)">RICH</span>IN PROTEIN AND OMEGA-3</span>
+                        </div>
+                    </div>
+                    <div style="flex: 1 1 300px; min-width: 0">
+                        <h2 t-att-style="tc_h2">HOW IT REACHES YOU</h2>
+                        <p style="margin: 0; color: #2E2626">
+                            Same-day delivery across Abu Dhabi<t t-if="tc['cutoff']"> for orders before <t t-out="tc['cutoff']"/></t>, and next-day delivery to the rest of the UAE.
+                            Every order travels chilled in a sealed, insulated box, with many cuts vacuum-sealed. <a href="/delivery">Delivery details</a>.
+                        </p>
+                    </div>
+                    <div style="flex: 1 1 300px; min-width: 0">
+                        <h2 t-att-style="tc_h2">VISIT OUR SHOP</h2>
+                        <p style="margin: 0; color: #2E2626">
+                            <t t-if="tc['address']"><t t-out="tc['address']"/>.</t>
+                            <t t-if="tc['opening']">Open <t t-out="tc['opening']"/> to <t t-out="tc['closing']"/>, <t t-out="tc['open_days']"/>.</t>
+                            Order online<t t-if="tc['pickup_free']"> and pick up for free</t>.
+                        </p>
+                        <a href="/shop" style="display: inline-block; margin-top: 20px; padding: 12px 26px; min-height: 44px; box-sizing: border-box; background: #7E1416; color: #FFFFFF; text-decoration: none; font-family: Anton, Impact, 'Arial Narrow', sans-serif; font-size: 20px; letter-spacing: 0.05em">SHOP WAGYU &amp; VENISON</a>
+                    </div>
+                </div>
+            </div>
+        </t>
+    </template>
+</odoo>

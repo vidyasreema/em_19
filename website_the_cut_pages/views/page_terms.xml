@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Terms of Sale, at /terms (the checkout and Google Merchant Center read this link) -->
+    <template id="page_terms" name="The Cut: Terms of Sale">
+        <t t-call="website.layout">
+            <t t-set="additional_title">Terms of Sale</t>
+            <t t-set="tc_text" t-value="'margin: 0; color: #2E2626'"/>
+            <div id="wrap" class="tc-root" style="background: #FFFFFF; color: #1B1414">
+                <t t-call="website_the_cut_pages.policy_header">
+                    <t t-set="tc_title">TERMS OF SALE</t>
+                    <t t-set="tc_intro">The rules for every order on <t t-out="tc['domain'] or 'our website'"/>, in plain words.</t>
+                </t>
+                <div style="max-width: 760px; margin: 0 auto; padding: 48px 24px 64px">
+                    <p t-if="tc['policies_date']" style="margin: 0 0 20px; color: #4E4343">Last updated <t t-out="tc['policies_date']"/></p>
+                    <p style="margin: 0 0 12px; font-size: 18px; color: #2E2626">These terms apply to every order placed on <t t-out="tc['domain'] or 'our website'"/>, operated by Excellence Meats L.L.C., Abu Dhabi.</p>
+                    <t t-call="website_the_cut_pages.terms_section">
+                        <t t-set="tc_heading">1. DELIVERY</t>
+                        <p t-att-style="tc_text">Delivery areas, times and fees are listed on our <a href="/delivery">Delivery &amp; Pickup</a> page and confirmed at checkout before you pay.</p>
+                    </t>
+                    <t t-call="website_the_cut_pages.terms_section">
+                        <t t-set="tc_heading">2. RECEIVING YOUR ORDER</t>
+                        <p t-att-style="tc_text">It’s best to have someone at the delivery address to receive the order. If no one is available at the time of delivery, the order is left at the door and must be taken in as soon as possible. From the moment it is left, the quality and safe storage of the products are the customer’s responsibility.</p>
+                        <p style="margin: 12px 0 0; color: #2E2626">If someone else is receiving the order, add their name and mobile number in the order note before payment.</p>
+                    </t>
+                    <t t-call="website_the_cut_pages.terms_section">
+                        <t t-set="tc_heading">3. CANCELLING AN ORDER</t>
+                        <p t-att-style="tc_text">
+                            <t t-if="tc['whatsapp']">You can cancel your order by calling or messaging us on WhatsApp at <a t-att-href="tc['whatsapp_url'] or None" t-out="tc['whatsapp']"/>, as long as it has not left for delivery.</t>
+                            <t t-else="">You can cancel your order by contacting us, as long as it has not left for delivery.</t>
+                            Once an order is on its way, it can no longer be cancelled.
+                        </p>
+                    </t>
+                    <t t-call="website_the_cut_pages.terms_section">
+                        <t t-set="tc_heading">4. RETURNS</t>
+                        <div style="margin-bottom: 12px"><span style="display: inline-block; padding: 3px 9px; background: #7E1416; color: #FFFFFF; font-family: Anton, Impact, 'Arial Narrow', sans-serif; font-size: 15px; letter-spacing: 0.05em; line-height: 1.35">NO RETURNS</span></div>
+                        <p t-att-style="tc_text">For food safety, we do not accept returns of chilled meat once it has left our shop. Chilled products cannot safely make a return journey, even when sealed, so all sales are final, except as set out in section 5.</p>
+                    </t>
+                    <t t-call="website_the_cut_pages.terms_section">
+                        <t t-set="tc_heading">5. WRONG ITEM</t>
+                        <p t-att-style="tc_text">If we delivered an item different from the one you ordered, contact us when you receive it. We will collect it and deliver the correct item at our cost. The item must be unopened and kept chilled from the time of delivery. We cannot replace items that have been opened or not stored correctly.</p>
+                        <p t-if="tc['damaged_box_note']" style="margin: 12px 0 0; color: #2E2626">If the packaging arrives damaged, tell us when you receive the order so we can review it.</p>
+                    </t>
+                    <t t-call="website_the_cut_pages.terms_section">
+                        <t t-set="tc_heading">6. REFUNDS</t>
+                        <p t-att-style="tc_text">When an order is cancelled before delivery, we refund your original payment method within 48 hours. Your bank may take longer to show it.</p>
+                    </t>
+                    <t t-call="website_the_cut_pages.terms_section">
+                        <t t-set="tc_heading">7. PAYMENT</t>
+                        <p t-att-style="tc_text">Payments are processed securely by Stripe. Prices are shown in AED.</p>
+                    </t>
+                    <t t-call="website_the_cut_pages.terms_section">
+                        <t t-set="tc_heading">8. CONTACT US</t>
+                        <t t-call="website_the_cut_pages.policy_contact"/>
+                    </t>
+                </div>
+            </div>
+        </t>
+    </template>
+
+    <template id="terms_section" name="The Cut: terms section">
+        <div class="tc-terms-section" style="padding: 28px 0; border-top: 1px solid #E9E1DF">
+            <h2 style="margin: 0 0 12px; font-family: Anton, Impact, 'Arial Narrow', sans-serif; font-weight: 400; font-size: 30px; letter-spacing: 0.02em; line-height: 1.1; color: #1B1414" t-out="tc_heading"/>
+            <t t-out="0"/>
+        </div>
+    </template>
+</odoo>

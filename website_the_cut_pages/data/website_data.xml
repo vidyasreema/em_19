@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Homepage title and description in Google (BRD 3.7), unless already written -->
+    <function model="website" name="_cut_set_homepage_seo"/>
+</odoo>
