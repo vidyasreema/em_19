@@ -1,0 +1,158 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_stock_barcode_register_list" model="ir.ui.view">
+        <field name="name">stock.barcode.register.list</field>
+        <field name="model">stock.barcode.register</field>
+        <field name="arch" type="xml">
+            <list string="Barcode Register" decoration-muted="state == 'sold'" decoration-danger="is_past_alert and state == 'unsold'">
+                <field name="date"/>
+                <field name="barcode"/>
+                <field name="carton_number" optional="hide"/>
+                <field name="barcode_type"/>
+                <field name="product_id"/>
+                <field name="quantity" sum="Total"/>
+                <field name="product_uom_id" groups="uom.group_uom" optional="show"/>
+                <field name="carton_count" sum="Total"/>
+                <field name="pack_date"/>
+                <field name="pack_date_estimated" optional="show"/>
+                <field name="alert_date"/>
+                <field name="alert_date_manual" optional="hide"/>
+                <field name="source_ref" optional="show"/>
+                <field name="partner_id" optional="show"/>
+                <field name="vendor_invoice_ref" optional="hide"/>
+                <field name="employee_id" optional="hide"/>
+                <field name="location_id" optional="show"/>
+                <field name="state" widget="badge" decoration-success="state == 'unsold'" decoration-muted="state == 'sold'"/>
+                <field name="sale_ref" optional="hide"/>
+                <field name="company_id" groups="base.group_multi_company" optional="hide"/>
+                <field name="is_past_alert" column_invisible="1"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_stock_barcode_register_form" model="ir.ui.view">
+        <field name="name">stock.barcode.register.form</field>
+        <field name="model">stock.barcode.register</field>
+        <field name="arch" type="xml">
+            <form string="Carton" create="0">
+                <header>
+                    <field name="state" widget="statusbar"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <h1><field name="barcode" readonly="1"/></h1>
+                    </div>
+                    <group>
+                        <group string="Carton">
+                            <field name="barcode_type" readonly="1"/>
+                            <field name="carton_number" readonly="1"/>
+                            <field name="product_id" readonly="1"/>
+                            <label for="quantity"/>
+                            <div class="o_row">
+                                <field name="quantity" readonly="1"/>
+                                <field name="product_uom_id" groups="uom.group_uom"/>
+                            </div>
+                            <field name="carton_count" readonly="1"/>
+                            <field name="pack_date" readonly="1"/>
+                            <field name="pack_date_estimated" readonly="1"/>
+                            <field name="alert_date" readonly="state == 'sold'"/>
+                            <field name="alert_date_manual" readonly="1"/>
+                        </group>
+                        <group string="Source">
+                            <field name="date" readonly="1"/>
+                            <field name="source_ref" readonly="1"/>
+                            <field name="picking_id" readonly="1" invisible="not picking_id"/>
+                            <field name="count_session_id" readonly="1" invisible="not count_session_id"/>
+                            <field name="template_id" readonly="1" invisible="not template_id"/>
+                            <field name="origin_location_id" readonly="1"/>
+                            <field name="last_count_session_id" readonly="1" invisible="not last_count_session_id"/>
+                            <field name="scrap_id" readonly="1" invisible="not scrap_id"/>
+                            <field name="move_id" readonly="1" invisible="not move_id"/>
+                            <field name="partner_id" readonly="1"/>
+                            <field name="vendor_invoice_ref" readonly="1"/>
+                            <field name="employee_id" readonly="1"/>
+                            <field name="user_id" readonly="1"/>
+                            <field name="location_id" readonly="1"/>
+                            <field name="company_id" groups="base.group_multi_company" readonly="1"/>
+                        </group>
+                        <group string="Sale" invisible="state != 'sold'">
+                            <field name="sale_ref" readonly="1"/>
+                            <field name="sale_picking_id" readonly="1" invisible="not sale_picking_id"/>
+                            <field name="sold_date" readonly="1"/>
+                            <field name="sold_count_session_id" readonly="1" invisible="not sold_count_session_id"/>
+                        </group>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_stock_barcode_register_search" model="ir.ui.view">
+        <field name="name">stock.barcode.register.search</field>
+        <field name="model">stock.barcode.register</field>
+        <field name="arch" type="xml">
+            <search string="Barcode Register">
+                <field name="barcode"/>
+                <field name="carton_number"/>
+                <field name="product_id"/>
+                <field name="source_ref"/>
+                <field name="picking_id"/>
+                <field name="partner_id"/>
+                <field name="vendor_invoice_ref"/>
+                <field name="location_id"/>
+                <field name="employee_id"/>
+                <filter string="Unsold" name="unsold" domain="[('state', '=', 'unsold')]"/>
+                <filter string="Sold" name="sold" domain="[('state', '=', 'sold')]"/>
+                <separator/>
+                <filter string="Past Alert Date" name="past_alert" domain="[('is_past_alert', '=', True)]"/>
+                <filter string="Estimated Date" name="estimated" domain="[('pack_date_estimated', '=', True)]"/>
+                <separator/>
+                <filter string="Cartons" name="cartons" domain="[('barcode_type', 'not in', ('adjustment', 'scrap'))]"/>
+                <filter string="Adjustments and Scrap" name="adj_scr" domain="[('barcode_type', 'in', ('adjustment', 'scrap'))]"/>
+                <separator/>
+                <filter string="Date" name="filter_date" date="date"/>
+                <group>
+                    <filter string="Source Operation" name="group_by_picking" context="{'group_by': 'source_ref'}"/>
+                    <filter string="Date" name="group_by_date" context="{'group_by': 'date'}"/>
+                    <filter string="Vendor" name="group_by_partner" context="{'group_by': 'partner_id'}"/>
+                    <filter string="Status" name="group_by_state" context="{'group_by': 'state'}"/>
+                    <filter string="Product" name="group_by_product" context="{'group_by': 'product_id'}"/>
+                    <filter string="Location" name="group_by_location" context="{'group_by': 'location_id'}"/>
+                    <filter string="Type" name="group_by_type" context="{'group_by': 'barcode_type'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="view_stock_barcode_register_pivot" model="ir.ui.view">
+        <field name="name">stock.barcode.register.pivot</field>
+        <field name="model">stock.barcode.register</field>
+        <field name="arch" type="xml">
+            <pivot string="Barcode Register">
+                <field name="product_id" type="row"/>
+                <field name="state" type="col"/>
+                <field name="quantity" type="measure"/>
+                <field name="carton_count" type="measure"/>
+            </pivot>
+        </field>
+    </record>
+
+    <record id="action_stock_barcode_register" model="ir.actions.act_window">
+        <field name="name">Barcode Register</field>
+        <field name="res_model">stock.barcode.register</field>
+        <field name="path">barcode-register</field>
+        <field name="view_mode">list,form,pivot</field>
+        <field name="search_view_id" ref="view_stock_barcode_register_search"/>
+        <field name="context">{'create': False}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">No cartons registered yet</p>
+            <p>Cartons are added here when a receipt is validated, and updated by internal transfers, deliveries and counts.</p>
+        </field>
+    </record>
+
+    <menuitem id="menu_stock_barcode_register"
+        name="Barcode Register"
+        parent="stock.menu_warehouse_report"
+        action="action_stock_barcode_register"
+        sequence="50"/>
+</odoo>

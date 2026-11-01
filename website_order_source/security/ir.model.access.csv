@@ -1,0 +1,6 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_website_order_source_user,website.order.source.user,model_website_order_source,base.group_user,1,0,0,0
+access_website_order_source_public,website.order.source.public,model_website_order_source,base.group_public,1,0,0,0
+access_website_order_source_portal,website.order.source.portal,model_website_order_source,base.group_portal,1,0,0,0
+access_website_order_source_marketing,website.order.source.marketing,model_website_order_source,online_orders.group_online_orders_marketing,1,1,1,1
+access_website_order_source_management,website.order.source.management,model_website_order_source,online_orders.group_online_orders_management,1,1,1,1

@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Delivery promise in the order confirmation email (added once, stays editable) -->
+    <function model="mail.template" name="_timeslot_add_promise_to_confirmation_email"/>
+</odoo>

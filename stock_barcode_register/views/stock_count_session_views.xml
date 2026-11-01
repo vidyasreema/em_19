@@ -1,0 +1,188 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_stock_count_session_list" model="ir.ui.view">
+        <field name="name">stock.count.session.list</field>
+        <field name="model">stock.count.session</field>
+        <field name="arch" type="xml">
+            <list string="Count Sessions">
+                <field name="name"/>
+                <field name="location_id"/>
+                <field name="employee_id"/>
+                <field name="date"/>
+                <field name="posted_date" optional="show"/>
+                <field name="apply_date" optional="hide"/>
+                <field name="is_baseline" optional="show"/>
+                <field name="unmatched_line_count" optional="show"/>
+                <field name="state" widget="badge" decoration-info="state == 'draft'" decoration-warning="state == 'compared'"
+                       decoration-success="state == 'posted'" decoration-muted="state == 'cancel'"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_stock_count_session_search" model="ir.ui.view">
+        <field name="name">stock.count.session.search</field>
+        <field name="model">stock.count.session</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="name"/>
+                <field name="location_id"/>
+                <field name="employee_id"/>
+                <filter string="Counting" name="draft" domain="[('state', '=', 'draft')]"/>
+                <filter string="Comparison" name="compared" domain="[('state', '=', 'compared')]"/>
+                <filter string="Posted" name="posted" domain="[('state', '=', 'posted')]"/>
+                <filter string="Cancelled" name="cancel" domain="[('state', '=', 'cancel')]"/>
+                <group>
+                    <filter string="Location" name="group_location" context="{'group_by': 'location_id'}"/>
+                    <filter string="Status" name="group_state" context="{'group_by': 'state'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="view_stock_count_session_form" model="ir.ui.view">
+        <field name="name">stock.count.session.form</field>
+        <field name="model">stock.count.session</field>
+        <field name="arch" type="xml">
+            <form string="Count Session">
+                <header>
+                    <button name="action_confirm_quantities" string="Confirm Quantities" type="object" class="btn-primary" invisible="state != 'draft'"/>
+                    <button name="action_post" string="Post" type="object" class="btn-primary" invisible="state != 'compared'"
+                            confirm="Post the counted quantities to the Counted column of Physical Inventory and close the session?"/>
+                    <button name="action_reopen" string="Reopen Count" type="object" invisible="state != 'compared'"/>
+                    <button name="action_add_by_scan" string="Add by Scan" type="object" invisible="state != 'draft' or not location_id"/>
+                    <button name="action_load_products" string="Reload Location Products" type="object" invisible="state != 'draft' or not location_id"/>
+                    <button name="action_export_xlsx" string="Export Excel" type="object" invisible="state == 'draft'"/>
+                    <button name="action_cancel" string="Cancel" type="object" invisible="state in ('posted', 'cancel')"
+                            confirm="Cancel this count session? It stays visible with its scans."/>
+                    <field name="state" widget="statusbar" statusbar_visible="draft,compared,posted"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <h1><field name="name" readonly="1"/></h1>
+                    </div>
+                    <div class="alert alert-info" role="alert" invisible="not is_baseline or state == 'draft'">
+                        Baseline count: cartons not counted are marked sold without being treated as differences. Real comparison starts from the next count.
+                    </div>
+                    <group>
+                        <group>
+                            <field name="location_id" readonly="state != 'draft' or (id and line_ids)" required="state == 'draft'" force_save="1" options="{'no_create': True}"/>
+                            <field name="employee_id" readonly="state != 'draft'" required="state == 'draft'" options="{'no_create': True}"/>
+                        </group>
+                        <group>
+                            <field name="date" invisible="not date"/>
+                            <field name="previous_session_id" invisible="not previous_session_id"/>
+                            <field name="posted_date" invisible="not posted_date"/>
+                            <field name="apply_date" invisible="not apply_date"/>
+                            <field name="is_baseline" invisible="state == 'draft'"/>
+                            <field name="company_id" groups="base.group_multi_company" readonly="state != 'draft'"/>
+                        </group>
+                    </group>
+                    <field name="line_ids" readonly="state != 'draft'">
+                        <list editable="bottom" decoration-danger="status in ('unexplained', 'no_basis')" decoration-warning="status == 'unrecorded'">
+                            <field name="state" column_invisible="True"/>
+                            <field name="product_uom_id" column_invisible="True"/>
+                            <field name="photo_count" column_invisible="True"/>
+                            <field name="is_counted" column_invisible="True"/>
+                            <field name="quant_exists" column_invisible="True"/>
+                            <field name="product_id" readonly="id" options="{'no_create': True}"/>
+                            <widget name="carton_scan_button"/>
+                            <widget name="carton_photos"/>
+                            <field name="carton_count" string="Cartons"/>
+                            <field name="carton_qty" optional="hide"/>
+                            <field name="open_qty"/>
+                            <field name="counted_qty" sum="Total"/>
+                            <field name="system_qty" column_invisible="parent.state == 'draft'"/>
+                            <field name="difference_qty" column_invisible="parent.state == 'draft'"/>
+                            <field name="expected_qty" optional="hide" column_invisible="parent.state == 'draft'"/>
+                            <field name="out_by_cartons" column_invisible="parent.state == 'draft'"/>
+                            <field name="system_outflow" column_invisible="parent.state == 'draft'"/>
+                            <field name="outflow_difference" optional="hide" column_invisible="parent.state == 'draft'"/>
+                            <field name="status" widget="badge" column_invisible="parent.state == 'draft'"
+                                   decoration-success="status == 'matched'" decoration-warning="status == 'unrecorded'"
+                                   decoration-danger="status in ('unexplained', 'no_basis')" decoration-info="status == 'baseline'"/>
+                            <button name="action_open_details" type="object" icon="fa-search" title="Carton details"
+                                    column_invisible="parent.state == 'draft'"/>
+                            <field name="flags" column_invisible="parent.state == 'draft'"/>
+                        </list>
+                    </field>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <!-- Comparison carton window -->
+    <record id="view_stock_count_line_details_form" model="ir.ui.view">
+        <field name="name">stock.count.line.details.form</field>
+        <field name="model">stock.count.line</field>
+        <field name="priority">100</field>
+        <field name="arch" type="xml">
+            <form string="Carton Details" create="0" edit="0">
+                <group>
+                    <group string="Found in count">
+                        <field name="product_id" readonly="1"/>
+                        <field name="carton_count" string="Counted Cartons"/>
+                        <field name="matched_carton_count"/>
+                        <field name="unrecorded_count"/>
+                        <field name="open_qty" readonly="1"/>
+                        <field name="package_id" invisible="not package_id"/>
+                        <field name="counted_qty"/>
+                    </group>
+                    <group string="Out since previous count">
+                        <field name="expected_carton_count"/>
+                        <field name="expected_qty"/>
+                        <field name="out_by_cartons" string="Out (net of open quantity)"/>
+                        <field name="system_outflow"/>
+                        <field name="outflow_difference" string="Difference"/>
+                        <field name="status" readonly="1"/>
+                    </group>
+                </group>
+                <field name="carton_ids" readonly="1">
+                    <list decoration-warning="not register_id">
+                        <field name="barcode"/>
+                        <field name="barcode_type"/>
+                        <field name="quantity" sum="Total"/>
+                        <field name="carton_count" sum="Total"/>
+                        <field name="pack_date"/>
+                        <field name="register_id" string="Register Match" placeholder="No record"/>
+                        <field name="register_source" string="Source"/>
+                    </list>
+                </field>
+                <footer>
+                    <button name="action_export_xlsx" string="Export Excel" type="object" class="btn-secondary"/>
+                    <button string="Close" special="cancel" class="btn-primary"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_stock_count_scan_wizard_form" model="ir.ui.view">
+        <field name="name">stock.count.scan.wizard.form</field>
+        <field name="model">stock.count.scan.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Add by Scan">
+                <field name="session_id" invisible="1"/>
+                <group>
+                    <field name="barcode" placeholder="Scan a carton or product barcode" default_focus="1"/>
+                    <field name="product_id" options="{'no_create': True}"/>
+                </group>
+                <footer>
+                    <button name="action_add" string="Add and Scan Next" type="object" class="btn-primary"/>
+                    <button string="Done" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_stock_count_session" model="ir.actions.act_window">
+        <field name="name">Count</field>
+        <field name="res_model">stock.count.session</field>
+        <field name="path">count-sessions</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="view_stock_count_session_search"/>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">Open a count session</p>
+            <p>Choose a location: all its products load. Scan the cartons, enter the open quantity, then confirm to compare and post.</p>
+        </field>
+    </record>
+</odoo>

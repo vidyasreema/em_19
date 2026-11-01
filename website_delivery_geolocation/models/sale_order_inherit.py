@@ -16,6 +16,14 @@ class SaleOrder(models.Model):
         string='Order Notes',
         help='Special instructions or notes from the customer.'
     )
+    delivery_leave_at_door = fields.Boolean(
+        string='Leave at My Door',
+        help='Instruction for the driver chosen by the customer at checkout.',
+    )
+    delivery_call_on_arrival = fields.Boolean(
+        string='Call Me on Arrival',
+        help='Instruction for the driver chosen by the customer at checkout.',
+    )
 
     def calculate_distance_km(self, lat1, lon1, lat2, lon2):
         """Haversine formula to calculate distance in KM"""

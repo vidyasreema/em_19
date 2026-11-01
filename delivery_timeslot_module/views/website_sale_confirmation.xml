@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Order confirmation page: the delivery promise (Annex 3 D3) -->
+    <template id="confirmation_delivery_promise" inherit_id="website_sale.confirmation"
+              name="Delivery promise on the confirmation page">
+        <xpath expr="//div[@id='order_name']" position="after">
+            <div t-if="order.delivery_promise_message"
+                 class="alert alert-info d-flex align-items-start gap-3 mb-4 o_delivery_promise_confirmation" role="status">
+                <i class="fa fa-truck fa-2x" role="presentation"/>
+                <div>
+                    <div class="fw-bold" t-out="order.delivery_promise_message"/>
+                    <div t-out="order.delivery_promise_date_label"/>
+                </div>
+            </div>
+        </xpath>
+    </template>
+</odoo>

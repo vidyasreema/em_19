@@ -1,0 +1,8 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_online_order_stage_user,online.order.stage.user,model_online_order_stage,base.group_user,1,0,0,0
+access_online_order_stage_portal,online.order.stage.portal,model_online_order_stage,base.group_portal,1,0,0,0
+access_online_order_stage_public,online.order.stage.public,model_online_order_stage,base.group_public,1,0,0,0
+access_online_order_stage_management,online.order.stage.management,model_online_order_stage,group_online_orders_management,1,1,1,1
+access_online_order_cancel_wizard,online.order.cancel.wizard,model_online_order_cancel_wizard,group_online_orders_sales,1,1,1,1
+access_sale_order_online_orders,sale.order.online.orders,sale.model_sale_order,group_online_orders_sales,1,1,0,0
+access_sale_order_line_online_orders,sale.order.line.online.orders,sale.model_sale_order_line,group_online_orders_sales,1,0,0,0

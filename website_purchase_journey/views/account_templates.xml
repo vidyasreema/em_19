@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- "Need help? Chat on WhatsApp" (Annex 3 B6). The number is set in
+         Website > Configuration > Settings; no number: no button. -->
+    <template id="whatsapp_help" name="Purchase Journey: WhatsApp help">
+        <t t-set="whatsapp_url" t-value="website._journey_whatsapp_url(whatsapp_text or '')"/>
+        <a t-if="whatsapp_url" t-att-href="whatsapp_url" target="_blank" rel="noopener"
+           class="btn btn-outline-success w-100 o_journey_whatsapp">
+            <i class="fa fa-whatsapp me-1" role="presentation"/>Need help? Chat on WhatsApp
+        </a>
+    </template>
+
+    <!-- My Account, customer card: lifetime savings (C7) and WhatsApp help
+         instead of "Your contact" (B6) -->
+    <template id="portal_side_content_journey" inherit_id="portal.side_content" name="Purchase Journey: customer card">
+        <xpath expr="//div[hasclass('o_portal_my_details')]" position="before">
+            <t t-if="website.journey_enabled and not website.is_public_user()">
+                <t t-set="journey_saved" t-value="user_id.partner_id._journey_lifetime_savings(website)"/>
+                <div t-if="journey_saved" class="rounded-3 px-3 py-2 mb-3 o_journey_lifetime_savings">
+                    <i class="fa fa-tag me-1" role="presentation"/>
+                    You've saved
+                    <strong t-out="journey_saved" t-options="{'widget': 'monetary', 'display_currency': website.company_id.currency_id}"/>
+                    with <t t-out="website.name"/>
+                </div>
+            </t>
+        </xpath>
+        <xpath expr="//div[@name='portal_contact']" position="attributes">
+            <attribute name="t-if" add="not website.journey_enabled" separator="and"/>
+        </xpath>
+        <xpath expr="//div[@name='portal_contact']" position="after">
+            <div t-if="website.journey_enabled" class="mt-5">
+                <t t-call="website_purchase_journey.whatsapp_help"/>
+            </div>
+        </xpath>
+    </template>
+
+    <!-- Order page: WhatsApp help instead of "Your contact", no "Connect with your software" (B6) -->
+    <template id="sale_order_portal_journey_sidebar" inherit_id="sale.sale_order_portal_template"
+              name="Purchase Journey: order page help">
+        <xpath expr="//div[t[@t-call='portal.portal_my_contact']]" position="attributes">
+            <attribute name="t-if" add="not website.journey_enabled" separator="and"/>
+        </xpath>
+        <xpath expr="//button[@id='portal_connect_software_modal_btn']/.." position="attributes">
+            <attribute name="t-if" add="not website.journey_enabled" separator="and"/>
+        </xpath>
+        <xpath expr="//div[t[@t-call='portal.portal_my_contact']]" position="after">
+            <div t-if="website.journey_enabled">
+                <t t-call="website_purchase_journey.whatsapp_help">
+                    <t t-set="whatsapp_text" t-value="'Hello, I need help with my order %s' % sale_order.name"/>
+                </t>
+            </div>
+        </xpath>
+    </template>
+
+    <!-- Track / Order details page: WhatsApp help under the buttons -->
+    <template id="portal_order_track_whatsapp" inherit_id="website_purchase_journey.portal_order_track"
+              name="Purchase Journey: help on the track page">
+        <xpath expr="//div[hasclass('o_journey_track_page')]" position="inside">
+            <div class="mt-2">
+                <t t-call="website_purchase_journey.whatsapp_help">
+                    <t t-set="whatsapp_text" t-value="'Hello, I need help with my order %s' % track_order.name"/>
+                </t>
+            </div>
+        </xpath>
+    </template>
+
+    <!-- Favourites (B6): Odoo's wishlist, named Favourites, with a My Account card -->
+    <template id="portal_my_home_favourites" inherit_id="portal.portal_my_home" name="Purchase Journey: Favourites card">
+        <div id="portal_common_category" position="inside">
+            <t t-if="website.journey_enabled" t-call="portal.portal_docs_entry">
+                <t t-set="icon" t-value="'/website_purchase_journey/static/src/img/portal-favourites.svg'"/>
+                <t t-set="title">Favourites</t>
+                <t t-set="text">The cuts you saved with the heart</t>
+                <t t-set="url" t-value="'/shop/wishlist'"/>
+                <t t-set="config_card" t-value="True"/>
+            </t>
+        </div>
+    </template>
+
+    <template id="wishlist_page_favourites" inherit_id="website_sale_wishlist.product_wishlist" name="Purchase Journey: Favourites page">
+        <xpath expr="//t[@t-set='additional_title']" position="replace">
+            <t t-set="additional_title">Favourites</t>
+        </xpath>
+        <xpath expr="//h1" position="replace">
+            <h1 class="h4-fs mb-0">My favourites</h1>
+        </xpath>
+    </template>
+
+    <template id="header_wishlist_link_favourites" inherit_id="website_sale_wishlist.header_wishlist_link" name="Purchase Journey: Favourites in the header">
+        <xpath expr="//span[@t-if='_text']" position="replace">
+            <span t-if="_text" t-attf-class="#{_text_class}">Favourites</span>
+        </xpath>
+    </template>
+
+    <template id="product_add_to_favourites" inherit_id="website_sale_wishlist.product_add_to_wishlist" name="Purchase Journey: Add to favourites">
+        <xpath expr="//a[@data-action='o_wishlist']" position="attributes">
+            <attribute name="title">Add to favourites</attribute>
+        </xpath>
+        <xpath expr="//a[@data-action='o_wishlist']/i" position="attributes">
+            <attribute name="aria-label">Add to favourites</attribute>
+        </xpath>
+        <xpath expr="//span[@t-att-class='_span_classes']" position="replace">
+            <span t-att-class="_span_classes">Add to favourites</span>
+        </xpath>
+    </template>
+</odoo>

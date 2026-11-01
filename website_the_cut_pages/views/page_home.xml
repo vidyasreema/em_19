@@ -1,0 +1,261 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Homepage (BRD 3.2): the story from the pastures of New Zealand to the door in Abu Dhabi -->
+    <template id="page_home" name="The Cut: Homepage">
+        <t t-call="website.layout">
+            <t t-set="pageName" t-value="'homepage'"/>
+            <div id="wrap" class="tc-root" style="overflow: hidden; background: #FFFFFF; color: #1B1414">
+                <!-- 1. Header (red): title, the two delivery cards, Shop now, the tomahawk -->
+                <section style="background: #7E1416; color: #FFFFFF; border-top: 1px solid #94262A; overflow: hidden">
+                    <div style="max-width: 1120px; margin: 0 auto; padding: 56px 24px 40px; display: flex; flex-wrap: wrap; gap: 40px; align-items: center">
+                        <div style="flex: 999 1 440px; min-width: 0">
+                            <h1 style="margin: 0; font-family: 'Capture it', Impact, sans-serif; font-weight: 400; font-size: clamp(44px, 9vw, 84px); line-height: 1; color: #FFFFFF">EVERY CUT HAS A STORY</h1>
+                            <p style="margin: 22px 0 0; max-width: 540px; font-size: 19px; color: #F3DCDC">Ours start on the pastures of New Zealand and end on your table in Abu Dhabi, chilled, the same day.</p>
+                            <div class="tc-stack" style="position: relative; margin-top: 28px; width: 330px; max-width: 100%; height: 152px">
+                                <input type="checkbox" id="tc-swap" class="tc-swap" aria-label="Swap delivery card"
+                                       style="position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none"/>
+                                <label for="tc-swap" class="tc-anim tc-card tc-card-b" style="position: absolute; left: 0; top: 0; width: 300px; height: 108px; box-sizing: border-box; padding: 12px 20px; box-shadow: 4px 4px 0 #5A0E10; cursor: pointer; background: #FFFFFF; color: #7E1416; transform: translate(20px, 34px) rotate(3deg); z-index: 1">
+                                    <span style="display: block; font-family: Anton, Impact, 'Arial Narrow', sans-serif; font-size: 15px; letter-spacing: 0.06em">ORDER TODAY</span>
+                                    <span style="display: block; font-family: Anton, Impact, 'Arial Narrow', sans-serif; font-size: 30px; line-height: 1.05; letter-spacing: 0.02em; white-space: nowrap">DELIVERED TOMORROW</span>
+                                    <span style="display: block; font-family: Anton, Impact, 'Arial Narrow', sans-serif; font-size: 15px; letter-spacing: 0.06em">ANYWHERE IN THE UAE</span>
+                                </label>
+                                <label for="tc-swap" class="tc-anim tc-card tc-card-a" style="position: absolute; left: 0; top: 0; width: 300px; height: 108px; box-sizing: border-box; padding: 12px 20px; box-shadow: 4px 4px 0 #5A0E10; cursor: pointer; background: #F5A524; color: #1B1414; transform: rotate(-2deg); z-index: 2">
+                                    <span t-if="tc['cutoff']" style="display: block; font-family: Anton, Impact, 'Arial Narrow', sans-serif; font-size: 15px; letter-spacing: 0.06em">ORDER BEFORE <t t-out="tc['cutoff']"/></span>
+                                    <span style="display: block; font-family: Anton, Impact, 'Arial Narrow', sans-serif; font-size: 30px; line-height: 1.05; letter-spacing: 0.02em; white-space: nowrap">DELIVERED TODAY</span>
+                                    <span style="display: block; font-family: Anton, Impact, 'Arial Narrow', sans-serif; font-size: 15px; letter-spacing: 0.06em">ANYWHERE IN ABU DHABI</span>
+                                </label>
+                            </div>
+                            <div style="margin-top: 32px; display: flex; flex-wrap: wrap; gap: 20px; align-items: center">
+                                <a href="/shop" style="display: inline-flex; align-items: center; justify-content: center; padding: 16px 44px; min-height: 60px; box-sizing: border-box; background: #FFFFFF; color: #7E1416; text-decoration: none; font-family: Anton, Impact, 'Arial Narrow', sans-serif; font-size: 26px; letter-spacing: 0.05em; border-radius: 40px; box-shadow: 0 6px 0 #5A0E10">SHOP NOW</a>
+                                <a href="#nz" style="color: #FFFFFF; font-size: 16px; min-height: 44px; display: inline-flex; align-items: center; gap: 8px">Meet the farms <svg aria-hidden="true" class="tc-anim tc-cue" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></a>
+                            </div>
+                        </div>
+                        <div style="flex: 1 1 320px; min-width: 0; max-width: 440px; margin: 0 auto; position: relative; display: flex; align-items: center; justify-content: center; min-height: 440px">
+                            <div aria-hidden="true" class="tc-anim tc-blob" style="position: absolute; top: 18%; right: 0; bottom: 4%; left: 6%; background: #F5A524; border-radius: 46% 54% 42% 58% / 58% 40% 60% 42%; transform: rotate(-6deg)"/>
+                            <img src="/website_the_cut_pages/static/src/img/home_tomahawk.webp" alt="Wagyu tomahawk steak" class="tc-anim tc-float"
+                                 width="600" height="1098" fetchpriority="high"
+                                 style="position: relative; width: 62%; max-width: 280px; height: auto; display: block; filter: drop-shadow(0 22px 24px rgba(40, 0, 0, 0.45))"/>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 2. It starts in New Zealand -->
+                <div id="nz"/>
+                <section style="position: relative; height: 660px; overflow: hidden; background: #1B1414">
+                    <video data-src="/website_the_cut_pages/static/src/video/home_nz_aerial_landscape.mp4"
+                           poster="/website_the_cut_pages/static/src/img/home_nz_poster.webp"
+                           muted="" loop="" playsinline="" preload="none" aria-hidden="true"
+                           style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover"/>
+                    <div aria-hidden="true" style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: linear-gradient(#7E1416 0%, rgba(126, 20, 22, 0) 28%, rgba(0, 0, 0, 0) 50%, rgba(20, 16, 16, 0.8) 88%, #141010 100%)"/>
+                    <div style="position: relative; max-width: 1120px; height: 100%; margin: 0 auto; padding: 0 24px 64px; box-sizing: border-box; display: flex; flex-direction: column; justify-content: flex-end; gap: 14px; color: #FFFFFF">
+                        <h2 style="margin: 0; max-width: 760px; font-family: 'Capture it', Impact, sans-serif; font-weight: 400; font-size: clamp(40px, 8vw, 76px); line-height: 1; color: #FFFFFF">IT STARTS IN NEW ZEALAND</h2>
+                        <p style="margin: 0; max-width: 560px; font-size: 19px; color: #F1ECE8">Green hills, clean rivers and animals raised on open pasture. This is where our Wagyu and venison come from.</p>
+                    </div>
+                </section>
+
+                <!-- 3. Chapter 01: Wagyu -->
+                <section style="background: #F2F4EC; padding-bottom: 88px">
+                    <div style="position: relative; height: 540px; overflow: hidden">
+                        <t t-call="website_the_cut_pages.horizon"><t t-set="tc_fill" t-value="'#141010'"/></t>
+                        <img src="/website_the_cut_pages/static/src/img/home_wagyu_herd.webp" loading="lazy" decoding="async"
+                             alt="A herd of black Wagyu cattle on green pasture in front of New Zealand hills" class="tc-anim tc-kb"
+                             style="width: 100%; height: 100%; object-fit: cover; object-position: 50% 40%; display: block"/>
+                    </div>
+                    <div style="position: relative; max-width: 1120px; margin: -180px auto 0; padding: 0 24px; display: flex; flex-wrap: wrap; flex-direction: row; gap: 40px; align-items: flex-end">
+                        <div style="flex: 1 1 460px; min-width: 0; background: #FFFFFF; padding: 40px; box-sizing: border-box; box-shadow: 0 24px 48px rgba(20, 30, 10, 0.16); display: flex; flex-direction: column; gap: 16px">
+                            <span style="font-family: Anton, Impact, 'Arial Narrow', sans-serif; font-size: 15px; letter-spacing: 0.08em; color: #4E4343">CHAPTER 01 · NEW ZEALAND</span>
+                            <h2 style="margin: 0; font-family: 'Capture it', Impact, sans-serif; font-weight: 400; font-size: clamp(38px, 7vw, 62px); line-height: 1; color: #7E1416">RAISED ON PASTURE</h2>
+                            <p style="margin: 0; font-size: 18px; color: #2E2626">In New Zealand’s hill country, the Wagyu we bring you graze open pasture their whole lives. Nothing but grass, from a country that grows no GMO crops. The result is clean, rich marbling you can taste.</p>
+                            <div style="display: flex; flex-wrap: wrap; gap: 10px 18px; font-family: Anton, Impact, 'Arial Narrow', sans-serif; font-size: 19px; letter-spacing: 0.03em">
+                                <span><span style="display: inline-block; padding: 2px 10px 0; margin-right: 6px; background: #5DB35F; color: #1B1414; border-radius: 10px 4px 12px 5px / 5px 12px 4px 10px; transform: rotate(-1.5deg)">100%</span>GRASS-FED</span>
+                                <span><span style="display: inline-block; padding: 2px 10px 0; margin-right: 6px; background: #F5C518; color: #1B1414; border-radius: 10px 4px 12px 5px / 5px 12px 4px 10px; transform: rotate(1deg)">MBS</span>4 TO 9</span>
+                            </div>
+                            <div style="margin-top: 8px; display: flex; flex-wrap: wrap; gap: 14px">
+                                <t t-call="website_the_cut_pages.cut_card">
+                                    <t t-set="tc_url" t-value="'/shop?search=Wagyu+Ribeye'"/>
+                                    <t t-set="tc_img" t-value="'product_ribeye'"/>
+                                    <t t-set="tc_alt">Wagyu ribeye</t>
+                                    <t t-set="tc_name">RIBEYE</t>
+                                    <t t-set="tc_sub">MBS 7-9</t>
+                                </t>
+                                <t t-call="website_the_cut_pages.cut_card">
+                                    <t t-set="tc_url" t-value="'/shop?search=Wagyu+Tomahawk'"/>
+                                    <t t-set="tc_img" t-value="'product_tomahawk'"/>
+                                    <t t-set="tc_alt">Wagyu tomahawk</t>
+                                    <t t-set="tc_name">TOMAHAWK</t>
+                                    <t t-set="tc_sub">MBS 6-7</t>
+                                </t>
+                                <t t-call="website_the_cut_pages.cut_card">
+                                    <t t-set="tc_url" t-value="'/shop?search=Wagyu+Short+Ribs'"/>
+                                    <t t-set="tc_img" t-value="'product_short_ribs'"/>
+                                    <t t-set="tc_alt">Wagyu short ribs</t>
+                                    <t t-set="tc_name">SHORT RIBS</t>
+                                    <t t-set="tc_sub">MBS 7-9</t>
+                                </t>
+                            </div>
+                            <a href="/shop?search=NZ+Wagyu" style="align-self: flex-start; margin-top: 8px; display: inline-flex; align-items: center; padding: 14px 32px; min-height: 52px; box-sizing: border-box; background: #7E1416; color: #FFFFFF; text-decoration: none; font-family: Anton, Impact, 'Arial Narrow', sans-serif; font-size: 20px; letter-spacing: 0.05em; border-radius: 40px">SHOP NZ WAGYU</a>
+                        </div>
+                        <div style="flex: 0 1 380px; min-width: 0; position: relative; height: 440px; margin: 0 auto">
+                            <div aria-hidden="true" class="tc-anim tc-blob" style="position: absolute; top: 8%; right: 0; bottom: 0; left: 8%; background: #F5A524; border-radius: 46% 54% 42% 58% / 58% 40% 60% 42%; transform: rotate(-6deg)"/>
+                            <video data-src="/website_the_cut_pages/static/src/video/home_wagyu_cow.mp4" muted="" loop="" playsinline="" preload="none" aria-hidden="true"
+                                   style="position: absolute; top: 0; left: 4%; width: 90%; height: 92%; object-fit: cover; border-radius: 52% 48% 44% 56% / 46% 56% 44% 54%; box-shadow: 0 22px 36px rgba(20, 20, 10, 0.35); background: #1B1414"/>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 4. Chapter 02: Venison -->
+                <section style="background: #EEF0E8; padding-bottom: 88px">
+                    <div style="position: relative; height: 540px; overflow: hidden">
+                        <t t-call="website_the_cut_pages.horizon"><t t-set="tc_fill" t-value="'#F2F4EC'"/></t>
+                        <img src="/website_the_cut_pages/static/src/img/home_deer_herd.webp" loading="lazy" decoding="async"
+                             alt="A herd of red deer on a New Zealand farm with snow-capped mountains behind" class="tc-anim tc-kb"
+                             style="width: 100%; height: 100%; object-fit: cover; object-position: 50% 92%; display: block"/>
+                    </div>
+                    <div style="position: relative; max-width: 1120px; margin: -180px auto 0; padding: 0 24px; display: flex; flex-wrap: wrap; flex-direction: row-reverse; gap: 40px; align-items: flex-end">
+                        <div style="flex: 1 1 460px; min-width: 0; background: #FFFFFF; padding: 40px; box-sizing: border-box; box-shadow: 0 24px 48px rgba(20, 30, 10, 0.16); display: flex; flex-direction: column; gap: 16px">
+                            <span style="font-family: Anton, Impact, 'Arial Narrow', sans-serif; font-size: 15px; letter-spacing: 0.08em; color: #4E4343">CHAPTER 02 · NEW ZEALAND</span>
+                            <h2 style="margin: 0; font-family: 'Capture it', Impact, sans-serif; font-weight: 400; font-size: clamp(38px, 7vw, 62px); line-height: 1; color: #7E1416">RED DEER OF THE HILLS</h2>
+                            <p style="margin: 0; font-size: 18px; color: #2E2626">Pasture-raised red deer, grazing beneath snow-capped New Zealand ranges. Lean, tender and delicate in flavour, a meat that cooks fast and tastes like nowhere else.</p>
+                            <div style="display: flex; flex-wrap: wrap; gap: 10px 18px; font-family: Anton, Impact, 'Arial Narrow', sans-serif; font-size: 19px; letter-spacing: 0.03em">
+                                <span><span style="display: inline-block; padding: 2px 10px 0; margin-right: 6px; background: #5DB35F; color: #1B1414; border-radius: 10px 4px 12px 5px / 5px 12px 4px 10px; transform: rotate(-1deg)">LEAN</span>AND TENDER</span>
+                                <span><span style="display: inline-block; padding: 2px 10px 0; margin-right: 6px; background: #F5C518; color: #1B1414; border-radius: 10px 4px 12px 5px / 5px 12px 4px 10px; transform: rotate(1.2deg)">PASTURE</span>RAISED</span>
+                            </div>
+                            <div style="margin-top: 8px; display: flex; flex-wrap: wrap; gap: 14px">
+                                <t t-call="website_the_cut_pages.cut_card">
+                                    <t t-set="tc_url" t-value="'/shop?search=Venison+French+Rack'"/>
+                                    <t t-set="tc_img" t-value="'product_french_rack'"/>
+                                    <t t-set="tc_alt">Venison French rack</t>
+                                    <t t-set="tc_name">FRENCH RACK</t>
+                                    <t t-set="tc_sub">Red deer</t>
+                                </t>
+                                <t t-call="website_the_cut_pages.cut_card">
+                                    <t t-set="tc_url" t-value="'/shop?search=Venison+Tenderloin'"/>
+                                    <t t-set="tc_img" t-value="'product_tenderloin'"/>
+                                    <t t-set="tc_alt">Venison tenderloin</t>
+                                    <t t-set="tc_name">TENDERLOIN</t>
+                                    <t t-set="tc_sub">Red deer</t>
+                                </t>
+                            </div>
+                            <a href="/shop?search=Venison" style="align-self: flex-start; margin-top: 8px; display: inline-flex; align-items: center; padding: 14px 32px; min-height: 52px; box-sizing: border-box; background: #7E1416; color: #FFFFFF; text-decoration: none; font-family: Anton, Impact, 'Arial Narrow', sans-serif; font-size: 20px; letter-spacing: 0.05em; border-radius: 40px">SHOP VENISON</a>
+                        </div>
+                        <div style="flex: 0 1 380px; min-width: 0; position: relative; height: 440px; margin: 0 auto">
+                            <div aria-hidden="true" class="tc-anim tc-blob" style="position: absolute; top: 8%; right: 0; bottom: 0; left: 8%; background: #F5A524; border-radius: 46% 54% 42% 58% / 58% 40% 60% 42%; transform: rotate(-6deg)"/>
+                            <video data-src="/website_the_cut_pages/static/src/video/home_red_deer_stag.mp4" muted="" loop="" playsinline="" preload="none" aria-hidden="true"
+                                   style="position: absolute; top: 0; left: 4%; width: 90%; height: 92%; object-fit: cover; border-radius: 52% 48% 44% 56% / 46% 56% 44% 54%; box-shadow: 0 22px 36px rgba(20, 20, 10, 0.35); background: #1B1414"/>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 5. Marbling you can see -->
+                <section style="position: relative; height: 560px; overflow: hidden; background: #1B1414">
+                    <t t-call="website_the_cut_pages.horizon"><t t-set="tc_fill" t-value="'#EEF0E8'"/><t t-set="tc_z" t-value="2"/></t>
+                    <video data-src="/website_the_cut_pages/static/src/video/home_ribeye_marbling.mp4" muted="" loop="" playsinline="" preload="none" aria-hidden="true"
+                           style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover"/>
+                    <div aria-hidden="true" style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: linear-gradient(90deg, rgba(10, 6, 6, 0.75) 0%, rgba(10, 6, 6, 0.2) 65%)"/>
+                    <div style="position: relative; max-width: 1120px; height: 100%; margin: 0 auto; padding: 0 24px; box-sizing: border-box; display: flex; flex-direction: column; justify-content: center; gap: 16px; color: #FFFFFF">
+                        <h2 style="margin: 0; max-width: 620px; font-family: 'Capture it', Impact, sans-serif; font-weight: 400; font-size: clamp(40px, 8vw, 72px); line-height: 1; color: #FFFFFF">MARBLING YOU CAN SEE</h2>
+                        <p style="margin: 0; max-width: 460px; font-size: 19px; color: #EDE6E2">From the pasture to our butchers’ block in Abu Dhabi. Every cut prepared by hand, the same way we prepare it for five-star kitchens.</p>
+                        <a href="/shop" style="align-self: flex-start; margin-top: 8px; display: inline-flex; align-items: center; padding: 14px 32px; min-height: 52px; box-sizing: border-box; background: #F5A524; color: #1B1414; text-decoration: none; font-family: Anton, Impact, 'Arial Narrow', sans-serif; font-size: 20px; letter-spacing: 0.05em; border-radius: 40px">SHOP ALL CUTS</a>
+                    </div>
+                </section>
+
+                <!-- 6. Yellow strip (the only one, before the Abu Dhabi chapter) -->
+                <t t-set="tc_strip" t-value="['FROM THE PASTURE', 'TO OUR BUTCHERS', 'TO YOUR DOOR'] + (['ORDER BEFORE %s' % tc['cutoff']] if tc['cutoff'] else []) + ['DELIVERED TODAY IN ABU DHABI']"/>
+                <div aria-hidden="true" style="position: relative; z-index: 3; height: 0">
+                    <div style="position: absolute; left: -5%; width: 110%; top: -30px; transform: rotate(2deg); background: #F5A524; box-shadow: 0 10px 22px rgba(20, 10, 10, 0.22); overflow: hidden; padding: 13px 0">
+                        <div class="tc-anim tc-marquee" style="display: flex; width: max-content; white-space: nowrap; font-family: Anton, Impact, 'Arial Narrow', sans-serif; font-size: 22px; letter-spacing: 0.06em; color: #1B1414">
+                            <span t-foreach="range(2)" t-as="_half"><t t-foreach="tc_strip * 2" t-as="tc_part"><t t-out="tc_part"/>&#160;&#160;·&#160;&#160;</t></span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 7. Chapter 03: Abu Dhabi -->
+                <section style="background: #7E1416; color: #FFFFFF; position: relative; overflow: hidden">
+                    <div style="max-width: 1120px; margin: 0 auto; padding: 80px 24px; display: flex; flex-wrap: wrap; gap: 48px; align-items: center">
+                        <div style="flex: 1 1 420px; min-width: 0; display: flex; flex-direction: column; gap: 16px">
+                            <span style="font-family: Anton, Impact, 'Arial Narrow', sans-serif; font-size: 15px; letter-spacing: 0.08em">CHAPTER 03 · ABU DHABI</span>
+                            <h2 style="margin: 0; font-family: 'Capture it', Impact, sans-serif; font-weight: 400; font-size: clamp(40px, 8vw, 68px); line-height: 1; color: #FFFFFF">FROM THE FARM TO YOUR DOOR</h2>
+                            <p style="margin: 0; font-size: 18px; color: #F3DCDC">Our butchers in Mushrif Mall cut every order by hand, pack it chilled in a sealed box and send it out the same day. Thirteen years of supplying five-star kitchens, now for yours.</p>
+                            <div style="display: flex; flex-wrap: wrap; gap: 10px 18px; font-family: Anton, Impact, 'Arial Narrow', sans-serif; font-size: 19px; letter-spacing: 0.03em">
+                                <span><span style="display: inline-block; padding: 2px 10px 0; margin-right: 6px; background: #F5C518; color: #1B1414; border-radius: 10px 4px 12px 5px / 5px 12px 4px 10px; transform: rotate(-1.5deg)">SAME DAY</span>DELIVERY IN ABU DHABI</span>
+                                <span t-if="tc['abu_dhabi_free']"><span style="display: inline-block; padding: 2px 10px 0; margin-right: 6px; background: #5DB35F; color: #1B1414; border-radius: 10px 4px 12px 5px / 5px 12px 4px 10px; transform: rotate(1deg)">FREE</span>ABOVE <t t-out="tc['abu_dhabi_free']"/></span>
+                            </div>
+                            <a href="/shop" style="align-self: flex-start; margin-top: 10px; display: inline-flex; align-items: center; padding: 16px 44px; min-height: 60px; box-sizing: border-box; background: #FFFFFF; color: #7E1416; text-decoration: none; font-family: Anton, Impact, 'Arial Narrow', sans-serif; font-size: 26px; letter-spacing: 0.05em; border-radius: 40px; box-shadow: 0 6px 0 #5A0E10">START YOUR ORDER</a>
+                        </div>
+                        <div style="flex: 1 1 380px; min-width: 0; position: relative; padding: 20px 10px 60px">
+                            <div aria-hidden="true" class="tc-anim tc-blob" style="position: absolute; top: 4%; right: -2%; bottom: 10%; left: 8%; background: #F5A524; border-radius: 46% 54% 42% 58% / 58% 40% 60% 42%; transform: rotate(5deg)"/>
+                            <img src="/website_the_cut_pages/static/src/img/shop_front.webp" loading="lazy" decoding="async"
+                                 alt="The Cut shop counter at Mushrif Mall with three butchers"
+                                 style="position: relative; width: 100%; height: 300px; object-fit: cover; object-position: 50% 45%; display: block; border-radius: 52% 48% 44% 56% / 46% 56% 44% 54%; transform: rotate(-3deg); box-shadow: 0 18px 30px rgba(40, 0, 0, 0.35)"/>
+                            <img src="/website_the_cut_pages/static/src/img/delivery_scooter.webp" loading="lazy" decoding="async" alt="" class="tc-anim tc-float"
+                                 style="position: absolute; left: -6%; bottom: 0; width: 46%; height: auto; display: block; filter: drop-shadow(0 14px 16px rgba(40, 0, 0, 0.4))"/>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 8. FAQ -->
+                <div style="max-width: 880px; margin: 0 auto; padding: 64px 24px 72px">
+                    <h2 style="margin: 0 0 8px; font-family: 'Capture it', Impact, sans-serif; font-weight: 400; font-size: clamp(34px, 7vw, 52px); line-height: 1; color: #7E1416">BEFORE YOU ORDER</h2>
+                    <p style="margin: 0 0 24px; color: #4E4343">Quick answers about delivery. Full details on our <a href="/delivery">Delivery &amp; Pickup</a> page.</p>
+                    <div style="border-top: 3px solid #7E1416">
+                        <t t-call="website_the_cut_pages.faq">
+                            <t t-set="tc_open" t-value="True"/>
+                            <t t-set="tc_question">WHEN WILL MY ORDER ARRIVE?</t>
+                            <t t-set="tc_answer">
+                                <t t-if="tc['cutoff']">In Abu Dhabi, orders placed before <t t-out="tc['cutoff']"/> arrive the same day<t t-if="tc['same_day_hours']">, within <t t-out="tc['same_day_hours']"/></t>. Orders after <t t-out="tc['cutoff']"/>, and orders to the rest of the UAE, arrive the next day in the afternoon.</t>
+                                <t t-else="">Orders to the rest of the UAE arrive the next day in the afternoon.</t>
+                            </t>
+                        </t>
+                        <t t-if="tc['abu_dhabi_fee'] or tc['abu_dhabi_free'] or tc['uae_free'] or tc['pickup_free']" t-call="website_the_cut_pages.faq">
+                            <t t-set="tc_question">HOW MUCH IS DELIVERY?</t>
+                            <t t-set="tc_answer">
+                                <t t-if="tc['abu_dhabi_fee'] and tc['uae_fee']"><t t-out="tc['abu_dhabi_fee']"/> on Abu Dhabi Island and <t t-out="tc['uae_fee']"/> everywhere else.</t>
+                                <t t-elif="tc['abu_dhabi_fee']"><t t-out="tc['abu_dhabi_fee']"/> on Abu Dhabi Island.</t>
+                                <t t-if="tc['abu_dhabi_free'] and tc['uae_free']">Free above <t t-out="tc['abu_dhabi_free']"/> in Abu Dhabi and above <t t-out="tc['uae_free']"/> in the rest of the UAE.</t>
+                                <t t-elif="tc['abu_dhabi_free']">Free above <t t-out="tc['abu_dhabi_free']"/> in Abu Dhabi.</t>
+                                <t t-elif="tc['uae_free']">Free above <t t-out="tc['uae_free']"/> in the rest of the UAE.</t>
+                                <t t-if="tc['pickup_free']">Pickup from our shop is always free.</t>
+                            </t>
+                        </t>
+                        <t t-call="website_the_cut_pages.faq">
+                            <t t-set="tc_question">DO YOU DELIVER OUTSIDE ABU DHABI?</t>
+                            <t t-set="tc_answer">Yes, across the UAE. Orders outside Abu Dhabi arrive the next day in the afternoon, packed chilled in a sealed, insulated box.</t>
+                        </t>
+                    </div>
+                </div>
+            </div>
+        </t>
+    </template>
+
+    <!-- Horizon edge between the chapters (two layers shaped like hills) -->
+    <template id="horizon" name="The Cut: horizon edge">
+        <svg aria-hidden="true" viewBox="0 0 1440 110" preserveAspectRatio="none"
+             t-attf-style="position: absolute; left: 0; top: -1px; width: 100%; height: clamp(44px, 7vw, 100px); z-index: #{tc_z or 1}; display: block">
+            <path d="M0 0 H1440 V58 C1300 96 1150 34 980 66 C820 96 660 40 500 74 C340 106 180 52 0 88 Z" t-att-fill="tc_fill" opacity="0.45"/>
+            <path d="M0 0 H1440 V40 C1260 84 1090 22 920 52 C740 84 560 24 380 60 C230 90 110 46 0 70 Z" t-att-fill="tc_fill"/>
+        </svg>
+    </template>
+
+    <!-- A cut on the chapter cards -->
+    <template id="cut_card" name="The Cut: cut card">
+        <a t-att-href="tc_url" style="flex: 1 1 160px; min-width: 0; display: flex; flex-direction: column; background: #FFFFFF; color: #1B1414; text-decoration: none; box-shadow: 0 10px 24px rgba(20, 30, 10, 0.18)">
+            <img t-attf-src="/website_the_cut_pages/static/src/img/#{tc_img}.webp" t-att-alt="tc_alt" loading="lazy" decoding="async"
+                 style="width: 100%; height: 120px; object-fit: cover; display: block"/>
+            <span style="padding: 12px 14px 14px; display: flex; flex-direction: column; gap: 2px">
+                <span style="font-family: Anton, Impact, 'Arial Narrow', sans-serif; font-size: 19px; letter-spacing: 0.02em" t-out="tc_name"/>
+                <span style="font-size: 13px; color: #4E4343" t-out="tc_sub"/>
+            </span>
+        </a>
+    </template>
+
+    <!-- A collapsed question (opens when clicked) -->
+    <template id="faq" name="The Cut: question">
+        <details t-att-open="tc_open or None" style="border-bottom: 1px solid #E9E1DF; padding: 16px 0">
+            <summary style="min-height: 44px; display: flex; align-items: center; justify-content: space-between; gap: 16px; font-family: Anton, Impact, 'Arial Narrow', sans-serif; font-size: 22px; letter-spacing: 0.02em">
+                <t t-out="tc_question"/>
+                <svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#7E1416" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="flex: none"><path d="M6 9l6 6 6-6"/></svg>
+            </summary>
+            <p style="margin: 10px 0 0; color: #2E2626" t-out="tc_answer"/>
+        </details>
+    </template>
+</odoo>

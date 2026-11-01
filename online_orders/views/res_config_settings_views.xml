@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="res_config_settings_view_form_online_orders" model="ir.ui.view">
+        <field name="name">res.config.settings.form.online.orders</field>
+        <field name="model">res.config.settings</field>
+        <field name="inherit_id" ref="website_sale.res_config_settings_view_form"/>
+        <field name="arch" type="xml">
+            <setting id="order_confirmation_setting" position="after">
+                <setting id="online_orders_email_from_setting" string="Order emails from"
+                         help="Sender of the emails On the way, Delivered, Cancelled and Your address was updated. Empty: the company email.">
+                    <field name="online_orders_email_from" class="w-100" placeholder="The Cut &lt;orders@thecutuae.com&gt;"/>
+                </setting>
+            </setting>
+        </field>
+    </record>
+</odoo>

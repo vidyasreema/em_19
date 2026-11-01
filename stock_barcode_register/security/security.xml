@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="res_groups_privilege_operational_app" model="res.groups.privilege">
+        <field name="name">Operational App</field>
+        <field name="category_id" ref="base.module_category_supply_chain"/>
+    </record>
+
+    <!-- Warehouse staff: see only the operational app, not the Inventory app -->
+    <record id="group_operational_staff" model="res.groups">
+        <field name="name">Operational Staff</field>
+        <field name="privilege_id" ref="res_groups_privilege_operational_app"/>
+        <field name="implied_ids" eval="[(4, ref('stock.group_stock_user'))]"/>
+        <field name="comment">Sees only Receipts, Internal Transfers and Count in the operational app. The Inventory app is hidden unless the user is also an Inventory Administrator.</field>
+    </record>
+
+    <record id="res_groups_privilege_barcode_product" model="res.groups.privilege">
+        <field name="name">Barcode Register: Products</field>
+        <field name="category_id" ref="base.module_category_supply_chain"/>
+    </record>
+
+    <!-- Inventory and pricing officer -->
+    <record id="group_barcode_product_creator" model="res.groups">
+        <field name="name">Create Products from Receipt</field>
+        <field name="privilege_id" ref="res_groups_privilege_barcode_product"/>
+        <field name="implied_ids" eval="[(4, ref('stock.group_stock_user'))]"/>
+        <field name="comment">Inventory and pricing officer: can create a product from a receipt line.</field>
+    </record>
+
+    <record id="rule_stock_count_session_company" model="ir.rule">
+        <field name="name">Count Session: multi-company</field>
+        <field name="model_id" ref="model_stock_count_session"/>
+        <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+    </record>
+
+    <record id="rule_stock_barcode_register_company" model="ir.rule">
+        <field name="name">Barcode Register: multi-company</field>
+        <field name="model_id" ref="model_stock_barcode_register"/>
+        <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+    </record>
+</odoo>

@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="res_config_settings_view_form_the_cut_pages" model="ir.ui.view">
+        <field name="name">res.config.settings.form.the.cut.pages</field>
+        <field name="model">res.config.settings</field>
+        <field name="inherit_id" ref="website.res_config_settings_view_form"/>
+        <field name="arch" type="xml">
+            <block id="website_info_settings" position="after">
+                <block title="The Cut Pages" id="the_cut_pages_settings" invisible="not website_id">
+                    <setting id="cut_pages_setting" string="The Cut pages"
+                             help="Homepage, Delivery &amp; Pickup, Privacy Policy, Terms of Sale, About Us, and the header and footer of every page. Times, fees and contacts come from the delivery methods, Store Settings, the company and the WhatsApp help number. Untick to go back to the previous pages at once.">
+                        <field name="cut_pages_enabled"/>
+                    </setting>
+                    <setting id="cut_policies_setting" string="Privacy Policy and Terms" invisible="not cut_pages_enabled"
+                             help="Empty values are left out of the pages.">
+                        <div class="content-group">
+                            <div class="row mt-2">
+                                <label for="cut_policies_date" string="Last updated" class="col-lg-4 o_light_label"/>
+                                <field name="cut_policies_date"/>
+                            </div>
+                            <div class="row">
+                                <label for="cut_care_email" string="Contact email" class="col-lg-4 o_light_label"/>
+                                <field name="cut_care_email" placeholder="care@thecutuae.com"/>
+                            </div>
+                            <div class="row">
+                                <label for="cut_retention_period" string="Data kept for" class="col-lg-4 o_light_label"/>
+                                <field name="cut_retention_period" placeholder="5 years"/>
+                            </div>
+                            <div class="row">
+                                <label for="cut_damaged_box_note" string="Damaged box line" class="col-lg-4 o_light_label"/>
+                                <field name="cut_damaged_box_note"/>
+                            </div>
+                        </div>
+                    </setting>
+                </block>
+            </block>
+        </field>
+    </record>
+</odoo>

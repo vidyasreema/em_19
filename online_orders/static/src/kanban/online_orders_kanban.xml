@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+    <t t-name="online_orders.KanbanButtons">
+        <OnlineOrdersCounters model="model"/>
+    </t>
+
+    <t t-name="online_orders.Counters">
+        <div class="o_online_orders_counters d-flex gap-2 align-items-center">
+            <span class="badge text-bg-primary o_online_counter_open">
+                Open: <t t-out="state.open"/>
+            </span>
+            <span t-attf-class="badge o_online_counter_overdue #{state.overdue ? 'text-bg-danger' : 'text-bg-secondary'}">
+                Overdue: <t t-out="state.overdue"/>
+            </span>
+            <span class="badge text-bg-success o_online_counter_delivered">
+                Delivered today: <t t-out="state.delivered_today"/>
+            </span>
+        </div>
+    </t>
+
+</templates>

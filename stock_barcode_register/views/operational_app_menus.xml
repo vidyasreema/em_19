@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Front end on the standard operations: records created here are normal transfers -->
+    <record id="action_operational_receipts" model="ir.actions.act_window">
+        <field name="name">Receipts</field>
+        <field name="res_model">stock.picking</field>
+        <field name="path">op-receipts</field>
+        <field name="view_mode">list,kanban,form</field>
+        <field name="domain">[('picking_type_code', '=', 'incoming')]</field>
+        <field name="context">{'contact_display': 'partner_address', 'restricted_picking_type_code': 'incoming'}</field>
+        <field name="search_view_id" ref="stock.view_picking_internal_search"/>
+    </record>
+
+    <record id="action_operational_internal" model="ir.actions.act_window">
+        <field name="name">Internal Transfers</field>
+        <field name="res_model">stock.picking</field>
+        <field name="path">op-internal</field>
+        <field name="view_mode">list,kanban,form</field>
+        <field name="domain">[('picking_type_code', '=', 'internal')]</field>
+        <field name="context">{'contact_display': 'partner_address', 'restricted_picking_type_code': 'internal'}</field>
+        <field name="search_view_id" ref="stock.view_picking_internal_search"/>
+    </record>
+
+    <menuitem id="menu_operational_root"
+        name="Warehouse Operations"
+        sequence="139"
+        web_icon="stock_barcode_register,static/description/icon.png"
+        groups="stock_barcode_register.group_operational_staff,stock.group_stock_manager"/>
+
+    <menuitem id="menu_operational_receipts"
+        name="Receipts"
+        parent="menu_operational_root"
+        action="action_operational_receipts"
+        sequence="10"/>
+
+    <menuitem id="menu_operational_internal"
+        name="Internal Transfers"
+        parent="menu_operational_root"
+        action="action_operational_internal"
+        sequence="20"/>
+</odoo>

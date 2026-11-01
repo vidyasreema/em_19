@@ -10,90 +10,199 @@
         <xpath expr="//div[@role='alert'][contains(@t-if, 'use_delivery_as_billing')]" position="replace"/>
 
         <xpath expr="//form[@action='/shop/address/submit']" position="before">
-            <!-- Initial pin: the address being edited, or (new address) the
-                 location confirmed before shopping -->
-            <t t-set="geo_init_point" t-value="website._geo_address_initial_point(partner_sudo)"/>
-            <div class="o_map_address_selector mb-4">
-                <div class="d-flex align-items-baseline justify-content-between gap-2 mb-2">
-                    <h5 class="mb-0">
-                        <i class="fa fa-map-marker text-primary me-2"/>Delivery location
-                    </h5>
-                    <small class="text-muted d-none d-md-inline o_geo_hint">
-                        Move the map to place the pin; the address below fills in automatically
-                    </small>
-                    <!-- Full-screen picker only -->
-                    <button type="button" id="o_map_collapse_btn"
-                            class="btn-close o_geo_expanded_only"
-                            title="Close" aria-label="Close"/>
-                </div>
+            <t t-call="website_delivery_geolocation.address_map_block"/>
+        </xpath>
+        <xpath expr="//form[@action='/shop/address/submit']" position="inside">
+            <t t-call="website_delivery_geolocation.address_map_inputs"/>
+        </xpath>
+    </template>
 
-                <!-- Search + current location -->
-                <div class="input-group mb-2">
-                    <input type="text"
-                           id="o_map_search_input"
-                           class="form-control"
-                           placeholder="Search street, area or landmark"
-                           autocomplete="off"/>
-                    <button type="button"
-                            id="o_map_search_btn"
-                            class="btn btn-primary"
-                            title="Search" aria-label="Search">
-                        <i class="fa fa-search"/>
-                    </button>
-                    <button type="button"
-                            id="o_map_current_location_btn"
-                            class="btn btn-outline-primary"
-                            title="Use my current location" aria-label="Use my current location">
-                        <i class="fa fa-crosshairs"/>
-                    </button>
-                </div>
+    <!-- My Account > Addresses: the same map on Add / Edit of a delivery address -->
+    <template id="portal_address_map_selector"
+              inherit_id="portal.address_management"
+              name="Google Map Address Selector (My Account)">
+        <xpath expr="//form[@action='/my/address/submit']" position="before">
+            <t t-if="address_type != 'billing'" t-call="website_delivery_geolocation.address_map_block"/>
+        </xpath>
+        <xpath expr="//form[@action='/my/address/submit']" position="inside">
+            <t t-if="address_type != 'billing'" t-call="website_delivery_geolocation.address_map_inputs"/>
+        </xpath>
+    </template>
 
-                <!-- Google Map Container + fixed centre pin (the map moves under it) -->
-                <div class="o_geo_map_wrap">
-                    <div id="o_delivery_map"
-                         t-att-data-api-key="website._geo_google_maps_key()"
-                         t-att-data-init-lat="geo_init_point and geo_init_point[0]"
-                         t-att-data-init-lng="geo_init_point and geo_init_point[1]"></div>
-                    <div class="o_geo_center_pin" aria-hidden="true">
-                        <svg viewBox="0 0 36 48" width="36" height="48">
-                            <path d="M18 0C8.06 0 0 8.06 0 18c0 13.5 18 30 18 30s18-16.5 18-30C36 8.06 27.94 0 18 0z"/>
-                            <circle cx="18" cy="18" r="7"/>
-                        </svg>
-                    </div>
-                    <div class="o_geo_pin_shadow" aria-hidden="true"/>
-                </div>
+    <!-- My Account > Account details (Edit): customer details first; the main
+         address (also the first delivery address) is picked with the "Pick on
+         map" button of the address section, which opens the full-screen map -->
+    <template id="portal_details_map_selector"
+              inherit_id="portal.portal_my_details"
+              name="Google Map Address Selector (Account details)">
+        <xpath expr="//form[@action='/my/address/submit']" position="before">
+            <t t-set="geo_map_button" t-value="True"/>
+            <t t-call="website_delivery_geolocation.address_map_block">
+                <t t-set="geo_picker_only" t-value="True"/>
+            </t>
+        </xpath>
+        <xpath expr="//form[@action='/my/address/submit']" position="inside">
+            <t t-call="website_delivery_geolocation.address_map_inputs"/>
+        </xpath>
+    </template>
 
-                <!-- Selected location (shown once a point is picked) -->
-                <div id="o_map_selected_location" class="d-none d-flex align-items-start gap-2 mt-2">
-                    <i class="fa fa-check-circle text-success mt-1"/>
-                    <div class="small">
-                        <div id="o_map_selected_address" class="fw-semibold"></div>
-                        <div class="text-muted">
-                            <span id="o_map_selected_coords"></span>
-                        </div>
-                    </div>
-                </div>
-                <small class="text-muted d-md-none d-block mt-1 o_geo_hint">
-                    Move the map to place the pin; the address below fills in automatically.
+    <!-- The map (search, current location, centre pin) -->
+    <template id="address_map_block" name="Address Map">
+        <!-- Initial pin: the address being edited, or (new address) the
+             location confirmed before shopping -->
+        <t t-set="geo_init_point" t-value="website._geo_address_initial_point(partner_sudo)"/>
+        <!-- Behind the "Pick on map" popup (computers and tablets) -->
+        <div t-if="geo_picker_only" class="o_geo_backdrop"/>
+        <div t-attf-class="o_map_address_selector mb-4 #{'o_geo_picker_only' if geo_picker_only else ''}">
+            <div class="d-flex align-items-baseline justify-content-between gap-2 mb-2">
+                <h5 class="mb-0">
+                    <i class="fa fa-map-marker text-primary me-2"/>Delivery location
+                </h5>
+                <small class="text-muted d-none d-md-inline o_geo_hint">
+                    Move the map to place the pin; the address below fills in automatically
                 </small>
                 <!-- Full-screen picker only -->
-                <button type="button" id="o_map_confirm_btn"
-                        class="btn btn-primary w-100 mt-2 o_geo_expanded_only">
-                    Confirm location
+                <button type="button" id="o_map_collapse_btn"
+                        class="btn-close o_geo_expanded_only"
+                        title="Close" aria-label="Close"/>
+            </div>
+
+            <!-- Search + current location -->
+            <div class="input-group mb-2">
+                <input type="text"
+                       id="o_map_search_input"
+                       class="form-control"
+                       placeholder="Search street, area or landmark"
+                       autocomplete="off"/>
+                <button type="button"
+                        id="o_map_search_btn"
+                        class="btn btn-primary"
+                        title="Search" aria-label="Search">
+                    <i class="fa fa-search"/>
+                </button>
+                <button type="button"
+                        id="o_map_current_location_btn"
+                        class="btn btn-outline-primary"
+                        title="Use my current location" aria-label="Use my current location">
+                    <i class="fa fa-crosshairs"/>
                 </button>
             </div>
-        </xpath>
 
-        <!-- Hidden inputs: the map pin is saved on the address (res.partner).
-             Disabled (= not submitted) until the map sets a value, so an empty
-             value can never overwrite coordinates with 0. -->
-        <xpath expr="//form[@action='/shop/address/submit']" position="inside">
-            <input type="hidden" name="partner_latitude" id="o_partner_latitude"
-                   t-att-value="partner_sudo.partner_latitude if partner_sudo and partner_sudo.partner_latitude else None"
-                   t-att-disabled="None if partner_sudo and partner_sudo.partner_latitude else 'disabled'"/>
-            <input type="hidden" name="partner_longitude" id="o_partner_longitude"
-                   t-att-value="partner_sudo.partner_longitude if partner_sudo and partner_sudo.partner_longitude else None"
-                   t-att-disabled="None if partner_sudo and partner_sudo.partner_longitude else 'disabled'"/>
+            <!-- Google Map Container + fixed centre pin (the map moves under it) -->
+            <div class="o_geo_map_wrap">
+                <div id="o_delivery_map"
+                     t-att-data-api-key="website._geo_google_maps_key()"
+                     t-att-data-init-lat="geo_init_point and geo_init_point[0]"
+                     t-att-data-init-lng="geo_init_point and geo_init_point[1]"></div>
+                <div class="o_geo_center_pin" aria-hidden="true">
+                    <svg viewBox="0 0 36 48" width="36" height="48">
+                        <path d="M18 0C8.06 0 0 8.06 0 18c0 13.5 18 30 18 30s18-16.5 18-30C36 8.06 27.94 0 18 0z"/>
+                        <circle cx="18" cy="18" r="7"/>
+                    </svg>
+                </div>
+                <div class="o_geo_pin_shadow" aria-hidden="true"/>
+            </div>
+
+            <!-- Selected location (shown once a point is picked) -->
+            <div id="o_map_selected_location" class="d-none d-flex align-items-start gap-2 mt-2">
+                <i class="fa fa-check-circle text-success mt-1"/>
+                <div class="small">
+                    <div id="o_map_selected_address" class="fw-semibold"></div>
+                    <div class="text-muted">
+                        <span id="o_map_selected_coords"></span>
+                    </div>
+                </div>
+            </div>
+            <small class="text-muted d-md-none d-block mt-1 o_geo_hint">
+                Move the map to place the pin; the address below fills in automatically.
+            </small>
+            <!-- Full-screen picker only -->
+            <button type="button" id="o_map_confirm_btn"
+                    class="btn btn-primary w-100 mt-2 o_geo_expanded_only">
+                Confirm location
+            </button>
+        </div>
+    </template>
+
+    <!-- Hidden inputs: the map pin is saved on the address (res.partner).
+         Disabled (= not submitted) until the map sets a value, so an empty
+         value can never overwrite coordinates with 0. -->
+    <template id="address_map_inputs" name="Address Map Inputs">
+        <input type="hidden" name="partner_latitude" id="o_partner_latitude"
+               t-att-value="partner_sudo.partner_latitude if partner_sudo and partner_sudo.partner_latitude else None"
+               t-att-disabled="None if partner_sudo and partner_sudo.partner_latitude else 'disabled'"/>
+        <input type="hidden" name="partner_longitude" id="o_partner_longitude"
+               t-att-value="partner_sudo.partner_longitude if partner_sudo and partner_sudo.partner_longitude else None"
+               t-att-disabled="None if partner_sudo and partner_sudo.partner_longitude else 'disabled'"/>
+    </template>
+
+    <!-- "Pick on map" button at the start of the address (Account details) -->
+    <template id="address_form_map_button"
+              inherit_id="portal.address_form_fields"
+              name="Pick the address on the map">
+        <xpath expr="//div[@id='div_street']" position="before">
+            <div t-if="geo_map_button" id="div_geo_pick" class="col-lg-12 mb-2">
+                <label class="col-form-label label-optional d-block">Address</label>
+                <button type="button" id="o_map_open_btn"
+                        class="btn btn-outline-primary w-100 d-flex align-items-center justify-content-center gap-2">
+                    <i class="fa fa-map-marker" role="presentation"/>
+                    <span t-if="partner_sudo.partner_latitude">Change location on map</span>
+                    <span t-else="">Pick your location on the map</span>
+                </button>
+                <small id="o_map_open_hint" class="text-muted d-block mt-1">
+                    <t t-if="partner_sudo.partner_latitude">
+                        <i class="fa fa-check-circle text-success me-1" role="presentation"/>Location saved on the map
+                    </t>
+                    <t t-else="">Move the pin to your building; the address below fills in.</t>
+                </small>
+            </div>
+        </xpath>
+    </template>
+
+    <!-- Delivery address: label (Home / Work / Other) and directions for the driver -->
+    <template id="address_form_label_directions"
+              inherit_id="portal.address_form_fields"
+              name="Address label and driver directions">
+        <xpath expr="//div[@id='div_street2']" position="after">
+            <t t-if="address_type != 'billing'">
+                <div id="div_address_label" class="col-lg-12 mb-2">
+                    <label class="col-form-label label-optional d-block">Label</label>
+                    <div class="btn-group" role="group" aria-label="Address label">
+                        <t t-foreach="[('home', 'Home'), ('work', 'Work'), ('other', 'Other')]" t-as="label">
+                            <input type="radio" class="btn-check" name="address_label"
+                                   t-att-id="'o_address_label_%s' % label[0]"
+                                   t-att-value="label[0]"
+                                   t-att-checked="partner_sudo and partner_sudo.address_label == label[0]"/>
+                            <label class="btn btn-outline-secondary btn-sm"
+                                   t-att-for="'o_address_label_%s' % label[0]" t-out="label[1]"/>
+                        </t>
+                    </div>
+                </div>
+                <div id="div_delivery_directions" class="col-lg-12 mb-2">
+                    <label class="col-form-label label-optional" for="o_delivery_directions">
+                        Directions for the driver
+                    </label>
+                    <textarea id="o_delivery_directions" name="delivery_directions" rows="2"
+                              class="form-control"
+                              placeholder="Landmark, gate, parking..."
+                              t-out="partner_sudo.delivery_directions if partner_sudo else ''"/>
+                </div>
+            </t>
+        </xpath>
+    </template>
+
+    <!-- Address cards (My Account > Addresses, checkout): label, receiver mobile, driver directions -->
+    <template id="address_card_label_directions" inherit_id="portal.address_card"
+              name="Address card: label and driver directions">
+        <xpath expr="//t[@t-out='contact']" position="after">
+            <div t-if="contact.phone or contact.delivery_directions" class="small text-muted o_address_card_extra">
+                <div t-if="contact.phone"><i class="fa fa-phone me-1" role="presentation"/><t t-out="contact.phone"/></div>
+                <div t-if="contact.delivery_directions"><i class="fa fa-map-signs me-1" role="presentation"/><t t-out="contact.delivery_directions"/></div>
+            </div>
+        </xpath>
+        <xpath expr="//span[@t-if='is_user_address']" position="before">
+            <span t-if="contact.address_label" class="badge text-bg-light border o_address_card_label"
+                  t-out="contact._address_label_name()"/>
         </xpath>
     </template>
 

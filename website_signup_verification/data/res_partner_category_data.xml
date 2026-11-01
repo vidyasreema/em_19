@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Annex 3A task 4.2: other records of the email of a new account, for the daily check -->
+    <record id="partner_tag_duplicate_email" model="res.partner.category">
+        <field name="name">Duplicate email - check</field>
+        <field name="color">1</field>
+    </record>
+</odoo>

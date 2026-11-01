@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- My Orders list: the shipping status of an online order comes from its stage,
+         not from the delivery order (validated when the driver leaves). -->
+    <template id="portal_my_orders_online_stage" inherit_id="sale_stock.portal_my_orders"
+              name="Online Orders: shipping status from the stage">
+        <!-- Odoo's first badge (found by its condition) continues our t-if chain -->
+        <xpath expr="//td[@name='order_delivery_status']/span[@t-if=&quot;order.delivery_status == 'pending'&quot;]" position="attributes">
+            <attribute name="t-if"/>
+            <attribute name="t-elif">order.delivery_status == 'pending'</attribute>
+        </xpath>
+        <xpath expr="//td[@name='order_delivery_status']/span[1]" position="before">
+            <t t-set="online_stage" t-value="order.sudo().stage_id"/>
+            <span t-if="online_stage"
+                  t-attf-class="badge rounded-pill text-bg-#{online_stage.portal_color or 'info'}"
+                  t-out="online_stage.portal_label or online_stage.name"/>
+        </xpath>
+    </template>
+
+    <!-- Order page: delivery status from the stage, with the promise -->
+    <template id="sale_order_portal_content_online_stage"
+              inherit_id="sale_stock.sale_order_portal_content_inherit_sale_stock"
+              name="Online Orders: delivery status on the order page">
+        <xpath expr="//t[@t-set='delivery_orders']/following-sibling::div[1]" position="attributes">
+            <attribute name="t-if">delivery_orders and not sale_order.sudo().stage_id</attribute>
+        </xpath>
+        <xpath expr="//t[@t-set='delivery_orders']/following-sibling::div[1]" position="after">
+            <t t-set="online_stage" t-value="sale_order.sudo().stage_id"/>
+            <div t-if="online_stage" class="col-12 col-lg-6 mb-4" id="online_order_status">
+                <h5 class="mb-1">Delivery</h5>
+                <hr class="mt-1 mb-2"/>
+                <span t-attf-class="badge rounded-pill text-bg-#{online_stage.portal_color or 'info'}"
+                      t-out="online_stage.portal_label or online_stage.name"/>
+                <div t-if="sale_order.delivery_promise_message and online_stage.code not in ('delivered', 'completed', 'cancelled')"
+                     class="small text-muted mt-2" t-out="sale_order.delivery_promise_message"/>
+            </div>
+        </xpath>
+    </template>
+</odoo>

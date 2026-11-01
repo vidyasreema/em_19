@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Annex 4, section 3. Names, emails, labels and folding can be changed
+         in Online Orders > Configuration > Stages. -->
+    <data noupdate="1">
+        <record id="stage_new" model="online.order.stage">
+            <field name="name">New</field>
+            <field name="sequence">10</field>
+            <field name="code">new</field>
+            <field name="portal_label">Order received</field>
+            <field name="portal_color">info</field>
+        </record>
+        <record id="stage_out_for_delivery" model="online.order.stage">
+            <field name="name">Out for Delivery</field>
+            <field name="sequence">20</field>
+            <field name="code">out_for_delivery</field>
+            <field name="mail_template_id" ref="mail_template_out_for_delivery"/>
+            <field name="portal_label">On the way</field>
+            <field name="portal_color">warning</field>
+        </record>
+        <record id="stage_delivered" model="online.order.stage">
+            <field name="name">Delivered</field>
+            <field name="sequence">30</field>
+            <field name="code">delivered</field>
+            <field name="mail_template_id" ref="mail_template_delivered"/>
+            <field name="portal_label">Delivered</field>
+            <field name="portal_color">success</field>
+        </record>
+        <record id="stage_completed" model="online.order.stage">
+            <field name="name">Completed</field>
+            <field name="sequence">40</field>
+            <field name="code">completed</field>
+            <field name="fold" eval="True"/>
+            <field name="portal_label">Delivered</field>
+            <field name="portal_color">success</field>
+        </record>
+        <record id="stage_cancelled" model="online.order.stage">
+            <field name="name">Cancelled / Returned</field>
+            <field name="sequence">50</field>
+            <field name="code">cancelled</field>
+            <field name="fold" eval="True"/>
+            <field name="mail_template_id" ref="mail_template_cancelled"/>
+            <field name="activity_summary">Refund within 48 hours</field>
+            <field name="portal_label">Cancelled</field>
+            <field name="portal_color">danger</field>
+        </record>
+    </data>
+</odoo>

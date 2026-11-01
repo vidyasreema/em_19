@@ -55,15 +55,6 @@
                         </group>
                     </group>
 
-                    <separator string="Off-Hours Behaviour"/>
-
-                    <group string="After-Close Grace Period">
-                        <group>
-                            <field name="shop_scenario2_grace_hours"
-                                   string="Grace Period (hours)"/>
-                        </group>
-                    </group>
-
                 </sheet>
             </form>
         </field>

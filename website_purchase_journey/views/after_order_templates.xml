@@ -1,0 +1,159 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Confirmation page: guests create their account in one tap (Annex 3 v2 §4.1) -->
+    <template id="confirmation_guest_signup" inherit_id="website_sale.confirmation"
+              name="Purchase Journey: sign up after ordering">
+        <!-- Odoo's "Sign Up to follow your order" box: replaced by ours -->
+        <xpath expr="//t[contains(@t-if, '_get_signup_invitation_scope')]" position="attributes">
+            <attribute name="t-if" add="not website.journey_enabled" separator="and"/>
+        </xpath>
+        <xpath expr="//div[@id='order_name']" position="after">
+            <!-- "You earned a coupon for your next order" -->
+            <t t-set="journey_next_coupon" t-value="website.journey_enabled and order._journey_next_order_coupon()"/>
+            <div t-if="journey_next_coupon" class="alert alert-success d-flex align-items-start gap-3 mb-4 o_journey_next_coupon" role="status">
+                <i class="fa fa-gift fa-2x" role="presentation"/>
+                <div class="min-w-0">
+                    <strong class="d-block">You earned a coupon for your next order</strong>
+                    <span t-out="journey_next_coupon['title']"/>
+                    <t t-if="journey_next_coupon['ready']">
+                        · code <strong class="font-monospace o_journey_next_coupon_code" t-out="journey_next_coupon['code']"/>
+                    </t>
+                    <div class="small mt-1">
+                        <t t-if="journey_next_coupon['after_delivery']">Your code comes with the delivery of this order.</t>
+                        <t t-elif="not journey_next_coupon['ready']">Ready once this order is paid.</t>
+                        <a t-if="not website.is_public_user()" href="/my/coupons">View my coupons</a>
+                        <t t-else="">Saved for <t t-out="order.partner_id.email"/>: create your account or sign in with this email to use it.</t>
+                    </div>
+                </div>
+            </div>
+            <!-- "Congratulations" popup: opens once per order (the box above stays) -->
+            <div t-if="journey_next_coupon" class="modal fade o_journey_coupon_modal" tabindex="-1"
+                 aria-labelledby="o_journey_coupon_title" aria-hidden="true" t-att-data-order-id="order.id">
+                <div class="modal-dialog modal-dialog-centered">
+                    <div class="modal-content">
+                        <div class="modal-body text-center p-4">
+                            <span class="d-inline-flex align-items-center justify-content-center rounded-circle mb-3 o_journey_coupon_icon">
+                                <i class="fa fa-gift fa-2x" role="presentation"/>
+                            </span>
+                            <h3 class="mb-1" id="o_journey_coupon_title">🎉 Congratulations! 🎉</h3>
+                            <p class="text-muted mb-3">You earned a coupon for your next order</p>
+                            <p class="fs-4 fw-bold text-primary mb-3" t-out="journey_next_coupon['title']"/>
+                            <div t-if="journey_next_coupon['ready']"
+                                 class="d-flex align-items-center justify-content-between gap-2 rounded-3 px-3 py-2 mb-2 o_journey_coupon_code_box">
+                                <span class="font-monospace fw-bold text-truncate o_journey_coupon_code" t-out="journey_next_coupon['code']"/>
+                                <button type="button" class="btn btn-sm btn-outline-primary rounded-pill o_journey_coupon_copy"
+                                        t-att-data-code="journey_next_coupon['code']">Copy</button>
+                            </div>
+                            <p t-elif="journey_next_coupon['after_delivery']" class="small text-muted mb-2">Your code comes with the delivery of this order.</p>
+                            <p t-else="" class="small text-muted mb-2">Ready once this order is paid.</p>
+                            <p t-if="website.is_public_user()" class="small text-muted mb-0">
+                                Saved for <t t-out="order.partner_id.email"/>: create your account or sign in with this email to use it.
+                            </p>
+                            <p t-elif="journey_next_coupon['ready']" class="small text-muted mb-0">It is waiting in My coupons.</p>
+                        </div>
+                        <div class="modal-footer justify-content-center gap-2 border-0 pt-0 pb-4">
+                            <a t-if="not website.is_public_user()" href="/my/coupons" class="btn btn-outline-primary rounded-pill px-4">View my coupons</a>
+                            <button type="button" class="btn btn-primary rounded-pill px-4" data-bs-dismiss="modal">Great!</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <t t-set="journey_signup" t-value="request.params.get('journey_signup')"/>
+            <div t-if="journey_signup == 'done'" class="alert alert-success mb-4 o_journey_post_signup_done" role="status">
+                <strong>Your account is created.</strong>
+                We sent a link to <strong t-out="order.partner_id.email"/> to choose your password.
+                <t t-if="website._journey_signup_offer()">Your 10% sign-up offer is applied to your next order.</t>
+            </div>
+            <div t-elif="journey_signup == 'error'" class="alert alert-warning mb-4" role="alert">
+                We could not create your account. Please sign up from the
+                <a href="/web/signup">sign-up page</a>.
+            </div>
+            <t t-elif="website.is_public_user()">
+                <t t-set="journey_signup_state" t-value="order._journey_signup_state()"/>
+                <section t-if="journey_signup_state == 'has_account'" class="card mb-4 o_journey_post_signin">
+                    <div class="card-body">
+                        <h5 class="card-title mb-1">You already have an account</h5>
+                        <p class="text-muted mb-3">
+                            <strong t-out="order.partner_id.email"/> is registered with us.
+                            Sign in next time to use your saved addresses and coupons.
+                        </p>
+                        <a href="/web/login?redirect=/shop" class="btn btn-outline-primary w-100">Sign in</a>
+                    </div>
+                </section>
+                <section t-elif="journey_signup_state == 'offer'"
+                         class="card border-primary mb-4 o_journey_post_signup">
+                    <div class="card-body">
+                        <h5 class="card-title mb-1">
+                            <t t-if="website._journey_signup_offer()">Create an account to track this order and get 10% off your next order</t>
+                            <t t-else="">Create an account to track this order</t>
+                        </h5>
+                        <p class="text-muted mb-3">One tap. We use <strong t-out="order.partner_id.email"/> from your order.</p>
+                        <form action="/shop/order/signup" method="post">
+                            <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                            <button type="submit" class="btn btn-primary w-100 o_journey_post_signup_btn">Create my account</button>
+                        </form>
+                    </div>
+                </section>
+            </t>
+        </xpath>
+    </template>
+
+    <!-- Confirmation page: the addresses in one small box instead of Odoo's tall card -->
+    <template id="confirmation_address_compact" inherit_id="website_sale.confirmation"
+              name="Purchase Journey: compact addresses after ordering">
+        <xpath expr="//t[@t-call='website_sale.address_on_checkout']" position="attributes">
+            <attribute name="t-if">not website.journey_enabled</attribute>
+        </xpath>
+        <xpath expr="//t[@t-call='website_sale.address_on_checkout']" position="after">
+            <t t-if="website.journey_enabled" t-call="website_purchase_journey.confirmation_addresses"/>
+        </xpath>
+    </template>
+
+    <!-- Takes: order; journey_address_phone (optional): the phone under the address -->
+    <template id="confirmation_addresses" name="Purchase Journey: addresses (one line each)">
+        <t t-set="journey_rows" t-value="[]"/>
+        <t t-set="journey_same" t-value="order.partner_invoice_id == order.partner_shipping_id"/>
+        <t t-if="order._has_deliverable_products()"
+           t-set="journey_rows" t-value="[('fa-map-marker', 'Delivery &amp; billing' if journey_same else 'Delivery', order.partner_shipping_id)]"/>
+        <t t-if="not journey_rows or not journey_same"
+           t-set="journey_rows" t-value="journey_rows + [('fa-file-text-o', 'Billing', order.partner_invoice_id)]"/>
+        <div class="border rounded-3 small o_journey_conf_addresses">
+            <div t-foreach="journey_rows" t-as="row"
+                 t-attf-class="d-flex align-items-start gap-2 px-3 py-2 o_journey_conf_address #{'border-top' if not row_first else ''}">
+                <i t-attf-class="fa #{row[0]} fa-fw text-muted mt-1" role="presentation"/>
+                <div class="min-w-0">
+                    <b t-out="row[2].name"/> <span class="text-muted">· <t t-out="row[1]"/></span>
+                    <div class="text-muted"
+                         t-out="', '.join(filter(None, [row[2].street, row[2].street2, row[2].city, row[2].country_id.name]))"/>
+                    <div t-if="journey_address_phone and row[2].phone" class="text-muted">
+                        <i class="fa fa-phone me-1" role="presentation"/><t t-out="row[2].phone"/>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </template>
+
+    <!-- Every page (home, shop, account...): green tracking bar of the open
+         order until it is delivered (Annex 3 C6) -->
+    <template id="layout_tracking_bar" inherit_id="website.layout"
+              name="Purchase Journey: tracking bar">
+        <xpath expr="//header[@id='top']" position="after">
+            <t t-set="journey_active_order" t-value="website._journey_track_bar_order()"/>
+            <!-- A slim strip the full width of the page, under the menu -->
+            <a t-if="journey_active_order" t-att-href="journey_active_order._journey_track_url()"
+               class="d-block text-decoration-none o_journey_track_bar">
+                <div class="container d-flex align-items-center gap-2 py-2">
+                    <i class="fa fa-truck" role="presentation"/>
+                    <span class="flex-grow-1 min-w-0 text-truncate">
+                        <strong class="o_journey_track_stage" t-out="journey_active_order._journey_track_stage()"/>
+                        · Order <t t-out="journey_active_order.name"/>
+                        <span t-if="journey_active_order.delivery_promise_date_label" class="d-none d-sm-inline">
+                            · <t t-out="journey_active_order.delivery_promise_date_label"/>
+                        </span>
+                    </span>
+                    <span class="fw-semibold text-nowrap">Track <i class="fa fa-angle-right ms-1" role="presentation"/></span>
+                </div>
+            </a>
+        </xpath>
+    </template>
+</odoo>

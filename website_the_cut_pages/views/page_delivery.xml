@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Delivery & Pickup: areas, times, fees and free delivery come from the delivery methods -->
+    <template id="page_delivery" name="The Cut: Delivery &amp; Pickup">
+        <t t-call="website.layout">
+            <t t-set="additional_title">Delivery &amp; Pickup</t>
+            <t t-set="tc_anton" t-value="&quot;font-family: Anton, Impact, 'Arial Narrow', sans-serif;&quot;"/>
+            <t t-set="tc_h2" t-value="&quot;margin: 0 0 12px; font-family: Anton, Impact, 'Arial Narrow', sans-serif; font-weight: 400; font-size: 30px; letter-spacing: 0.02em; line-height: 1.1; color: #1B1414&quot;"/>
+            <t t-set="tc_tag" t-value="&quot;display: inline-block; padding: 3px 9px; font-family: Anton, Impact, 'Arial Narrow', sans-serif; font-size: 15px; letter-spacing: 0.05em; line-height: 1.35;&quot;"/>
+            <div id="wrap" class="tc-root" style="background: #FFFFFF; color: #1B1414">
+                <section style="background: #7E1416; color: #FFFFFF; border-top: 1px solid #94262A; overflow: hidden">
+                    <div style="max-width: 1120px; margin: 0 auto; padding: 56px 24px 64px; display: flex; flex-wrap: wrap; gap: 48px; align-items: center">
+                        <div style="flex: 999 1 440px; min-width: 0">
+                            <h1 style="margin: 0; font-family: 'Capture it', Impact, sans-serif; font-weight: 400; font-size: clamp(44px, 10vw, 76px); line-height: 1; color: #FFFFFF">DELIVERY &amp; PICKUP</h1>
+                            <p style="margin: 20px 0 0; max-width: 560px; font-size: 19px; color: #F3DCDC">
+                                <t t-if="tc['cutoff']">Order before <t t-out="tc['cutoff']"/> and your meat arrives chilled the same day, anywhere in Abu Dhabi.</t>
+                                Everywhere else in the UAE, we deliver the next afternoon.
+                            </p>
+                            <div t-if="tc['cutoff']" style="margin-top: 28px; display: inline-block; transform: rotate(-2deg); background: #F4C430; color: #1B1414; padding: 14px 22px; box-shadow: 4px 4px 0 #5A0E10">
+                                <span t-attf-style="display: block; #{tc_anton} font-size: 16px; letter-spacing: 0.06em">ORDER BEFORE <t t-out="tc['cutoff']"/></span>
+                                <span t-attf-style="display: block; #{tc_anton} font-size: 34px; line-height: 1.05; letter-spacing: 0.02em">DELIVERED TODAY</span>
+                            </div>
+                        </div>
+                        <div style="flex: 1 1 340px; min-width: 0; max-width: 480px; position: relative; display: flex; align-items: center; justify-content: center; min-height: 320px">
+                            <div aria-hidden="true" style="position: absolute; top: 12%; right: 4%; bottom: 12%; left: 8%; background: #F5A524; border-radius: 46% 54% 42% 58% / 58% 40% 60% 42%; transform: rotate(-6deg)"/>
+                            <img src="/website_the_cut_pages/static/src/img/delivery_scooter.webp" alt="The Cut delivery scooter" fetchpriority="high"
+                                 width="1000" height="677" style="position: relative; width: 108%; max-width: none; height: auto; display: block; transform: rotate(-8deg)"/>
+                        </div>
+                    </div>
+                </section>
+
+                <div style="max-width: 1120px; margin: 0 auto; padding: 56px 24px 16px">
+                    <h2 t-att-style="tc_h2">WHERE WE DELIVER</h2>
+                    <div style="border: 1px solid #E9E1DF; border-top: 3px solid #1B1414">
+                        <div t-foreach="tc['rows']" t-as="row" class="tc-delivery-row"
+                             style="display: flex; flex-wrap: wrap; gap: 14px 24px; padding: 20px; border-top: 1px solid #E9E1DF">
+                            <div t-attf-style="flex: 2 1 230px; min-width: 0; #{tc_anton} font-size: 21px; letter-spacing: 0.02em">
+                                <t t-out="row['name'].upper()"/>
+                                <t t-if="row['note']"><br/><span style="font-family: Figtree, system-ui, sans-serif; font-size: 14px; color: #4E4343; letter-spacing: 0" t-out="row['note']"/></t>
+                            </div>
+                            <div style="flex: 2 1 230px; min-width: 0">
+                                <span style="display: block; font-size: 13px; color: #4E4343; margin-bottom: 4px">When it arrives</span>
+                                <span t-if="row['same_day']" t-attf-style="#{tc_tag} background: #F4C430; color: #1B1414">SAME DAY</span>
+                                <span t-else="" t-attf-style="#{tc_tag} background: #FFFFFF; color: #7E1416; outline: 2px solid #7E1416; outline-offset: -2px">NEXT DAY</span>
+                                <div style="margin-top: 6px; font-size: 15px; color: #2E2626" t-out="row['detail']"/>
+                            </div>
+                            <div style="flex: 1 1 110px; min-width: 0">
+                                <t t-if="row['fee']">
+                                    <span style="display: block; font-size: 13px; color: #4E4343; margin-bottom: 4px">Delivery fee</span>
+                                    <span t-attf-style="#{tc_anton} font-size: 21px" t-out="row['fee']"/>
+                                </t>
+                            </div>
+                            <div style="flex: 1 1 160px; min-width: 0">
+                                <t t-if="row['free']">
+                                    <span style="display: block; font-size: 13px; color: #4E4343; margin-bottom: 4px">Free delivery</span>
+                                    <span t-attf-style="#{tc_tag} background: #2E7D32; color: #FFFFFF" t-out="row['free']"/>
+                                </t>
+                            </div>
+                        </div>
+                    </div>
+                    <p style="margin: 14px 0 0; font-size: 15px; color: #4E4343">
+                        <t t-if="tc['opening']">Our shop is open <t t-out="tc['opening']"/> to <t t-out="tc['closing']"/>, <t t-out="tc['open_days']"/>.</t>
+                        <t t-if="tc['cutoff']">Orders placed after <t t-out="tc['cutoff']"/> are delivered the next afternoon.</t>
+                        <t t-if="tc['opening'] and tc['same_day_hours']">Ordering overnight? Your order goes out the same day, within <t t-out="tc['same_day_hours']"/> of our <t t-out="tc['opening']"/> opening.</t>
+                    </p>
+                </div>
+
+                <div style="max-width: 1120px; margin: 0 auto; padding: 40px 24px; display: flex; flex-wrap: wrap; gap: 48px">
+                    <div style="flex: 1 1 320px; min-width: 0">
+                        <h2 t-att-style="tc_h2">HOW YOUR ORDER TRAVELS</h2>
+                        <div style="margin-bottom: 12px; display: flex; flex-wrap: wrap; gap: 8px">
+                            <span t-attf-style="#{tc_tag} background: #7E1416; color: #FFFFFF">CHILLED</span>
+                            <span t-attf-style="#{tc_tag} background: #1B1414; color: #FFFFFF">SEALED BOX</span>
+                            <span t-attf-style="#{tc_tag} background: #FFFFFF; color: #7E1416; outline: 2px solid #7E1416; outline-offset: -2px">VACUUM-SEALED CUTS</span>
+                        </div>
+                        <p style="margin: 0; color: #2E2626">Every order is packed in a sealed, insulated box to keep it chilled all the way to you, and many cuts are vacuum-sealed for freshness.</p>
+                    </div>
+                    <div style="flex: 1 1 320px; min-width: 0">
+                        <h2 t-att-style="tc_h2">RECEIVING YOUR ORDER</h2>
+                        <p style="margin: 0; color: #2E2626">It’s best to have someone there to receive your order. If no one is available, the order is left at your door and should be taken in as soon as possible to keep it chilled. Once it’s left at the door, keeping it safe is your responsibility.</p>
+                        <p style="margin: 12px 0 0; color: #2E2626">Someone else receiving it? Add their name and mobile number in the order note before you pay.</p>
+                    </div>
+                </div>
+
+                <div style="max-width: 1120px; margin: 0 auto; padding: 0 24px 40px; display: flex; flex-wrap: wrap; gap: 48px">
+                    <div style="flex: 1 1 320px; min-width: 0">
+                        <h2 t-att-style="tc_h2">NEED TO CANCEL?</h2>
+                        <p style="margin: 0; color: #2E2626">
+                            <t t-if="tc['whatsapp']">Call or WhatsApp us on <a t-att-href="tc['whatsapp_url'] or None" t-out="tc['whatsapp']"/> before your order leaves for delivery, and we’ll cancel it.</t>
+                            <t t-else="">Contact us before your order leaves for delivery, and we’ll cancel it.</t>
+                            Once it’s on its way, it can’t be cancelled.
+                        </p>
+                    </div>
+                    <div style="flex: 1 1 320px; min-width: 0">
+                        <h2 t-att-style="tc_h2">RECEIVED THE WRONG ITEM?</h2>
+                        <p style="margin: 0; color: #2E2626">Tell us as soon as you receive your order. If we sent the wrong item, we’ll collect it and deliver the right one at no cost to you, as long as it’s unopened and has been kept chilled. <a href="/terms">See our Terms of Sale</a>.</p>
+                        <p t-if="tc['damaged_box_note']" style="margin: 12px 0 0; color: #2E2626">If the box arrives damaged, please tell us when you receive it.</p>
+                    </div>
+                </div>
+
+                <div style="max-width: 1120px; margin: 0 auto; padding: 0 24px 64px">
+                    <div style="background: #7E1416; color: #FFFFFF; padding: 56px 40px; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 18px">
+                        <h2 style="margin: 0; font-family: 'Capture it', Impact, sans-serif; font-weight: 400; font-size: clamp(36px, 9vw, 56px); line-height: 1; color: #FFFFFF">READY TO ORDER?</h2>
+                        <p style="margin: 0; max-width: 560px; font-size: 18px; color: #F3DCDC">
+                            Same day across Abu Dhabi<t t-if="tc['pickup_free'] and tc['address']">, or pick up for free from <t t-out="tc['address']"/></t>.
+                            <t t-if="tc['opening']">Open <t t-out="tc['opening']"/> to <t t-out="tc['closing']"/>, <t t-out="tc['open_days']"/>.</t>
+                        </p>
+                        <a href="/shop" style="margin-top: 8px; display: inline-flex; align-items: center; justify-content: center; padding: 18px 56px; min-height: 64px; box-sizing: border-box; background: #FFFFFF; color: #7E1416; text-decoration: none; font-family: Anton, Impact, 'Arial Narrow', sans-serif; font-size: 30px; letter-spacing: 0.05em; border-radius: 40px; box-shadow: 0 6px 0 #5A0E10">ORDER NOW</a>
+                    </div>
+                </div>
+            </div>
+        </t>
+    </template>
+</odoo>

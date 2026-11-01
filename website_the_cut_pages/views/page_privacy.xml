@@ -1,0 +1,113 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Privacy Policy: eight sections, collapsed until clicked (BRD 3.1) -->
+    <template id="page_privacy" name="The Cut: Privacy Policy">
+        <t t-call="website.layout">
+            <t t-set="additional_title">Privacy Policy</t>
+            <t t-set="tc_list" t-value="'margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 8px; color: #2E2626'"/>
+            <div id="wrap" class="tc-root" style="background: #FFFFFF; color: #1B1414">
+                <t t-call="website_the_cut_pages.policy_header">
+                    <t t-set="tc_title">PRIVACY POLICY</t>
+                    <t t-set="tc_intro">What we collect when you shop with us, how we use it, and the choices you have.</t>
+                </t>
+                <div style="max-width: 760px; margin: 0 auto; padding: 48px 24px 64px">
+                    <p t-if="tc['policies_date']" style="margin: 0 0 20px; color: #4E4343">Last updated <t t-out="tc['policies_date']"/></p>
+                    <p style="margin: 0 0 12px; font-size: 18px; color: #2E2626">This policy applies to The Cut, operated by Excellence Meats L.L.C., Abu Dhabi.</p>
+                    <t t-call="website_the_cut_pages.policy_section">
+                        <t t-set="tc_heading">1. INFORMATION WE COLLECT</t>
+                        <ul t-att-style="tc_list">
+                            <li><b>Your details:</b> your name, email address and mobile number, whether you create an account or check out as a guest.</li>
+                            <li><b>Delivery details:</b> your delivery addresses, including building, apartment, map location, the receiver’s name and mobile number, and any delivery instructions.</li>
+                            <li><b>Order details:</b> the products you order, your order history, coupons used, and messages you send us.</li>
+                            <li><b>Sign-in providers:</b> if you sign in with Google or another provider, we receive your name and email address from that provider.</li>
+                            <li><b>Location:</b> with your permission, your browser shares your location so we can show delivery options and times for your area.</li>
+                            <li><b>Payment information:</b> payments are processed by our payment provider, Stripe. We do not store your full card number.</li>
+                            <li><b>How you use our website:</b> we use cookies and similar tools to keep you signed in, remember your cart, understand how pages are used (such as clicks and scrolling), and measure our advertising. Some are set by our advertising and analytics partners, for example Meta. You can manage cookies in your browser settings.</li>
+                        </ul>
+                    </t>
+                    <t t-call="website_the_cut_pages.policy_section">
+                        <t t-set="tc_heading">2. HOW WE USE YOUR INFORMATION</t>
+                        <ul t-att-style="tc_list">
+                            <li>To prepare and deliver your orders, and to tell you about their status.</li>
+                            <li>To show you delivery options, times and fees for your location.</li>
+                            <li>To manage your account, saved addresses, coupons and order history.</li>
+                            <li>To contact you about your order by email, phone or WhatsApp.</li>
+                            <li>To send you offers and news, only if you agreed to receive them. You can unsubscribe at any time using the link in our emails.</li>
+                            <li>To improve our website, our service and our advertising.</li>
+                            <li>To prevent fraud and meet our legal obligations.</li>
+                        </ul>
+                    </t>
+                    <t t-call="website_the_cut_pages.policy_section">
+                        <t t-set="tc_heading">3. WHO WE SHARE IT WITH</t>
+                        <ul t-att-style="tc_list">
+                            <li><b>Delivery partners:</b> your name, mobile number, address, map location and delivery instructions, so they can deliver your order.</li>
+                            <li><b>Payment provider:</b> to process your payment securely.</li>
+                            <li><b>Technology providers:</b> who host our website and send our emails, under our instructions.</li>
+                            <li><b>Advertising and analytics partners:</b> to measure our ads and improve the shopping experience.</li>
+                            <li><b>Authorities:</b> where the law requires it.</li>
+                        </ul>
+                        <p style="margin: 12px 0 0; color: #2E2626">We do not sell your personal information.</p>
+                    </t>
+                    <t t-call="website_the_cut_pages.policy_section">
+                        <t t-set="tc_heading">4. HOW LONG WE KEEP IT</t>
+                        <p style="margin: 0; color: #2E2626">We keep your account and order information while your account is active, and afterwards for as long as we need it for accounting, tax and legal purposes<t t-if="tc['retention']"> (<t t-out="tc['retention']"/>)</t>.</p>
+                    </t>
+                    <t t-call="website_the_cut_pages.policy_section">
+                        <t t-set="tc_heading">5. HOW WE PROTECT IT</t>
+                        <p style="margin: 0; color: #2E2626">We use secure connections (HTTPS), access controls and other measures to protect your information.</p>
+                    </t>
+                    <t t-call="website_the_cut_pages.policy_section">
+                        <t t-set="tc_heading">6. YOUR CHOICES</t>
+                        <ul t-att-style="tc_list">
+                            <li>View and update your details and addresses in My Account.</li>
+                            <li>Ask us for a copy of your information, or ask us to correct or delete it.</li>
+                            <li>Delete your account from My Account, or by contacting us.</li>
+                            <li>Stop marketing messages at any time.</li>
+                        </ul>
+                        <p style="margin: 12px 0 0; color: #2E2626">We handle requests in line with UAE data protection law.</p>
+                    </t>
+                    <t t-call="website_the_cut_pages.policy_section">
+                        <t t-set="tc_heading">7. CHANGES TO THIS POLICY</t>
+                        <p style="margin: 0; color: #2E2626">When we update this policy, we post the new version on this page with a new date.</p>
+                    </t>
+                    <t t-call="website_the_cut_pages.policy_section">
+                        <t t-set="tc_heading">8. CONTACT US</t>
+                        <t t-call="website_the_cut_pages.policy_contact"><t t-set="tc_email" t-value="True"/></t>
+                    </t>
+                </div>
+            </div>
+        </t>
+    </template>
+
+    <!-- Red header of the Privacy Policy and the Terms of Sale -->
+    <template id="policy_header" name="The Cut: policy header">
+        <section style="background: #7E1416; color: #FFFFFF; border-top: 1px solid #94262A">
+            <div style="max-width: 1120px; margin: 0 auto; padding: 56px 24px 64px">
+                <h1 style="margin: 0; font-family: 'Capture it', Impact, sans-serif; font-weight: 400; font-size: clamp(40px, 10vw, 72px); line-height: 1; color: #FFFFFF" t-out="tc_title"/>
+                <p style="margin: 20px 0 0; max-width: 620px; font-size: 19px; color: #F3DCDC" t-out="tc_intro"/>
+            </div>
+        </section>
+    </template>
+
+    <!-- A collapsed section of the Privacy Policy -->
+    <template id="policy_section" name="The Cut: policy section">
+        <details class="tc-policy-section" style="border-top: 1px solid #E9E1DF; padding: 18px 0">
+            <summary style="min-height: 44px; display: flex; align-items: center; justify-content: space-between; gap: 16px">
+                <h2 style="margin: 0; font-family: Anton, Impact, 'Arial Narrow', sans-serif; font-weight: 400; font-size: 30px; letter-spacing: 0.02em; line-height: 1.1; color: #1B1414" t-out="tc_heading"/>
+                <svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#7E1416" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="flex: none"><path d="M6 9l6 6 6-6"/></svg>
+            </summary>
+            <div style="padding-top: 12px">
+                <t t-out="0"/>
+            </div>
+        </details>
+    </template>
+
+    <!-- Contact lines of the Privacy Policy and the Terms of Sale (empty values left out) -->
+    <template id="policy_contact" name="The Cut: policy contact">
+        <p style="margin: 0; color: #2E2626">
+            <t t-if="tc_email and tc['care_email']">Email: <a t-attf-href="mailto:#{tc['care_email']}" t-out="tc['care_email']"/><br/></t>
+            <t t-if="tc['whatsapp']">Phone and WhatsApp: <a t-att-href="tc['whatsapp_url'] or None" t-out="tc['whatsapp']"/><br/></t>
+            <t t-if="tc['address']"><t t-out="tc['address']"/>, UAE</t>
+        </p>
+    </template>
+</odoo>

@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <menuitem id="menu_online_orders_root" name="Online Orders" sequence="6"
+              web_icon="online_orders,static/description/icon.png"
+              groups="group_online_orders_sales"/>
+
+    <menuitem id="menu_online_orders_board" name="Orders Board" sequence="10"
+              parent="menu_online_orders_root" action="action_online_orders_board"/>
+    <menuitem id="menu_online_orders_customers" name="Customers" sequence="20"
+              parent="menu_online_orders_root" action="contacts.action_contacts"/>
+
+    <menuitem id="menu_online_orders_reporting" name="Reporting" sequence="30"
+              parent="menu_online_orders_root"
+              groups="group_online_orders_marketing,group_online_orders_management"/>
+    <menuitem id="menu_online_orders_quality" name="Delivery Quality" sequence="10"
+              parent="menu_online_orders_reporting" action="action_online_orders_quality"
+              groups="group_online_orders_marketing,group_online_orders_management"/>
+    <menuitem id="menu_online_orders_cancellations" name="Cancellations by Reason" sequence="20"
+              parent="menu_online_orders_reporting" action="action_online_orders_cancellations"
+              groups="group_online_orders_marketing,group_online_orders_management"/>
+
+    <menuitem id="menu_online_orders_config" name="Configuration" sequence="90"
+              parent="menu_online_orders_root"
+              groups="group_online_orders_marketing,group_online_orders_management"/>
+    <menuitem id="menu_online_orders_stages" name="Stages" sequence="10"
+              parent="menu_online_orders_config" action="action_online_order_stages"
+              groups="group_online_orders_management"/>
+    <menuitem id="menu_online_orders_templates" name="Email Templates" sequence="20"
+              parent="menu_online_orders_config" action="action_online_orders_mail_templates"
+              groups="group_online_orders_marketing"/>
+</odoo>

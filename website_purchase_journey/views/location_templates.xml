@@ -1,0 +1,164 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- "Deliver to" bar at the top of the site (Annex 3 C2 / D3) -->
+    <template id="layout_location_bar" inherit_id="website.layout" name="Purchase Journey: Deliver to bar">
+        <xpath expr="//header[@id='top']" position="before">
+            <t t-if="website._journey_show_location_bar()">
+                <t t-set="location" t-value="website._journey_location_values()"/>
+                <div class="o_journey_location_bar"
+                     t-att-data-has-location="'1' if location['has_location'] else '0'"
+                     t-att-data-api-key="website._geo_google_maps_key()">
+                    <div class="o_journey_location_content">
+                        <t t-call="website_purchase_journey.location_bar_content"/>
+                    </div>
+                    <t t-call="website_purchase_journey.location_picker"/>
+                </div>
+            </t>
+        </xpath>
+        <!-- The "Choose weight" sheet, for the product cards of any page -->
+        <xpath expr="//main" position="after">
+            <t t-if="website.journey_enabled" t-call="website_purchase_journey.weight_sheet"/>
+            <!-- "View cart" button at the bottom right (updated by the cards) -->
+            <t t-set="journey_cart_bar" t-value="website._journey_cart_bar_values()"/>
+            <t t-if="journey_cart_bar is not None">
+                <a href="/shop/order" t-att-data-needs-address="'1' if journey_cart_bar['needs_address'] else '0'"
+                   t-attf-class="d-flex align-items-center gap-3 o_journey_cart_bar #{'' if journey_cart_bar['quantity'] else 'd-none'}">
+                    <span>View cart · <span class="o_journey_cart_bar_qty" t-out="journey_cart_bar['quantity']"/>
+                        <span class="o_journey_cart_bar_items"><t t-if="journey_cart_bar['quantity'] == 1">item</t><t t-else="">items</t></span></span>
+                    <span class="o_journey_cart_bar_amount" t-out="journey_cart_bar['amount']"/>
+                </a>
+                <t t-call="website_purchase_journey.address_sheet"/>
+            </t>
+        </xpath>
+    </template>
+
+    <!-- "Address details" (v2 prototype): View cart asks for the delivery address
+         first when the cart has none; Change / Add on the order page open it too.
+         The pin is the one of the "Deliver to" bar, the building comes from the map. -->
+    <template id="address_sheet" name="Purchase Journey: Address details">
+        <t t-set="sheet" t-value="website._journey_address_sheet_values()"/>
+        <div class="modal fade o_journey_address_modal" tabindex="-1" aria-labelledby="o_journey_address_title" aria-hidden="true"
+             t-att-data-api-key="website._geo_google_maps_key()">
+            <div class="modal-dialog">
+                <form class="modal-content o_journey_address_form" novalidate="novalidate">
+                    <h3 class="o_journey_sheet_title" id="o_journey_address_title">Address details</h3>
+                    <p class="o_journey_sheet_sub">The building is filled from the pin. Edit it if needed.</p>
+                    <div class="o_journey_minimap">
+                        <t t-call="website_purchase_journey.pin_icon"/>
+                        <b class="text-truncate o_journey_address_area">
+                            <t t-if="sheet['latitude']" t-out="sheet['area']"/>
+                            <t t-else="">Set your delivery location</t>
+                        </b>
+                        <button t-if="website._journey_show_location_bar()" type="button" class="o_journey_link o_journey_address_edit_pin">
+                            <t t-if="sheet['latitude']">Edit pin</t>
+                            <t t-else="">Set pin</t>
+                        </button>
+                    </div>
+                    <div class="o_journey_field_error" data-field="pin"/>
+
+                    <div class="o_journey_sheet_chips" role="radiogroup" aria-label="Label">
+                        <t t-foreach="[('home', 'Home'), ('work', 'Work'), ('other', 'Other')]" t-as="label">
+                            <input type="radio" class="btn-check" name="label" t-att-value="label[0]"
+                                   t-att-id="'o_journey_address_label_%s' % label[0]" t-att-checked="label[0] == 'home' or None"/>
+                            <label class="o_journey_sheet_chip" t-att-for="'o_journey_address_label_%s' % label[0]" t-out="label[1]"/>
+                        </t>
+                    </div>
+
+                    <div class="o_journey_field">
+                        <label for="o_journey_address_apartment">Apartment &amp; floor / villa no. (required)</label>
+                        <input id="o_journey_address_apartment" name="apartment" type="text"
+                               placeholder="e.g. Apt 1204, Floor 12" maxlength="120" autocomplete="address-line2"/>
+                        <div class="o_journey_field_error" data-field="apartment"/>
+                    </div>
+                    <div class="o_journey_field">
+                        <label for="o_journey_address_building">Building / tower name (required)</label>
+                        <input id="o_journey_address_building" name="building" type="text" maxlength="120" autocomplete="address-line1"/>
+                        <div class="o_journey_field_error" data-field="building"/>
+                    </div>
+                    <div class="o_journey_field">
+                        <label for="o_journey_address_directions">Directions to reach (optional)</label>
+                        <input id="o_journey_address_directions" name="directions" type="text"
+                               placeholder="Entrance, parking, landmark" maxlength="1000"/>
+                    </div>
+                    <div class="o_journey_field">
+                        <label for="o_journey_address_name">Receiver name</label>
+                        <input id="o_journey_address_name" name="name" type="text"
+                               t-att-value="sheet['name']" maxlength="120" autocomplete="name"/>
+                        <div class="o_journey_field_error" data-field="name"/>
+                    </div>
+                    <div class="o_journey_field">
+                        <label for="o_journey_address_phone">Receiver mobile</label>
+                        <input id="o_journey_address_phone" name="phone" type="tel" inputmode="tel"
+                               t-att-value="sheet['phone']" maxlength="120" autocomplete="tel"/>
+                        <div class="o_journey_field_error" data-field="phone"/>
+                    </div>
+
+                    <!-- The address being changed (empty: a new one) and its pin -->
+                    <input type="hidden" name="partner_id"/>
+                    <input type="hidden" name="latitude" t-att-value="sheet['latitude']"/>
+                    <input type="hidden" name="longitude" t-att-value="sheet['longitude']"/>
+                    <!-- From the map: area, city, emirate, country of the pin -->
+                    <input type="hidden" name="area" t-att-value="sheet['area']"/>
+                    <input type="hidden" name="city"/>
+                    <input type="hidden" name="state"/>
+                    <input type="hidden" name="country_code"/>
+                    <div class="o_journey_sheet_msg d-none o_journey_address_error" role="alert"/>
+                    <button type="submit" class="o_journey_sheet_btn o_journey_address_save">Save address</button>
+                </form>
+            </div>
+        </div>
+    </template>
+
+    <template id="pin_icon" name="Purchase Journey: pin icon">
+        <svg class="o_journey_pin_icon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+            <path d="M12 2a7 7 0 0 0-7 7c0 5.2 7 13 7 13s7-7.8 7-13a7 7 0 0 0-7-7zm0 9.5a2.5 2.5 0 1 1 0-5 2.5 2.5 0 0 1 0 5z"/>
+        </svg>
+    </template>
+
+    <template id="location_bar_content" name="Purchase Journey: Deliver to bar content">
+        <div class="container d-flex flex-wrap align-items-center column-gap-2 py-1 small">
+            <i class="fa fa-map-marker" role="presentation"/>
+            <button type="button" class="btn btn-link btn-sm p-0 text-reset text-start o_journey_change text-truncate o_journey_area">
+                <t t-if="location['has_location']">Deliver to <strong t-out="location['area']"/></t>
+                <t t-else="">Deliver to: <strong>set your location</strong></t>
+                <i class="fa fa-angle-down ms-1" role="presentation"/>
+            </button>
+            <span t-attf-class="text-truncate o_journey_promise #{'text-danger' if location['has_location'] and not location['zone_found'] else ''}"
+                  t-out="location['message']"/>
+        </div>
+    </template>
+
+    <template id="location_picker" name="Purchase Journey: location picker">
+        <div class="modal fade o_journey_location_modal" tabindex="-1" aria-labelledby="o_journey_location_title" aria-hidden="true">
+            <div class="modal-dialog modal-lg modal-dialog-centered modal-fullscreen-sm-down">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="o_journey_location_title">Where should we deliver?</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"/>
+                    </div>
+                    <div class="modal-body">
+                        <div class="input-group mb-2">
+                            <input type="text" class="form-control o_journey_search" placeholder="Search area, street or landmark"/>
+                            <button type="button" class="btn btn-primary o_journey_search_btn" title="Search" aria-label="Search">
+                                <i class="fa fa-search"/>
+                            </button>
+                        </div>
+                        <button type="button" class="btn btn-outline-primary btn-sm mb-2 o_journey_locate">
+                            <i class="fa fa-crosshairs me-1" role="presentation"/>Use my current location
+                        </button>
+                        <div class="o_journey_map_wrap position-relative">
+                            <div class="o_journey_map"/>
+                            <div class="o_journey_center_pin" aria-hidden="true"><i class="fa fa-map-marker"/></div>
+                        </div>
+                        <div class="o_journey_location_message alert mt-2 mb-0 d-none" role="status"/>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-primary w-100 o_journey_confirm" disabled="disabled">
+                            Confirm location
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </template>
+</odoo>

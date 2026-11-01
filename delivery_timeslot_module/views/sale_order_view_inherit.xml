@@ -14,6 +14,10 @@
                             Expected: <field name="expected_date" class="oe_inline" widget="date"/>
                         </span>
                     </div>
+                    <field name="delivery_promise_message" invisible="not delivery_promise_message"/>
+                    <field name="delivery_promise_type" invisible="not delivery_promise_type"/>
+                    <field name="delivery_promise_from" invisible="not delivery_promise_from"/>
+                    <field name="delivery_promise_until" invisible="not delivery_promise_until"/>
                 </xpath>
 
             </field>

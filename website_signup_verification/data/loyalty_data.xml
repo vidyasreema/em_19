@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- The sign-up coupon (Annex 3A note and task 5): its own programme with a
+         fixed code; the rate and the minimum are read from here, not from the code. -->
+    <data noupdate="1">
+        <record id="loyalty_program_signup_coupon" model="loyalty.program">
+            <field name="name">Sign-up 10%</field>
+            <field name="program_type">promo_code</field>
+            <field name="trigger">with_code</field>
+            <field name="applies_on">current</field>
+            <field name="rule_ids" eval="[(5, 0, 0), (0, 0, {'mode': 'with_code', 'code': 'SIGNUP10', 'minimum_amount': 0.0})]"/>
+            <field name="reward_ids" eval="[(5, 0, 0), (0, 0, {
+                'reward_type': 'discount',
+                'discount': 10.0,
+                'discount_mode': 'percent',
+                'discount_applicability': 'order',
+                'description': '10% off (sign-up)',
+            })]"/>
+        </record>
+    </data>
+    <!-- Websites without a sign-up coupon get this one (kept if one was chosen) -->
+    <function model="website" name="_signup_set_default_coupon_program"/>
+</odoo>

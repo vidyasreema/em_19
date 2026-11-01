@@ -48,8 +48,11 @@ class SaleOrder(models.Model):
         return result
 
     def _get_first_order_reward_programs(self):
+        """First-order promotions applied on this order. A next-order coupon is not
+        one: only earning it is limited to the first order, not using it."""
         self.ensure_one()
-        return self.order_line.reward_id.program_id.filtered('first_order_only')
+        return self.order_line.reward_id.program_id.filtered(
+            lambda p: p.first_order_only and p.applies_on != 'future')
 
     def _update_programs_and_rewards(self):
         programs_before = {order: order._get_first_order_reward_programs() for order in self}
@@ -76,6 +79,7 @@ class SaleOrder(models.Model):
         programs = Program.search(Domain.AND([self._get_program_domain(), [
             ('first_order_only', '=', True),
             ('trigger', '=', 'auto'),
+            ('applies_on', '!=', 'future'),
         ]]))
         if not programs:
             return Program
@@ -103,9 +107,7 @@ class SaleOrder(models.Model):
         # the online payment, so blocking there would leave a paid, unconfirmed
         # order; their rewards are already re-checked before the payment step.
         for order in self.filtered(lambda o: not o.website_id):
-            first_order_rewards = order.order_line.filtered(
-                lambda l: l.reward_id and l.reward_id.program_id.first_order_only)
-            if first_order_rewards and not order._is_first_order():
+            if order._get_first_order_reward_programs() and not order._is_first_order():
                 raise UserError(_(
                     "Order %s contains a first-order promotion, but the customer "
                     "already has a confirmed order. Please update the rewards first.",

@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_stock_move_carton_list" model="ir.ui.view">
+        <field name="name">stock.move.carton.list</field>
+        <field name="model">stock.move.carton</field>
+        <field name="arch" type="xml">
+            <list string="Cartons" editable="bottom" decoration-muted="state in ('done', 'cancel')">
+                <field name="move_id" column_invisible="True"/>
+                <field name="state" column_invisible="True"/>
+                <field name="sequence" widget="handle"/>
+                <field name="barcode" placeholder="Scan or type; empty = generated at receipt" required="0"/>
+                <field name="barcode_type"/>
+                <field name="carton_number" optional="hide"/>
+                <field name="quantity" sum="Total"/>
+                <field name="product_uom_id" groups="uom.group_uom"/>
+                <field name="carton_count" sum="Total"/>
+                <field name="pack_date"/>
+                <field name="pack_date_estimated" optional="show"/>
+                <field name="alert_date"/>
+                <field name="alert_date_manual" optional="show"/>
+                <field name="register_id" optional="hide"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_stock_move_carton_picking_list" model="ir.ui.view">
+        <field name="name">stock.move.carton.picking.list</field>
+        <field name="model">stock.move.carton</field>
+        <field name="arch" type="xml">
+            <list string="Cartons" create="0" edit="0" default_group_by="product_id">
+                <field name="product_id"/>
+                <field name="barcode"/>
+                <field name="barcode_type"/>
+                <field name="quantity" sum="Total"/>
+                <field name="product_uom_id" groups="uom.group_uom"/>
+                <field name="carton_count" sum="Total"/>
+                <field name="pack_date"/>
+                <field name="pack_date_estimated" optional="show"/>
+                <field name="alert_date"/>
+                <field name="alert_date_manual" optional="hide"/>
+                <field name="register_id" optional="show"/>
+            </list>
+        </field>
+    </record>
+</odoo>

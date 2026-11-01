@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_picking_form_barcode_register" model="ir.ui.view">
+        <field name="name">stock.picking.form.barcode.register</field>
+        <field name="model">stock.picking</field>
+        <field name="inherit_id" ref="stock.view_picking_form"/>
+        <field name="arch" type="xml">
+            <field name="partner_id" position="attributes">
+                <attribute name="required">picking_type_code == 'incoming'</attribute>
+            </field>
+            <field name="partner_id" position="after">
+                <field name="vendor_scan_requirement" invisible="1"/>
+                <div class="text-muted small" colspan="2" invisible="picking_type_code != 'incoming' or not vendor_barcode_hint">
+                    <i class="fa fa-barcode me-1"/>Expected barcode type: <field name="vendor_barcode_hint" class="oe_inline" readonly="1"/>
+                    <span invisible="vendor_scan_requirement != 'required'"> · cartons required on every line</span>
+                    <span invisible="vendor_scan_requirement != 'warning'"> · warning on lines without cartons</span>
+                </div>
+            </field>
+            <div name="button_box" position="inside">
+                <button name="action_open_scanned_cartons" type="object" class="oe_stat_button" icon="fa-barcode"
+                        invisible="not scanned_carton_count">
+                    <field name="scanned_carton_count" widget="statinfo" string="Cartons"/>
+                </button>
+            </div>
+            <xpath expr="//header" position="inside">
+                <button name="action_create_product" string="New Product" type="object"
+                        groups="stock_barcode_register.group_barcode_product_creator"
+                        invisible="picking_type_code != 'incoming' or state in ('done', 'cancel')"/>
+                <button name="action_export_cartons_xlsx" string="Export Cartons" type="object"
+                        invisible="picking_type_code not in ('incoming', 'internal', 'outgoing')"/>
+            </xpath>
+            <field name="picking_type_id" position="after">
+                <div class="o_td_label" invisible="picking_type_code not in ('incoming', 'internal', 'outgoing')">
+                    <label for="employee_id" string="Received by" style="font-weight:bold;"
+                           invisible="picking_type_code != 'incoming'"/>
+                    <label for="employee_id" string="Transferred by" style="font-weight:bold;"
+                           invisible="picking_type_code != 'internal'"/>
+                    <label for="employee_id" string="Delivered by" style="font-weight:bold;"
+                           invisible="picking_type_code != 'outgoing'"/>
+                </div>
+                <field name="employee_id" nolabel="1"
+                       invisible="picking_type_code not in ('incoming', 'internal', 'outgoing')"
+                       required="picking_type_code in ('incoming', 'internal', 'outgoing') and state not in ('cancel', 'done')"
+                       readonly="state in ('cancel', 'done')"
+                       options="{'no_create': True}"/>
+                <field name="vendor_invoice_ref"
+                       invisible="picking_type_code != 'incoming'"
+                       required="picking_type_code == 'incoming' and state not in ('cancel', 'done')"
+                       readonly="state in ('cancel', 'done')"/>
+            </field>
+            <xpath expr="//field[@name='move_ids']/list/field[@name='quantity']" position="after">
+                <field name="carton_count" string="Cartons" optional="show" column_invisible="parent.state == 'draft'"/>
+                <field name="barcode_above_tolerance" column_invisible="True"/>
+                <field name="barcode_difference" string="Diff. %" optional="show" column_invisible="parent.state == 'draft'"
+                       decoration-danger="barcode_above_tolerance"/>
+                <field name="barcode_note" optional="show"/>
+                <field name="photo_count" column_invisible="True"/>
+                <widget name="carton_scan_button"/>
+                <widget name="carton_photos"/>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="vpicktree_barcode_register" model="ir.ui.view">
+        <field name="name">stock.picking.list.barcode.register</field>
+        <field name="model">stock.picking</field>
+        <field name="inherit_id" ref="stock.vpicktree"/>
+        <field name="arch" type="xml">
+            <field name="origin" position="after">
+                <field name="vendor_invoice_ref" optional="show"/>
+                <field name="employee_id" optional="hide"/>
+            </field>
+        </field>
+    </record>
+
+    <record id="view_picking_internal_search_barcode_register" model="ir.ui.view">
+        <field name="name">stock.picking.search.barcode.register</field>
+        <field name="model">stock.picking</field>
+        <field name="inherit_id" ref="stock.view_picking_internal_search"/>
+        <field name="arch" type="xml">
+            <field name="origin" position="after">
+                <field name="vendor_invoice_ref"/>
+                <field name="employee_id"/>
+            </field>
+        </field>
+    </record>
+</odoo>
