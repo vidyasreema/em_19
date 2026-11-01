@@ -64,7 +64,7 @@
         <t t-out="object.partner_shipping_id.name or ''">Sara</t> · <t t-out="object.partner_shipping_id.contact_address_inline or ''">Tower A, Abu Dhabi</t>
     </p>
     <p style="margin: 20px 0 4px 0; text-align: center;">
-        <a t-att-href="object.get_portal_url()" style="display: inline-block; padding: 12px 26px; background-color: #7A1F2B; color: #ffffff; border-radius: 24px; text-decoration: none; font-weight: bold;">View my order</a>
+        <a t-att-href="object.get_portal_url()" style="display: inline-block; padding: 12px 26px; background-color: #7E1416; color: #ffffff; border-radius: 24px; text-decoration: none; font-weight: bold;">View my order</a>
     </p>
 </div>
             </field>
@@ -98,7 +98,7 @@
         <t t-out="object.partner_shipping_id.name or ''">Sara</t> · <t t-out="object.partner_shipping_id.contact_address_inline or ''">Tower A, Abu Dhabi</t>
     </p>
     <p style="margin: 20px 0 4px 0; text-align: center;">
-        <a t-att-href="object.get_portal_url()" style="display: inline-block; padding: 12px 26px; background-color: #7A1F2B; color: #ffffff; border-radius: 24px; text-decoration: none; font-weight: bold;">Track my order</a>
+        <a t-att-href="object.get_portal_url()" style="display: inline-block; padding: 12px 26px; background-color: #7E1416; color: #ffffff; border-radius: 24px; text-decoration: none; font-weight: bold;">Track my order</a>
     </p>
 </div>
             </field>
@@ -126,12 +126,12 @@
     </p>
     <t t-if="object.online_next_order_coupons">
         <p style="margin: 0 0 8px 0; font-weight: bold;">A coupon for your next order</p>
-        <div style="margin: 0 0 16px 0; padding: 14px 0; background-color: #F6E9EA; border: 1px dashed #7A1F2B; border-radius: 12px; text-align: center; font-size: 22px; font-weight: bold; letter-spacing: 2px; color: #7A1F2B;"
+        <div style="margin: 0 0 16px 0; padding: 14px 0; background-color: #F6E9EA; border: 1px dashed #7E1416; border-radius: 12px; text-align: center; font-size: 22px; font-weight: bold; letter-spacing: 2px; color: #7E1416;"
              t-out="object.online_next_order_coupons">0444-50e1-4cb5</div>
         <p style="margin: 0 0 16px 0; font-size: 13px; color: #6A635E;">Enter this code on your next order, or find it in My coupons.</p>
     </t>
     <p style="margin: 20px 0 4px 0; text-align: center;">
-        <a href="/shop" style="display: inline-block; padding: 12px 26px; background-color: #7A1F2B; color: #ffffff; border-radius: 24px; text-decoration: none; font-weight: bold;">Order again</a>
+        <a href="/shop" style="display: inline-block; padding: 12px 26px; background-color: #7E1416; color: #ffffff; border-radius: 24px; text-decoration: none; font-weight: bold;">Order again</a>
     </p>
 </div>
             </field>
@@ -211,7 +211,7 @@
         follow your deliveries and find your coupons.
     </p>
     <p style="margin: 20px 0 4px 0; text-align: center;">
-        <a href="/shop" style="display: inline-block; padding: 12px 26px; background-color: #7A1F2B; color: #ffffff; border-radius: 24px; text-decoration: none; font-weight: bold;">Start shopping</a>
+        <a href="/shop" style="display: inline-block; padding: 12px 26px; background-color: #7E1416; color: #ffffff; border-radius: 24px; text-decoration: none; font-weight: bold;">Start shopping</a>
     </p>
 </div>
             </field>
@@ -238,7 +238,7 @@
         Choose your password to sign in.
     </p>
     <p style="margin: 20px 0 12px 0; text-align: center;">
-        <a t-att-href="object.partner_id._get_signup_url()" style="display: inline-block; padding: 12px 26px; background-color: #7A1F2B; color: #ffffff; border-radius: 24px; text-decoration: none; font-weight: bold;">Choose my password</a>
+        <a t-att-href="object.partner_id._get_signup_url()" style="display: inline-block; padding: 12px 26px; background-color: #7E1416; color: #ffffff; border-radius: 24px; text-decoration: none; font-weight: bold;">Choose my password</a>
     </p>
     <p style="margin: 0 0 4px 0; font-size: 13px; color: #6A635E;">
         The link is valid for <t t-out="int(int(object.env['ir.config_parameter'].sudo().get_param('auth_signup.signup.validity.hours', 144)) / 24)">6</t> days.
@@ -265,7 +265,7 @@
         <strong t-out="object.email or object.login or ''">sara@example.com</strong>.
     </p>
     <p style="margin: 20px 0 12px 0; text-align: center;">
-        <a t-att-href="object.partner_id._get_signup_url()" style="display: inline-block; padding: 12px 26px; background-color: #7A1F2B; color: #ffffff; border-radius: 24px; text-decoration: none; font-weight: bold;">Choose a new password</a>
+        <a t-att-href="object.partner_id._get_signup_url()" style="display: inline-block; padding: 12px 26px; background-color: #7E1416; color: #ffffff; border-radius: 24px; text-decoration: none; font-weight: bold;">Choose a new password</a>
     </p>
     <p style="margin: 0 0 4px 0; font-size: 13px; color: #6A635E;">
         The link is valid for <t t-out="object.env['ir.config_parameter'].sudo().get_param('auth_signup.reset_password.validity.hours', 4)">4</t> hours.
@@ -297,14 +297,14 @@
         Hello <t t-out="object._mail_get_customer().name or ''">Sara</t>, here is your coupon:
         <strong t-out="program.reward_ids[:1].description or program.name">10% on your order</strong>.
     </p>
-    <div style="margin: 0 0 12px 0; padding: 14px 0; background-color: #F6E9EA; border: 1px dashed #7A1F2B; border-radius: 12px; text-align: center; font-size: 22px; font-weight: bold; letter-spacing: 2px; color: #7A1F2B;"
+    <div style="margin: 0 0 12px 0; padding: 14px 0; background-color: #F6E9EA; border: 1px dashed #7E1416; border-radius: 12px; text-align: center; font-size: 22px; font-weight: bold; letter-spacing: 2px; color: #7E1416;"
          t-out="object.code">0444-50e1-4cb5</div>
     <p style="margin: 0 0 16px 0; font-size: 13px; color: #6A635E;">
         Enter this code on your order<t t-if="minimum"> (minimum <t t-out="format_amount(minimum, program.currency_id)">300.00 AED</t>)</t><t t-if="expiration">, before <t t-out="format_date(expiration)">31/12/2026</t></t>.
         You also find it in My coupons.
     </p>
     <p style="margin: 20px 0 4px 0; text-align: center;">
-        <a href="/shop" style="display: inline-block; padding: 12px 26px; background-color: #7A1F2B; color: #ffffff; border-radius: 24px; text-decoration: none; font-weight: bold;">Shop now</a>
+        <a href="/shop" style="display: inline-block; padding: 12px 26px; background-color: #7E1416; color: #ffffff; border-radius: 24px; text-decoration: none; font-weight: bold;">Shop now</a>
     </p>
 </div>
             </field>

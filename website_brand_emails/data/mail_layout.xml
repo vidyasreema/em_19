@@ -14,13 +14,13 @@
 <t t-set="brand_name" t-value="brand.name if brand else (company.name if company else '')"/>
 <div style="margin: 0; padding: 24px 12px; background-color: #EEEBE6; font-family: Arial, Helvetica, sans-serif; color: #1E1B19;">
     <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%"
-           style="max-width: 560px; margin: 0 auto; background-color: #ffffff; border-radius: 18px; border-top: 4px solid #7A1F2B; border-collapse: separate;">
+           style="max-width: 560px; margin: 0 auto; background-color: #ffffff; border-radius: 18px; border-top: 4px solid #7E1416; border-collapse: separate;">
         <tr>
             <td align="center" style="padding: 24px 24px 4px 24px;">
                 <t t-set="brand_logo_url" t-value="brand._brand_logo_url() if brand else ''"/>
                 <img t-if="brand_logo_url" t-att-src="brand_logo_url" t-att-alt="brand_name"
                      style="height: 64px; width: auto; border: 0;"/>
-                <div t-else="" style="font-size: 22px; font-weight: bold; color: #7A1F2B;" t-out="brand_name"/>
+                <div t-else="" style="font-size: 22px; font-weight: bold; color: #7E1416;" t-out="brand_name"/>
             </td>
         </tr>
         <tr>
@@ -33,7 +33,7 @@
                 <strong style="color: #1E1B19;" t-out="brand_name"/>
                 <t t-if="brand">
                     <br/>
-                    <a t-att-href="brand.get_base_url()" style="color: #7A1F2B; text-decoration: none;"
+                    <a t-att-href="brand.get_base_url()" style="color: #7E1416; text-decoration: none;"
                        t-out="brand.get_base_url().split('//')[-1]"/>
                     <t t-if="brand._brand_contact()"> · <t t-out="brand._brand_contact()"/></t>
                 </t>

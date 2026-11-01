@@ -8,7 +8,7 @@ from odoo.tests import new_test_user, tagged
 from odoo.addons.mail.tests.common import MockEmail
 from odoo.addons.online_orders.tests.common import OnlineOrdersCommon
 
-BRAND_MARK = 'border-top: 4px solid #7A1F2B'
+BRAND_MARK = 'border-top: 4px solid #7E1416'
 PNG = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg=='
 SVG = base64.b64encode(b'<svg xmlns="http://www.w3.org/2000/svg" width="10" height="10"></svg>')
 
