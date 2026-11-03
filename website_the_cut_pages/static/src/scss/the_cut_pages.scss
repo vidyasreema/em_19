@@ -226,3 +226,9 @@ body:has(#wrapwrap.tc-site) {
 @media (prefers-reduced-motion: reduce) {
     .tc-root .tc-anim { animation: none !important; }
 }
+
+// Product page: delivery line between "Terms and Conditions" and the specifications (Annex 3B, 3.1)
+.tc-product-delivery {
+    font-size: 15px;
+    color: #2E2626;
+}

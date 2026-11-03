@@ -130,6 +130,17 @@ class TestTheCutPages(HttpCase):
                           'product_id': self.island.product_id.copy().id})
         self.assertEqual(self._page('/delivery').count('class="tc-delivery-row"'), 5)
 
+    def test_product_page_delivery_line(self):
+        """Annex 3B, 3.1: the empty area of the product page gets the delivery line."""
+        product = self.env['product.template'].create({
+            'name': 'Wagyu Ribeye', 'list_price': 100.0, 'is_published': True, 'website_id': self.website.id})
+        line = 'Same-day delivery in Abu Dhabi for orders before 7 PM · Free pickup from our shop'
+        self.assertIn(line, self._page(product.website_url))
+        (self.island | self.off_island).promise_same_day_cutoff = 18.0
+        self.assertIn('orders before 6 PM', self._page(product.website_url))
+        self.pickup.is_published = False
+        self.assertNotIn('Free pickup', self._page(product.website_url))
+
     def test_10_privacy_collapsed(self):
         """Acceptance 10: the eight sections are collapsed and open when clicked."""
         page = self._page('/privacy')
@@ -154,7 +165,9 @@ class TestTheCutPages(HttpCase):
         page = self._page('/shop')
         self.assertIn('tc-header', page)
         self.assertIn('o_wsale_my_cart', page, "the cart stays in the header")
-        self.assertIn('<a href="/" aria-label="Home" title="Home">', page, "home icon")
+        self.assertIn('<a href="/">HOME</a>', page, "HOME tab first (Annex 3B, 2.1)")
+        self.assertLess(page.index('<a href="/">HOME</a>'), page.index('<a href="/shop">SHOP</a>'))
+        self.assertNotIn('fa-home', page, "no small home icon")
         self.assertIn('tc-footer', page)
         self.assertIn('tc-site', page, "colours, fonts and buttons of the new pages")
         self.assertIn('Same-day delivery in Abu Dhabi for orders before 7\N{NO-BREAK SPACE}PM', page, "Deliver to bar")

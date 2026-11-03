@@ -5,6 +5,8 @@
     <template id="layout" inherit_id="website.layout" name="The Cut: header and footer" priority="90">
         <xpath expr="//head" position="inside">
             <t t-if="website.cut_pages_enabled">
+                <!-- The Google Fonts stylesheet of the theme: connect early (Annex 3B, 6.2) -->
+                <link rel="preconnect" href="https://fonts.googleapis.com"/>
                 <!-- The fonts of the header and the titles, early (served by the website) -->
                 <link rel="preload" as="font" type="font/woff2" crossorigin=""
                       href="/website_the_cut_pages/static/src/fonts/anton.woff2"/>
@@ -34,6 +36,17 @@
         </xpath>
     </template>
 
+    <!-- Product page: the empty area between "Terms and Conditions" and the specifications
+         (Odoo's Contact Us section, hidden on priced products) gets the delivery line -->
+    <template id="product_delivery_line" inherit_id="website_sale.product" name="The Cut: product delivery line">
+        <xpath expr="//div[hasclass('o_wsale_product_details_content_section_contact')]" position="inside">
+            <t t-set="tc_delivery_line" t-value="website.cut_pages_enabled and website._cut_product_delivery_line()"/>
+            <p t-if="tc_delivery_line" class="tc-product-delivery mb-0">
+                <i class="fa fa-truck me-2" role="presentation"/><t t-out="tc_delivery_line"/>
+            </p>
+        </xpath>
+    </template>
+
     <template id="header" name="The Cut: header">
         <header class="tc-header" style="background: #7E1416; color: #FFFFFF">
             <div style="max-width: 1120px; margin: 0 auto; padding: 14px 24px; display: flex; flex-wrap: wrap; gap: 16px; align-items: center; justify-content: space-between">
@@ -43,14 +56,12 @@
                 </a>
                 <nav class="tc-nav" aria-label="Main menu"
                      style="display: flex; flex-wrap: wrap; gap: 28px; align-items: center; font-family: Anton, Impact, 'Arial Narrow', sans-serif; font-size: 18px; letter-spacing: 0.05em">
+                    <a href="/">HOME</a>
                     <a href="/shop">SHOP</a>
                     <a href="/delivery">DELIVERY</a>
                     <a href="/about-us">ABOUT</a>
                     <a href="/contactus">CONTACT</a>
                     <ul class="tc-icons list-unstyled d-flex align-items-center gap-3 m-0 p-0">
-                        <li>
-                            <a href="/" aria-label="Home" title="Home"><i class="fa fa-home" role="presentation"/></a>
-                        </li>
                         <t t-call="website_sale.header_cart_link">
                             <t t-set="_icon" t-value="True"/>
                         </t>
