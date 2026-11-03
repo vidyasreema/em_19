@@ -65,6 +65,28 @@ class TestAccount(OrderCommon):
         self.assertNotIn('invalid_fields', result)
         self.assertEqual(partner.phone, '+971 50 111 2233')
 
+    def test_account_news_and_offers(self):
+        """Account details: "Email me with news and offers" shows the choice and saves it."""
+        partner = self.user.partner_id
+        partner.marketing_consent = True
+        page = self.url_open('/my/account').text
+        self.assertIn('o_journey_account_consent', page)
+        self.assertRegex(page, r'id="o_journey_account_consent"[^>]*checked')
+
+        form = {
+            'partner_id': str(partner.id), 'name': partner.name, 'email': 'account@example.com',
+            'phone': '050 111 2233', 'street': 'Tower A', 'city': 'Abu Dhabi', 'zipcode': '00000',
+            'country_id': self.env.ref('base.ae').id,
+            'state_id': self.env['res.country.state'].search([('country_id.code', '=', 'AE')], limit=1).id,
+            'csrf_token': Request.csrf_token(self), 'journey_consent_shown': '1',
+        }
+        result = self.url_open('/my/address/submit', data=form).json()  # box unticked: not sent
+        self.assertNotIn('invalid_fields', result)
+        self.assertFalse(partner.marketing_consent)
+        self.assertTrue(partner.marketing_consent_date, "the answer is recorded")
+        self.url_open('/my/address/submit', data=dict(form, journey_consent='1'))
+        self.assertTrue(partner.marketing_consent)
+
     def test_order_page(self):
         """Download invoice, no terms / payment terms / messages, no Track once delivered."""
         self.order.payment_term_id = self.env.ref('account.account_payment_term_immediate')

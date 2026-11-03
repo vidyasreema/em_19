@@ -53,6 +53,19 @@ class JourneyCart(Cart):
 class JourneyCheckout(WebsiteSale):
 
     # ──────────────────────────────────────────────────────────────────────────
+    # Shop: the products that can be ordered first, the out of stock ones last
+    # ──────────────────────────────────────────────────────────────────────────
+
+    def _shop_lookup_products(self, options, post, search, website):
+        fuzzy_search_term, product_count, search_result = super()._shop_lookup_products(
+            options, post, search, website)
+        if website.journey_enabled:
+            # Stable sort, before the pages are cut: the chosen order stays within each group
+            search_result = search_result.sorted(lambda template: template._journey_is_out_of_stock(
+                website, template.product_variant_ids if len(template.product_variant_ids) == 1 else None))
+        return fuzzy_search_term, product_count, search_result
+
+    # ──────────────────────────────────────────────────────────────────────────
     # The standard steps lead to the order page
     # ──────────────────────────────────────────────────────────────────────────
 
