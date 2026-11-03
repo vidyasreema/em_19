@@ -1,7 +1,9 @@
 from datetime import datetime, time, timedelta
+from unittest.mock import patch
 
 import pytz
 
+from odoo import Command
 from odoo.exceptions import AccessError, UserError
 from odoo.tests import Form, new_test_user, tagged
 from odoo.tools import mute_logger
@@ -390,3 +392,118 @@ class TestOnlineOrdersDeliveredBy(OnlineOrdersCommon):
         order.picking_ids.employee_id = driver
         order.with_user(self.sales_user).action_online_next_stage()
         self.assertEqual(order.picking_ids.employee_id, driver)
+
+
+@tagged('post_install', '-at_install')
+class TestPickupAndInvoice(OnlineOrdersCommon):
+    """Annex 3B, 5.2 and 5.3; Annex 2, 5.1 and 5.2."""
+
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        cls.stage_picked_up = cls.env.ref('online_orders.stage_picked_up')
+        product = cls.env['product.product'].create({'name': 'Pickup', 'type': 'service'})
+        cls.pickup = cls.env['delivery.carrier'].create({
+            'name': 'Pick up in store', 'product_id': product.id, 'delivery_type': 'fixed',
+            'fixed_price': 0.0, 'online_pickup': True, 'is_published': True,
+        })
+
+    def _pickup_order(self):
+        order = self.env['sale.order'].create({
+            'partner_id': self.customer.id, 'website_id': self.website.id,
+            'order_line': [Command.create({'product_id': self.meat.id, 'product_uom_qty': 2.0})],
+        })
+        order._set_delivery_method(self.pickup)
+        order.action_confirm()
+        self._flush_tracking()
+        return order
+
+    def test_pickup_order_new_to_picked_up(self):
+        order = self._tracked(self._pickup_order())
+        self.assertEqual(order.carrier_id, self.pickup, "the address zone does not replace the pickup")
+        self.assertEqual(order.online_area, "Pickup from the shop")
+        self.assertEqual(order.online_next_stage_id, self.stage_picked_up, "straight from New")
+        order.action_online_next_stage()
+        self._flush_tracking()
+        self.assertEqual(order.stage_id, self.stage_picked_up)
+        self.assertEqual(order.picking_ids.state, 'done', "the stock leaves")
+        self.assertTrue(order.online_delivered_date)
+        self.assertFalse(order.online_next_stage_id)
+        self.assertTrue(self._messages_with_subject(order, 'Thank you for your order'), "the Picked up email")
+        invoice = order.invoice_ids
+        self.assertEqual(invoice.state, 'posted', "invoiced like any other order")
+        self.assertTrue(invoice.is_move_sent, "and emailed at Picked up")
+        self.assertEqual(order.get_online_order_counters()['open'], 0)
+        self.env['sale.order']._cron_online_orders_complete()
+        self.assertEqual(order.stage_id, self.stage_completed)
+
+    def test_pickup_whatever_the_address(self):
+        """A pickup method limited to the UAE stays available to a guest (no address yet)."""
+        self.pickup.country_ids = self.env.ref('base.ae')
+        guest = self.env['res.partner'].create({'name': 'Guest without address'})
+        order = self.env['sale.order'].create({
+            'partner_id': guest.id, 'website_id': self.website.id,
+            'order_line': [Command.create({'product_id': self.meat.id, 'product_uom_qty': 1.0})],
+        })
+        self.assertTrue(self.pickup._is_available_for_order(order))
+        order._set_delivery_method(self.pickup)
+        self.assertEqual(order.carrier_id, self.pickup)
+
+    def test_pickup_skips_the_delivery_stages(self):
+        order = self._pickup_order()
+        for stage in (self.stage_out, self.stage_delivered):
+            with self.assertRaisesRegex(UserError, 'pickup order'):
+                order.stage_id = stage
+        delivery = self._create_order()
+        with self.assertRaisesRegex(UserError, 'delivery order'):
+            delivery.stage_id = self.stage_picked_up
+        delivery.action_online_next_stage()
+        delivery.action_online_next_stage()
+        self.assertEqual(delivery.stage_id, self.stage_delivered)
+        self.assertFalse(delivery.online_next_stage_id, "Picked up is not offered after Delivered")
+
+    def test_invoice_at_out_for_delivery_sent_at_delivered(self):
+        order = self._create_order()
+        self.assertFalse(order.invoice_ids)
+        order.action_online_next_stage()
+        invoice = order.invoice_ids
+        self.assertEqual(invoice.state, 'posted', "created when the order goes out")
+        self.assertFalse(invoice.is_move_sent, "not sent yet")
+        self.assertEqual(invoice.amount_total, order.amount_total)
+        order.action_online_next_stage()
+        self.assertTrue(invoice.is_move_sent, "sent once delivered")
+        self.assertEqual(len(order.invoice_ids), 1)
+
+    def test_invoice_matched_with_the_online_payment(self):
+        order = self._create_order()
+        # Paid online: a done transaction with its posted payment (as Stripe leaves it)
+        method = self.env.ref('payment.payment_method_unknown')
+        provider = self.env['payment.provider'].create({
+            'name': 'Test Card', 'code': 'none', 'state': 'test', 'is_published': True,
+            'payment_method_ids': [Command.set(method.ids)],
+        })
+        payment = self.env['account.payment'].create({
+            'payment_type': 'inbound', 'partner_type': 'customer', 'partner_id': self.customer.id,
+            'amount': order.amount_total,
+            'journal_id': self.env['account.journal'].search(
+                [('type', '=', 'bank'), ('company_id', '=', self.env.company.id)], limit=1).id,
+        })
+        payment.action_post()
+        tx = self.env['payment.transaction'].create({
+            'provider_id': provider.id, 'payment_method_id': method.id, 'amount': order.amount_total,
+            'currency_id': order.currency_id.id, 'partner_id': self.customer.id,
+            'reference': '%s-paid' % order.name, 'operation': 'online_direct', 'state': 'done',
+            'payment_id': payment.id, 'sale_order_ids': [Command.set(order.ids)],
+        })
+        order.action_online_next_stage()
+        self.assertIn(order.invoice_ids.payment_state, ('paid', 'in_payment'))
+        self.assertEqual(tx.invoice_ids, order.invoice_ids)
+
+    def test_invoice_problem_does_not_block_the_dispatch(self):
+        order = self._create_order()
+        with patch.object(type(order), '_create_invoices', side_effect=UserError("No income account")), \
+                mute_logger('odoo.addons.online_orders.models.sale_order'):
+            order.action_online_next_stage()
+        self.assertEqual(order.stage_id, self.stage_out)
+        self.assertFalse(order.invoice_ids)
+        self.assertIn('could not be created automatically', order.message_ids[0].body)
