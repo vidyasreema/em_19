@@ -1,6 +1,6 @@
 {
     'name': 'POS Direct Manufacturing Integration',
-    'version': '19.0.1.1.0',
+    'version': '19.0.1.2.0',
     'category': 'Point of Sale',
     'summary': 'Create Manufacturing Orders directly from POS for '
                'meat-shop style ad-hoc raw material usage',
@@ -30,6 +30,7 @@
             'pos_direct_manufacturing/static/src/xml/order_line_patch.xml',
             'pos_direct_manufacturing/static/src/js/raw_material_popup.js',
             'pos_direct_manufacturing/static/src/xml/raw_material_popup.xml',
+            'pos_direct_manufacturing/static/src/scss/raw_material_popup.scss',
             'pos_direct_manufacturing/static/src/js/data_service_options_patch.js',
             'pos_direct_manufacturing/static/src/js/pos_order_patch.js',
             'pos_direct_manufacturing/static/src/js/pos_store_patch.js'

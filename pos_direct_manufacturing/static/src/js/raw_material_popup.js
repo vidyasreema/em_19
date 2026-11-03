@@ -1,5 +1,5 @@
 /** @odoo-module **/
-import { Component, useState } from "@odoo/owl";
+import { Component, useRef, useState } from "@odoo/owl";
 import { Dialog } from "@web/core/dialog/dialog";
 import { useService } from "@web/core/utils/hooks";
 import { usePos } from "@point_of_sale/app/hooks/pos_hook";
@@ -8,6 +8,11 @@ import {
     compareRawMaterialTotal,
     getConvertedRawMaterialTotal,
 } from "@pos_direct_manufacturing/js/raw_material_utils";
+
+// Results loaded per search. High enough that the whole raw material
+// category can be scrolled through; past it, the summary line asks the
+// cashier to type to narrow down.
+const RAW_MATERIAL_SEARCH_LIMIT = 500;
 
 export class RawMaterialPopup extends Component {
     static template = "pos_direct_manufacturing.RawMaterialPopup";
@@ -25,6 +30,7 @@ export class RawMaterialPopup extends Component {
     setup() {
         this.orm = useService("orm");
         this.pos = usePos();
+        this.rootRef = useRef("root");
 
         const initialLines = (this.props.existingMaterials || []).map((m, index) => ({
             id: index + 1,
@@ -32,13 +38,14 @@ export class RawMaterialPopup extends Component {
             productName: m.productName,
             qty: m.qty,
             uomId: m.uomId || null,
+            terms: [],
         }));
 
         // The actual set of lines the popup starts with, whether that's
         // the existing materials or the empty-state placeholder row.
         const lines = initialLines.length
             ? initialLines
-            : [{ id: 1, productId: null, productName: "", qty: 0, uomId: null }];
+            : [{ id: 1, productId: null, productName: "", qty: 0, uomId: null, terms: [] }];
 
         this.state = useState({
             lines,
@@ -67,18 +74,41 @@ export class RawMaterialPopup extends Component {
     }
 
     async loadProductOptions(line, searchTerm) {
-        const results = await this.orm.call(
+        // The filter boxes and the text being typed all have to match.
+        const query = [...line.terms, searchTerm].join(" ").trim();
+        const { total, products } = await this.orm.call(
             "product.product",
             "search_pos_raw_materials",
-            [this.pos.config.id, searchTerm || ""],
-            { limit: searchTerm ? 10 : 20 }
+            [this.pos.config.id, query],
+            { limit: RAW_MATERIAL_SEARCH_LIMIT, with_count: true }
         );
-        return results.map((p) => ({
+        // No onSelect, so the AutoComplete renders it as a plain,
+        // unclickable line that keyboard navigation skips.
+        const summary = {
+            label: this._getResultSummary(total, products.length, query),
+            cssClass: "o_raw_material_summary",
+        };
+        const options = [summary];
+        if (searchTerm) {
+            // First selectable option, so it is the one Enter picks, the
+            // same way Odoo's search bar turns the typed text into a facet.
+            options.push({
+                label: `Filter by "${searchTerm}"`,
+                cssClass: "o_raw_material_add_filter",
+                onSelect: () => {
+                    line.terms.push(searchTerm);
+                    this._reopenSearch(line);
+                },
+            });
+        }
+        return [...options, ...products.map((p) => ({
             label: p.display_name,
             onSelect: async () => {
                 line.productId = p.id;
                 line.productName = p.display_name;
                 line.uomId = p.uom_id || null;
+                // The filters did their job: show the chosen product alone.
+                line.terms = [];
                 this._clearMessages();
 
                 // search_pos_raw_materials searches the whole catalogue and
@@ -95,7 +125,53 @@ export class RawMaterialPopup extends Component {
                 // order sync fails at the payment screen.
                 await this._ensureProductLoaded(p.id);
             },
-        }));
+        }))];
+    }
+
+    onRemoveTerm(line, index) {
+        line.terms.splice(index, 1);
+        this._reopenSearch(line);
+    }
+
+    /**
+     * Show the list again, narrowed by the current filter boxes, the way
+     * Odoo's search bar refreshes as soon as a facet is added or removed.
+     * An input event makes the AutoComplete search again whether its list
+     * is open or not; the typed text now lives in a filter box, so the
+     * input is emptied first.
+     */
+    _reopenSearch(line) {
+        setTimeout(() => {
+            const input = this.rootRef.el?.querySelector(
+                `[data-line-id="${line.id}"] input.o-autocomplete--input`
+            );
+            if (input) {
+                input.value = "";
+                input.focus();
+                input.dispatchEvent(new Event("input", { bubbles: true }));
+            }
+        });
+    }
+
+    /** Backspace in an empty search box removes the last filter box. */
+    onSearchKeydown(line, ev) {
+        if (ev.key === "Backspace" && !ev.target.value && line.terms.length) {
+            line.terms.pop();
+            this._reopenSearch(line);
+        }
+    }
+
+    _getResultSummary(total, shown, query) {
+        if (!total) {
+            return query
+                ? `No raw material found for "${query}"`
+                : "No raw materials available";
+        }
+        const noun = total === 1 ? "raw material" : "raw materials";
+        if (shown < total) {
+            return `Showing ${shown} of ${total} ${noun} — type to narrow down`;
+        }
+        return `${total} ${noun}`;
     }
 
     /**
@@ -145,6 +221,7 @@ export class RawMaterialPopup extends Component {
             productName: "",
             qty: 0,
             uomId: null,
+            terms: [],
         });
     }
 

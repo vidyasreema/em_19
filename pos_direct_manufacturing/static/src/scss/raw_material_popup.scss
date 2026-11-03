@@ -1,0 +1,56 @@
+// The raw material search list can hold dozens of products: keep it inside
+// the screen and let it scroll, with the result count pinned on top.
+.o_raw_material_menu {
+    max-height: 50vh;
+    overflow-y: auto;
+
+    .o_raw_material_summary {
+        position: sticky;
+        top: 0;
+        z-index: 1;
+        background-color: $dropdown-bg;
+        border-bottom: 1px solid $border-color;
+
+        .dropdown-item {
+            color: $text-muted;
+            font-size: $font-size-sm;
+            font-style: italic;
+        }
+    }
+}
+
+// Search box holding the filter boxes ("facets") and the input, styled
+// after Odoo's search bar.
+.o_raw_material_search {
+    border-bottom: 1px solid $border-color;
+    padding-bottom: 2px;
+
+    .o_raw_material_facet {
+        padding: 1px 6px;
+        border-radius: $border-radius;
+        background-color: $gray-200;
+        font-size: $font-size-sm;
+
+        .fa-times {
+            cursor: pointer;
+            opacity: .6;
+
+            &:hover {
+                opacity: 1;
+            }
+        }
+    }
+
+    .o_raw_material_input {
+        flex: 1 1 120px;
+        min-width: 120px;
+
+        input {
+            border: 0;
+        }
+    }
+}
+
+.o_raw_material_menu .o_raw_material_add_filter .dropdown-item {
+    font-weight: $font-weight-bold;
+}

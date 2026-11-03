@@ -50,6 +50,14 @@ class PosConfig(models.Model):
              "example meat measured in kg used for a product sold in Units.",
     )
 
+    raw_material_categ_id = fields.Many2one(
+        'product.category',
+        string='Raw Material Category',
+        help="Only products in this category, or in one of its "
+             "subcategories, can be picked in the raw material popup. "
+             "Leave empty to allow any storable product.",
+    )
+
     @api.model
     def _load_pos_data_fields(self, config):
         fields_list = super()._load_pos_data_fields(config)
