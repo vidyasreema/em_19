@@ -87,6 +87,8 @@ class JourneyCheckout(WebsiteSale):
         # the order with this key (the cart is already cleared from the session).
         request.session['sale_last_order_id'] = order_sudo.id
         self._journey_prepare_order(order_sudo)
+        if not order_sudo.carrier_id.online_pickup and not website._journey_cart_needs_address(order_sudo):
+            website._journey_sync_location(order_sudo.partner_shipping_id)
         return request.render('website_purchase_journey.order_page', self._journey_order_values(order_sudo))
 
     def _journey_prepare_order(self, order_sudo):
@@ -150,10 +152,13 @@ class JourneyCheckout(WebsiteSale):
         website = request.website
         is_public = request.env.user._is_public()
         values = self._get_shop_payment_values(order_sudo)
-        has_address = not order_sudo._is_anonymous_cart()
-        if not has_address:
+        is_pickup = bool(order_sudo.carrier_id.online_pickup)
+        anonymous = order_sudo._is_anonymous_cart()
+        # A real delivery address (a new account has a contact but no address yet)
+        has_address = not anonymous and bool(order_sudo.partner_shipping_id.street)
+        if (not is_pickup and not has_address) or (is_pickup and anonymous):
             # No address yet, so no delivery zone: "unable to ship" would be wrong.
-            # The order button asks for the address instead.
+            # The order button asks for the address (pickup: the name and mobile) instead.
             values['errors'] = []
         if values['errors']:
             values.pop('payment_methods_sudo', '')
@@ -179,9 +184,17 @@ class JourneyCheckout(WebsiteSale):
             'oauth_providers': self._journey_oauth_providers() if is_public else [],
             'signup_url': '/web/signup?' + url_encode({'redirect': ORDER_PATH}),
             'coupon_error': request.session.pop(SESSION_COUPON_ERROR, None),
-            'contact_email': '' if is_public and not has_address else order_sudo.partner_id.email or '',
-            'consent': order_sudo.partner_id.marketing_consent if has_address or not is_public else False,
-            'show_consent': is_public or order_sudo.partner_id._journey_is_new_customer(order_sudo),
+            'contact_email': '' if is_public and anonymous else order_sudo.partner_id.email or '',
+            # Ticked until the customer answers (Annex 3B, 4.2); asked to guests only (4.3)
+            'consent': order_sudo.partner_id.marketing_consent
+            if not anonymous and order_sudo.partner_id.marketing_consent_date else True,
+            'show_consent': is_public,
+            'is_pickup': is_pickup,
+            'pickup_method': website._journey_pickup_method(),
+            'shop_address': website._journey_shop_address(),
+            'has_pickup_customer': not anonymous,
+            'pickup_name': '' if anonymous else order_sudo.partner_id.name or '',
+            'pickup_phone': '' if anonymous else order_sudo.partner_id.phone or '',
             'only_services': order_sudo.only_services,
             # "View my coupons" popup: the coupons ready to use or waiting for a payment
             'my_coupons': None if is_public else request.env['loyalty.card']._journey_portal_coupons(
@@ -220,21 +233,62 @@ class JourneyCheckout(WebsiteSale):
         request.session[SESSION_GUEST] = bool(guest)
         return {'ok': True}
 
+    @route('/shop/order/fulfilment', type='jsonrpc', auth='public', website=True, methods=['POST'])
+    def journey_order_fulfilment(self, pickup=False):
+        """Delivery to an address, or pickup from the shop (Annex 3B, 5.1)."""
+        order_sudo = request.cart
+        if not order_sudo or order_sudo.state != 'draft' or not order_sudo.website_order_line:
+            return {'error': _("Your cart has changed. Please check your order."), 'reload': True}
+        if pickup:
+            method = request.website._journey_pickup_method()
+            if not method:
+                return {'error': _("Pickup from our shop is not available right now.")}
+            if order_sudo.carrier_id != method:
+                order_sudo._set_delivery_method(method)
+        elif order_sudo.carrier_id.online_pickup:
+            # The page sets the method of the address zone again
+            order_sudo._remove_delivery_line()
+            order_sudo.carrier_id = False
+        return {'ok': True}
+
+    def _journey_set_pickup_customer(self, order_sudo, name, phone, email):
+        """Guest picking up: the customer is created from the name, mobile and email.
+        :return: an error {'error', 'field'} or None"""
+        name, phone = (name or '').strip()[:120], (phone or '').strip()[:120]
+        if not name:
+            return {'error': _("Enter the name of the person picking up the order."), 'field': 'pickup_name'}
+        PartnerSudo = request.env['res.partner'].sudo()
+        phone, error = PartnerSudo._journey_check_phone(phone, mobile=True)
+        if error:
+            return {'error': error, 'field': 'pickup_phone'}
+        partner_sudo, _feedback = self._create_or_update_address(
+            PartnerSudo, address_type='delivery', use_delivery_as_billing=True, verify_address_values=False,
+            order_sudo=order_sudo, name=name, phone=phone, email=email,
+            country_id=request.website.company_id.country_id.id or False)
+        order_sudo._update_address(partner_sudo.id, {'partner_id', 'partner_invoice_id', 'partner_shipping_id'})
+        order_sudo.message_unsubscribe(request.website.partner_id.ids)
+        return None
+
     @route('/shop/order/prepare', type='jsonrpc', auth='public', website=True, methods=['POST'])
-    def journey_order_prepare(self, email=None, consent=None, call_on_arrival=False, note='', save_note=False):
+    def journey_order_prepare(self, email=None, consent=None, call_on_arrival=False, note='', save_note=False,
+                              pickup_name='', pickup_phone=''):
         """Save the form and check the order before the payment starts."""
         order_sudo = request.cart
         if not order_sudo or order_sudo.state != 'draft' or not order_sudo.website_order_line:
             return {'error': _("Your cart has changed. Please check your order."), 'reload': True}
-        if order_sudo._is_anonymous_cart():
+        is_pickup = order_sudo.carrier_id.online_pickup
+        is_public = request.env.user._is_public()
+        email = (email or '').strip()
+        if is_public and not EMAIL_RE.match(email):
+            return {'error': _("Enter a valid email address."), 'field': 'email'}
+        if is_pickup and order_sudo._is_anonymous_cart():
+            if error := self._journey_set_pickup_customer(order_sudo, pickup_name, pickup_phone, email):
+                return error
+        elif request.website._journey_cart_needs_address(order_sudo):
             return {'error': _("Add your delivery address."), 'field': 'address'}
         partner_sudo = order_sudo.partner_id
-        if request.env.user._is_public():
-            email = (email or '').strip()
-            if not EMAIL_RE.match(email):
-                return {'error': _("Enter a valid email address."), 'field': 'email'}
-            if partner_sudo.email != email:
-                partner_sudo.email = email
+        if is_public and partner_sudo.email != email:
+            partner_sudo.email = email
         if consent is not None:  # not asked to returning customers: their choice stays
             partner_sudo._journey_set_marketing_consent(consent)
 

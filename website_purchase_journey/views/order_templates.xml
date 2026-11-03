@@ -24,7 +24,8 @@
             <div id="wrap" class="oe_website_sale o_journey_order"
                  t-att-data-show-promise-popup="'1' if show_promise_popup else '0'"
                  t-att-data-promise-message="promise and promise.get('message') or ''"
-                 t-att-data-is-public="'1' if is_public else '0'">
+                 t-att-data-is-public="'1' if is_public else '0'"
+                 t-att-data-needs-address="'1' if not is_pickup and not has_address and not only_services else '0'">
 
                 <!-- Savings / free delivery bar -->
                 <div class="o_journey_savebar_wrap">
@@ -52,17 +53,18 @@
                     </div>
 
                     <!-- Phones: summary behind a toggle -->
-                    <button class="btn btn-light border w-100 d-flex justify-content-between align-items-center d-lg-none mb-3 o_journey_sumtog collapsed"
+                    <!-- Open by default, the customer can close it (Annex 3B, 4.1) -->
+                    <button class="btn btn-light border w-100 d-flex justify-content-between align-items-center d-lg-none mb-3 o_journey_sumtog"
                             type="button" data-bs-toggle="collapse" data-bs-target="#o_journey_summary"
-                            aria-expanded="false" aria-controls="o_journey_summary">
-                        <span><i class="fa fa-shopping-basket me-2"/><span class="o_journey_sumtog_label">Show order summary</span></span>
+                            aria-expanded="true" aria-controls="o_journey_summary">
+                        <span><i class="fa fa-shopping-basket me-2"/><span class="o_journey_sumtog_label">Hide order summary</span></span>
                         <b class="o_journey_sumtog_total" t-out="summary['total']" t-options="money_options"/>
                     </button>
 
                     <div class="row g-4 align-items-start">
                         <!-- Summary (right on desktop, pinned) -->
                         <div class="col-12 col-lg-5 order-lg-2">
-                            <div id="o_journey_summary" class="collapse d-lg-block o_journey_summary">
+                            <div id="o_journey_summary" class="collapse show d-lg-block o_journey_summary">
                                 <t t-call="website_purchase_journey.order_summary"/>
                             </div>
                         </div>
@@ -208,7 +210,11 @@
                 <span>Coupon<t t-if="coupon['code']"> (<t t-out="coupon['code']"/>)</t></span>
                 <span>− <t t-out="coupon['amount']" t-options="money_options"/></span>
             </div>
-            <div class="d-flex justify-content-between">
+            <div t-if="is_pickup" class="d-flex justify-content-between">
+                <span>Pickup from our shop</span>
+                <span class="text-success fw-bold">Free</span>
+            </div>
+            <div t-else="" class="d-flex justify-content-between">
                 <span>Delivery</span>
                 <span t-if="not summary['has_delivery']" class="text-muted">Add your address</span>
                 <span t-elif="summary['free_delivery']">
@@ -289,12 +295,27 @@
                 </button>
             </section>
         </t>
-        <section t-else="" class="o_journey_blk small">
-            Signed in as <b t-out="website_sale_order.partner_id.email or website_sale_order.partner_id.name"/>
+
+        <!-- Delivery or pickup from the shop (Annex 3B, 5.1) -->
+        <section t-if="pickup_method and not only_services" class="o_journey_blk o_journey_fulfil">
+            <h3 class="o_journey_h">How would you like to get your order?</h3>
+            <div class="d-grid gap-2 o_journey_fulfil_options" role="radiogroup" aria-label="Delivery or pickup">
+                <button type="button" role="radio" data-pickup="0" t-att-aria-checked="'false' if is_pickup else 'true'"
+                        class="o_journey_fulfil_option">
+                    <i class="fa fa-truck" role="presentation"/>
+                    <span><b>Delivery</b><small class="d-block text-muted">To your address</small></span>
+                </button>
+                <button type="button" role="radio" data-pickup="1" t-att-aria-checked="'true' if is_pickup else 'false'"
+                        class="o_journey_fulfil_option">
+                    <i class="fa fa-shopping-bag" role="presentation"/>
+                    <span><b>Pickup from our shop</b><small class="d-block text-muted">
+                        <t t-out="shop_address"/><t t-if="shop_address"> · </t>Free</small></span>
+                </button>
+            </div>
         </section>
 
-        <!-- Contact (Version 2 §1.4, §3); news and offers: new customers only -->
-        <section t-if="is_public or show_consent" class="o_journey_blk">
+        <!-- Contact (Version 2 §1.4, §3); news and offers: guests only (Annex 3B, 4.3) -->
+        <section t-if="is_public" class="o_journey_blk">
             <t t-if="is_public">
                 <h3 class="o_journey_h">Contact</h3>
                 <label for="o_journey_email" class="form-label small">Email (required, for your order confirmation)</label>
@@ -308,8 +329,32 @@
             </div>
         </section>
 
+        <!-- Pickup: who collects the order (guests type it; members: their account) -->
+        <section t-if="is_pickup" class="o_journey_blk o_journey_pickup">
+            <h3 class="o_journey_h">Pickup details</h3>
+            <p t-if="shop_address" class="small mb-2"><i class="fa fa-map-marker me-1" role="presentation"/><t t-out="shop_address"/></p>
+            <t t-if="not has_pickup_customer">
+                <div class="mb-2">
+                    <label for="o_journey_pickup_name" class="form-label small">Name of the person picking up</label>
+                    <input id="o_journey_pickup_name" type="text" class="form-control o_journey_pickup_name"
+                           t-att-value="pickup_name" maxlength="120" autocomplete="name"/>
+                    <div class="invalid-feedback">Enter the name of the person picking up the order</div>
+                </div>
+                <div>
+                    <label for="o_journey_pickup_phone" class="form-label small">Mobile</label>
+                    <input id="o_journey_pickup_phone" type="tel" inputmode="tel" class="form-control o_journey_pickup_phone"
+                           t-att-value="pickup_phone" maxlength="120" autocomplete="tel"/>
+                    <div class="invalid-feedback">Enter a valid mobile number</div>
+                </div>
+            </t>
+            <div t-else="" class="small">
+                <span class="text-muted">Picked up by</span><br/>
+                <b t-out="pickup_name"/><t t-if="pickup_phone"> · <t t-out="pickup_phone"/></t>
+            </div>
+        </section>
+
         <!-- Instructions for the driver -->
-        <section class="o_journey_blk">
+        <section t-if="not is_pickup" class="o_journey_blk">
             <h3 class="o_journey_h">Instructions for the driver</h3>
             <div class="d-flex flex-wrap gap-2 mb-2">
                 <button type="button" class="btn btn-sm rounded-pill o_journey_chip"
@@ -328,7 +373,7 @@
         </section>
 
         <!-- Receiver -->
-        <section t-if="shipping" class="o_journey_blk d-flex justify-content-between align-items-center">
+        <section t-if="shipping and not is_pickup" class="o_journey_blk d-flex justify-content-between align-items-center">
             <div>
                 <small class="text-muted">Received by</small><br/>
                 <b t-out="shipping.name"/><t t-if="shipping.phone"> · <t t-out="shipping.phone"/></t>
@@ -338,7 +383,7 @@
         </section>
 
         <!-- Address -->
-        <section class="o_journey_blk o_journey_address" id="o_journey_address">
+        <section t-if="not is_pickup" class="o_journey_blk o_journey_address" id="o_journey_address">
             <h3 class="o_journey_h">Delivery address</h3>
             <t t-if="len(addresses) &gt; 1">
                 <div t-foreach="addresses" t-as="address" class="form-check o_journey_addr_row">
@@ -383,7 +428,10 @@
 
         <!-- Order button: at the end of the form on desktop, a fixed bar on phones -->
         <div class="o_journey_dock">
-            <div t-if="shipping" class="small text-truncate d-lg-none mb-2">
+            <div t-if="is_pickup and shop_address" class="small text-truncate d-lg-none mb-2">
+                <i class="fa fa-shopping-bag me-1"/>Pickup · <t t-out="shop_address"/>
+            </div>
+            <div t-elif="shipping" class="small text-truncate d-lg-none mb-2">
                 <i class="fa fa-map-marker me-1"/><t t-out="', '.join(filter(None, [shipping.street, shipping.street2]))"/>
             </div>
             <t t-if="not errors">

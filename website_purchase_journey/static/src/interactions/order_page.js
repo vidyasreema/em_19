@@ -49,6 +49,8 @@ export class JourneyOrderPage extends Interaction {
         ".o_journey_chip": { "t-on-click": this.toggleChip },
         ".o_journey_email": { "t-on-input": this.clearEmailError },
         ".o_journey_address_pick": { "t-on-change": this.locked(this.pickAddress, true) },
+        ".o_journey_fulfil_option": { "t-on-click": this.locked(this.setFulfilment, true) },
+        ".o_journey_pickup_name, .o_journey_pickup_phone": { "t-on-input": this.clearPickupError },
         ".o_journey_sumtog": { "t-on-click": this.onSummaryToggle },
         ".o_journey_mycoupon_copy": { "t-on-click": this.copyCoupon },
         ".o_journey_mycoupon_apply": { "t-on-click": this.locked(this.applyMyCoupon, true) },
@@ -79,6 +81,12 @@ export class JourneyOrderPage extends Interaction {
         }
         if (this.el.dataset.promiseMessage) {
             this.waitForTimeout(() => this.checkPromise(), PROMISE_CHECK_MS);
+        }
+        // A signed-in customer with no delivery address yet (e.g. a new account): ask for
+        // it first (Annex 3B, 4.6), once the "Address details" sheet has started. Guests
+        // get the sheet from View cart, and see the sign-up box here first.
+        if (this.el.dataset.needsAddress === "1" && this.el.dataset.isPublic !== "1") {
+            this.waitForTimeout(() => document.dispatchEvent(new CustomEvent("journey_open_address")), 0);
         }
     }
 
@@ -223,6 +231,24 @@ export class JourneyOrderPage extends Interaction {
         chip.setAttribute("aria-pressed", chip.getAttribute("aria-pressed") === "true" ? "false" : "true");
     }
 
+    /** Delivery or pickup from the shop: the page shows the parts of the choice. */
+    async setFulfilment(ev) {
+        const button = ev.currentTarget;
+        if (button.getAttribute("aria-checked") === "true") {
+            return;
+        }
+        const result = await this.waitFor(rpc("/shop/order/fulfilment", { pickup: button.dataset.pickup === "1" }));
+        if (result.error && !result.reload) {
+            this.showError(result.error);
+            return;
+        }
+        this.reload();
+    }
+
+    clearPickupError(ev) {
+        ev.currentTarget.classList.remove("is-invalid");
+    }
+
     async pickAddress(ev) {
         await this.waitFor(rpc("/shop/update_address", { partner_id: parseInt(ev.currentTarget.value), address_type: "delivery" }));
         this.reload();
@@ -280,8 +306,17 @@ export class JourneyOrderPage extends Interaction {
         error.classList.remove("d-none");
         const email = this.el.querySelector(".o_journey_email");
         email?.classList.toggle("is-invalid", field === "email");
-        this.el.querySelector(".o_journey_address_error").classList.toggle("d-none", field !== "address");
-        const target = field === "email" ? email : field === "address" ? this.el.querySelector("#o_journey_address") : error;
+        this.el.querySelector(".o_journey_address_error")?.classList.toggle("d-none", field !== "address");
+        const pickupInputs = {
+            pickup_name: this.el.querySelector(".o_journey_pickup_name"),
+            pickup_phone: this.el.querySelector(".o_journey_pickup_phone"),
+        };
+        for (const [name, input] of Object.entries(pickupInputs)) {
+            input?.classList.toggle("is-invalid", field === name);
+        }
+        const target = field === "email" ? email
+            : field === "address" ? this.el.querySelector("#o_journey_address")
+            : pickupInputs[field] || error;
         target?.scrollIntoView({ behavior: "smooth", block: "center" });
         if (field === "email") {
             email.focus();
@@ -312,6 +347,8 @@ export class JourneyOrderPage extends Interaction {
             call_on_arrival: pressed("call_on_arrival"),
             note: this.el.querySelector(".o_journey_note")?.value || "",
             save_note: this.el.querySelector(".o_journey_save_note")?.checked || false,
+            pickup_name: this.el.querySelector(".o_journey_pickup_name")?.value || "",
+            pickup_phone: this.el.querySelector(".o_journey_pickup_phone")?.value || "",
         }));
         if (result.reload) {
             this.reload();
