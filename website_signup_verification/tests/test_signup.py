@@ -33,11 +33,11 @@ class SignupCommon(OrderCommon, MockEmail):
     def _csrf(self):
         return http.Request.csrf_token(self)
 
-    def _sign_up(self, email, name='Sara Test', password='Sup3r-secret!', confirm=None, redirect=''):
+    def _sign_up(self, email, name='Sara Test', password='Sup3r-secret!', confirm=None, redirect='', **extra):
         with patch(RANDBELOW, return_value=CODE):
             return self.url_open('/web/signup', data={
                 'csrf_token': self._csrf(), 'name': name, 'login': email,
-                'password': password, 'confirm_password': confirm or password, 'redirect': redirect,
+                'password': password, 'confirm_password': confirm or password, 'redirect': redirect, **extra,
             })
 
     def _verify(self, code=CODE, **values):
@@ -176,6 +176,30 @@ class TestSignupCode(SignupCommon):
             self._verify(code=999999)
         self.assertIn('Too many wrong codes', self._verify().text, "even the right code, until a new one")
         self.assertFalse(self.Users.search([('login', '=', 'guess@example.com')]))
+
+    def test_news_and_offers(self):
+        """"Email me with news and offers" is ticked on the form and saved with the account."""
+        page = self.url_open('/web/signup').text
+        self.assertRegex(page, r'id="journey_consent"[^>]*checked')
+
+        self._sign_up('yes.news@example.com', journey_consent_shown='1', journey_consent='1')
+        self._verify()
+        partner = self.Users.search([('login', '=', 'yes.news@example.com')]).partner_id
+        self.assertTrue(partner.marketing_consent)
+        self.assertTrue(partner.marketing_consent_date)
+
+        self.authenticate(None, None)
+        self._sign_up('no.news@example.com', journey_consent_shown='1')  # unticked: not sent
+        self._verify()
+        partner = self.Users.search([('login', '=', 'no.news@example.com')]).partner_id
+        self.assertFalse(partner.marketing_consent)
+        self.assertTrue(partner.marketing_consent_date, "the answer is recorded")
+
+    def test_news_and_offers_without_code(self):
+        self.website.signup_verification = False
+        self._sign_up('standard.news@example.com', journey_consent_shown='1', journey_consent='1')
+        partner = self.Users.search([('login', '=', 'standard.news@example.com')]).partner_id
+        self.assertTrue(partner.marketing_consent)
 
     def test_switch_off(self):
         """The switch brings back the standard sign-up at once."""
