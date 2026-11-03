@@ -81,7 +81,7 @@
 
     <!-- Red header of the Privacy Policy and the Terms of Sale -->
     <template id="policy_header" name="The Cut: policy header">
-        <section style="background: #7E1416; color: #FFFFFF; border-top: 1px solid #94262A">
+        <section class="tc-pattern-red tc-top" style="background-color: #7E1416; color: #FFFFFF; border-top: 1px solid #94262A">
             <div style="max-width: 1120px; margin: 0 auto; padding: 56px 24px 64px">
                 <h1 style="margin: 0; font-family: 'Capture it', Impact, sans-serif; font-weight: 400; font-size: clamp(40px, 10vw, 72px); line-height: 1; color: #FFFFFF" t-out="tc_title"/>
                 <p style="margin: 20px 0 0; max-width: 620px; font-size: 19px; color: #F3DCDC" t-out="tc_intro"/>

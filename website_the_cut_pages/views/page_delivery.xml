@@ -8,7 +8,7 @@
             <t t-set="tc_h2" t-value="&quot;margin: 0 0 12px; font-family: Anton, Impact, 'Arial Narrow', sans-serif; font-weight: 400; font-size: 30px; letter-spacing: 0.02em; line-height: 1.1; color: #1B1414&quot;"/>
             <t t-set="tc_tag" t-value="&quot;display: inline-block; padding: 3px 9px; font-family: Anton, Impact, 'Arial Narrow', sans-serif; font-size: 15px; letter-spacing: 0.05em; line-height: 1.35;&quot;"/>
             <div id="wrap" class="tc-root" style="background: #FFFFFF; color: #1B1414">
-                <section style="background: #7E1416; color: #FFFFFF; border-top: 1px solid #94262A; overflow: hidden">
+                <section class="tc-pattern-red tc-top" style="background-color: #7E1416; color: #FFFFFF; border-top: 1px solid #94262A; overflow: hidden">
                     <div style="max-width: 1120px; margin: 0 auto; padding: 56px 24px 64px; display: flex; flex-wrap: wrap; gap: 48px; align-items: center">
                         <div style="flex: 999 1 440px; min-width: 0">
                             <h1 style="margin: 0; font-family: 'Capture it', Impact, sans-serif; font-weight: 400; font-size: clamp(44px, 10vw, 76px); line-height: 1; color: #FFFFFF">DELIVERY &amp; PICKUP</h1>
@@ -99,7 +99,7 @@
                 </div>
 
                 <div style="max-width: 1120px; margin: 0 auto; padding: 0 24px 64px">
-                    <div style="background: #7E1416; color: #FFFFFF; padding: 56px 40px; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 18px">
+                    <div class="tc-pattern-red" style="background-color: #7E1416; color: #FFFFFF; padding: 56px 40px; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 18px">
                         <h2 style="margin: 0; font-family: 'Capture it', Impact, sans-serif; font-weight: 400; font-size: clamp(36px, 9vw, 56px); line-height: 1; color: #FFFFFF">READY TO ORDER?</h2>
                         <p style="margin: 0; max-width: 560px; font-size: 18px; color: #F3DCDC">
                             Same day across Abu Dhabi<t t-if="tc['pickup_free'] and tc['address']">, or pick up for free from <t t-out="tc['address']"/></t>.

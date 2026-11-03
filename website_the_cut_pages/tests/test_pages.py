@@ -172,6 +172,12 @@ class TestTheCutPages(HttpCase):
         self.assertIn('tc-site', page, "colours, fonts and buttons of the new pages")
         self.assertIn('Same-day delivery in Abu Dhabi for orders before 7\N{NO-BREAK SPACE}PM', page, "Deliver to bar")
 
+    def test_shop_card_photo_size(self):
+        self.env['product.template'].create({'name': 'Photo size check', 'is_published': True, 'sale_ok': True})
+        page = self._page('/shop?search=Photo+size+check')
+        self.assertIn('/image_512', page, "the cards load the 512 px photos (speed)")
+        self.assertNotIn('/image_1024', page)
+
     def test_contact_page_top(self):
         page = self._page('/contactus')
         self.assertIn('tc-contact-hero', page)

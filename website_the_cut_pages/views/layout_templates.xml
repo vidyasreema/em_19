@@ -47,39 +47,58 @@
         </xpath>
     </template>
 
+    <!-- Shop cards: the photos are shown about 200 px wide (up to 300 px on a big screen), so
+         the 512 px version is enough, also on phone screens; Odoo loads the 1024 px one (speed) -->
+    <template id="products_item_image_size" inherit_id="website_sale.products_item" name="The Cut: card photo size">
+        <xpath expr="//span[hasclass('oe_product_image_img_wrapper_primary')]" position="attributes">
+            <attribute name="t-options">{'widget': 'image', 'preview_image': 'image_512', 'class': 'oe_product_image_img h-100 w-100'}</attribute>
+        </xpath>
+        <xpath expr="//span[hasclass('oe_product_image_img_wrapper_secondary')]" position="attributes">
+            <attribute name="t-options">{'widget': 'image', 'preview_image': 'image_512', 'class': 'oe_product_image_img_secondary h-100 w-100'}</attribute>
+        </xpath>
+    </template>
+
+    <!-- On phones the menu folds behind the menu button, so the header is one row -->
     <template id="header" name="The Cut: header">
         <header class="tc-header" style="background: #7E1416; color: #FFFFFF">
-            <div style="max-width: 1120px; margin: 0 auto; padding: 14px 24px; display: flex; flex-wrap: wrap; gap: 16px; align-items: center; justify-content: space-between">
-                <a href="/" aria-label="The Cut home" style="display: block">
+            <div class="tc-header-row">
+                <a href="/" aria-label="The Cut home" class="tc-logo">
                     <img src="/website_the_cut_pages/static/src/img/logo_white.png" alt="The Cut, by Excellence Meats"
-                         width="76" height="76" style="width: 76px; height: 76px; display: block"/>
+                         width="76" height="76"/>
                 </a>
-                <nav class="tc-nav" aria-label="Main menu"
-                     style="display: flex; flex-wrap: wrap; gap: 28px; align-items: center; font-family: Anton, Impact, 'Arial Narrow', sans-serif; font-size: 18px; letter-spacing: 0.05em">
+                <nav id="tc-nav" class="tc-nav" aria-label="Main menu">
                     <a href="/">HOME</a>
                     <a href="/shop">SHOP</a>
                     <a href="/delivery">DELIVERY</a>
                     <a href="/about-us">ABOUT</a>
                     <a href="/contactus">CONTACT</a>
-                    <ul class="tc-icons list-unstyled d-flex align-items-center gap-3 m-0 p-0">
-                        <t t-call="website_sale.header_cart_link">
-                            <t t-set="_icon" t-value="True"/>
-                        </t>
-                        <li>
-                            <a t-att-href="'/web/login' if website.is_public_user() else '/my'"
-                               t-att-aria-label="'Sign in' if website.is_public_user() else 'My account'">
-                                <i class="fa fa-user-o" role="presentation"/>
-                            </a>
-                        </li>
-                    </ul>
                 </nav>
+                <ul class="tc-icons list-unstyled d-flex align-items-center gap-3 m-0 p-0">
+                    <t t-call="website_sale.header_cart_link">
+                        <t t-set="_icon" t-value="True"/>
+                    </t>
+                    <li>
+                        <a t-att-href="'/web/login' if website.is_public_user() else '/my'"
+                           t-att-aria-label="'Sign in' if website.is_public_user() else 'My account'">
+                            <i class="fa fa-user-o" role="presentation"/>
+                        </a>
+                    </li>
+                    <li class="tc-menu-item">
+                        <button type="button" class="tc-menu-btn" aria-controls="tc-nav" aria-expanded="false" aria-label="Menu">
+                            <svg aria-hidden="true" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round">
+                                <path class="tc-menu-open-icon" d="M4 7h16M4 12h16M4 17h16"/>
+                                <path class="tc-menu-close-icon" d="M6 6l12 12M18 6L6 18"/>
+                            </svg>
+                        </button>
+                    </li>
+                </ul>
             </div>
         </header>
     </template>
 
     <template id="footer" name="The Cut: footer">
         <t t-set="tc_contact" t-value="website._cut_contact()"/>
-        <footer class="tc-footer" style="background: #5A0E10; color: #FFFFFF">
+        <footer class="tc-footer tc-pattern-dark" style="background-color: #5A0E10; color: #FFFFFF">
             <div style="max-width: 1120px; margin: 0 auto; padding: 36px 24px; display: flex; flex-wrap: wrap; gap: 32px; align-items: center; justify-content: space-between">
                 <div style="display: flex; flex-direction: column; gap: 8px; font-family: Anton, Impact, 'Arial Narrow', sans-serif; font-size: 22px; letter-spacing: 0.03em">
                     <span t-if="tc_contact['domain']" t-out="tc_contact['domain'].upper()"/>
@@ -110,7 +129,7 @@
     <template id="contact_hero" name="The Cut: contact page top">
         <t t-set="tc" t-value="website._cut_values()"/>
         <t t-set="tc_btn" t-value="&quot;display: inline-flex; align-items: center; gap: 10px; padding: 14px 30px; min-height: 56px; box-sizing: border-box; text-decoration: none; font-family: Anton, Impact, 'Arial Narrow', sans-serif; font-size: 20px; letter-spacing: 0.05em; border-radius: 40px;&quot;"/>
-        <section class="tc-root tc-contact-hero" style="background: #7E1416; color: #FFFFFF; border-top: 1px solid #94262A">
+        <section class="tc-root tc-contact-hero tc-pattern-red tc-top" style="background-color: #7E1416; color: #FFFFFF; border-top: 1px solid #94262A">
             <div style="max-width: 1120px; margin: 0 auto; padding: 56px 24px 64px">
                 <h1 style="margin: 0; font-family: 'Capture it', Impact, sans-serif; font-weight: 400; font-size: clamp(44px, 10vw, 76px); line-height: 1; color: #FFFFFF">CONTACT US</h1>
                 <p style="margin: 20px 0 0; max-width: 560px; font-size: 19px; color: #F3DCDC">A question about an order, a cut or a delivery? Message us, call us or send us the form below.</p>

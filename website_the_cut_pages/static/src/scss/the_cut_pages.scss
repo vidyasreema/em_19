@@ -39,6 +39,39 @@
 .tc-header {
     position: relative;
     z-index: 10;
+    .tc-header-row {
+        max-width: 1120px;
+        margin: 0 auto;
+        padding: 14px 24px;
+        display: flex;
+        gap: 28px;
+        align-items: center;
+    }
+    .tc-logo { display: block; margin-right: auto; }
+    .tc-logo img { width: 76px; height: 76px; display: block; }
+    .tc-nav {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 28px;
+        align-items: center;
+        font-family: Anton, Impact, 'Arial Narrow', sans-serif;
+        font-size: 18px;
+        letter-spacing: 0.05em;
+    }
+    .tc-menu-item { display: none; }
+    .tc-menu-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 44px;
+        height: 44px;
+        margin-right: -10px;
+        padding: 0;
+        border: 0;
+        background: none;
+        color: #FFFFFF;
+    }
+    .tc-menu-close-icon { display: none; }
     .tc-nav a { color: #FFFFFF; text-decoration: none; }
     .tc-nav a:hover, .tc-nav a:focus { color: #F5A524; }
     .tc-icons a { color: #FFFFFF; font-size: 20px; display: inline-flex; align-items: center; min-height: 44px; }
@@ -59,10 +92,40 @@
 .tc-footer a { color: #FFFFFF; }
 .tc-footer a:hover { color: #F5A524; }
 
-@media (max-width: 575.98px) {
-    .tc-header .tc-nav { gap: 14px !important; font-size: 16px !important; }
-    .tc-header .tc-icons { gap: 12px !important; }
-    .tc-header .tc-icons .o_wsale_my_cart { margin-right: 10px; }
+// Phones and small tablets: logo, cart, account and the menu button on one row;
+// the menu opens below it
+@media (max-width: 767.98px) {
+    .tc-header {
+        .tc-header-row { flex-wrap: wrap; gap: 0; padding: 8px 16px; }
+        .tc-logo img { width: 56px; height: 56px; }
+        .tc-icons { gap: 18px !important; }
+        .tc-icons .o_wsale_my_cart { margin-right: 10px; }
+        .tc-menu-item { display: block; }
+        .tc-nav {
+            display: none;
+            order: 3;
+            flex-basis: calc(100% + 32px); // edge to edge, over the padding of the row
+            flex-direction: column;
+            align-items: stretch;
+            gap: 0;
+            margin: 8px -16px -8px;
+            padding: 4px 16px 12px;
+            background: #5A0E10;
+            font-size: 22px;
+            a {
+                display: flex;
+                align-items: center;
+                min-height: 52px;
+                border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+            }
+            a:last-child { border-bottom: 0; }
+        }
+        &.tc-menu-open {
+            .tc-nav { display: flex; }
+            .tc-menu-open-icon { display: none; }
+            .tc-menu-close-icon { display: inline; }
+        }
+    }
 }
 
 // The Odoo pages (shop, product, cart, checkout, contact, sign-in, My Account) in the
@@ -72,6 +135,33 @@ $tc-red: #7E1416;
 $tc-red-dark: #5A0E10;
 $tc-anton: Anton, Impact, 'Arial Narrow', sans-serif;
 $tc-figtree: Figtree, system-ui, sans-serif;
+
+// The Cut icon pattern (brand pack, 600px tile) along the top of a section only: it
+// fades out downwards and the rest of the section stays plain, as on the posts
+@mixin tc-pattern-top($file, $opacity) {
+    position: relative;
+
+    &::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 260px;
+        max-height: 100%;
+        pointer-events: none;
+        background: url("/website_the_cut_pages/static/src/img/#{$file}") 0 0 / 600px 600px repeat;
+        opacity: $opacity;
+        -webkit-mask-image: linear-gradient(#000 0%, #000 20%, transparent 100%);
+        mask-image: linear-gradient(#000 0%, #000 20%, transparent 100%);
+    }
+    > * { position: relative; }
+}
+// On cream: dark red lines at 20-30%
+@mixin tc-pattern-cream {
+    @include tc-pattern-top('the_cut_pattern_reddeep.svg', 0.22);
+    background-color: #F1ECE8;
+}
 
 body:has(#wrapwrap.tc-site) {
     --#{$prefix}body-font-family: #{$tc-figtree};
@@ -180,8 +270,63 @@ body:has(#wrapwrap.tc-site) {
         }
     }
 
+    // Sign in, sign up, verification code, reset password and the empty cart: a white
+    // card with the logo on the cream pattern, instead of a blank page
+    main:has(> .oe_website_login_container), main:has(> .o_journey_order_empty) {
+        @include tc-pattern-cream;
+        padding: 48px 16px 64px;
+    }
+    .oe_website_login_container :is(.oe_login_form, .oe_signup_form, .oe_reset_password_form) {
+        max-width: none;
+        margin: 0 !important; // the card has the room around the form
+    }
+    .oe_website_login_container, .o_journey_order_empty > .container {
+        max-width: 440px;
+        margin: 0 auto;
+        padding: 28px 28px 32px !important;
+        background: #FFFFFF;
+        border-radius: 20px;
+        box-shadow: 0 14px 40px rgba($tc-red-dark, 0.14);
+
+        &::before {
+            content: "";
+            display: block;
+            width: 76px;
+            height: 76px;
+            margin: 0 auto 16px;
+            background: url("/website_the_cut_pages/static/src/img/logo_black.png") center / contain no-repeat;
+        }
+    }
+    .o_journey_order_empty > .container {
+        h2 { font-size: 40px; color: $tc-red; }
+        .btn { margin-top: 8px; }
+    }
+
     // Contact page: the top of the new pages replaces the photo banner
     &:has(.tc-contact-hero) #wrap > section.s_title:first-child { display: none !important; }
+}
+
+// The Cut icon pattern on a red section (brand pack: red ground, white lines at 17%, 600px tile)
+// On the red sections: white lines at 17%; quieter (10%) on the dark red of the footer
+.tc-pattern-red { @include tc-pattern-top('the_cut_pattern_white.svg', 0.17); }
+.tc-pattern-dark { @include tc-pattern-top('the_cut_pattern_white.svg', 0.1); }
+
+// A page that starts with a red section (.tc-top): the menu and that section are one red
+// block, the pattern starts behind the menu and fades out in the section. The tracking
+// strip of an open order stays on top of it.
+#wrapwrap:has(.tc-top) {
+    .tc-header {
+        @include tc-pattern-top('the_cut_pattern_white.svg', 0.17);
+        &::before { height: 340px; max-height: none; }
+    }
+    .tc-top {
+        border-top: 0 !important;
+        &::before { display: none; }
+    }
+    .o_journey_track_bar {
+        position: relative;
+        z-index: 11;
+    }
 }
 
 // Motion (BRD 3.2 and 3.4)
