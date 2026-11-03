@@ -7,9 +7,9 @@
         <field name="arch" type="xml">
             <xpath expr="//block[@id='pos_inventory_section']" position="after">
                 <block title="Raw Material / Manufacturing" id="pos_raw_material_section">
-                    <setting string="Raw Material Category"
-                             help="Only products in this category, or in one of its subcategories, are listed in the raw material popup. Leave empty to list every storable product.">
-                        <field name="pos_raw_material_categ_id" options="{'no_create': True}"/>
+                    <setting string="Raw Material Categories"
+                             help="Only products in these categories, or in their subcategories, are listed in the raw material popup. Leave empty to list every storable product.">
+                        <field name="pos_raw_material_categ_ids" widget="many2many_tags" options="{'no_create': True}"/>
                     </setting>
                     <setting string="Raw Material Tolerance"
                              help="How far the raw material total may differ from the quantity sold, in the finished product's unit (0.1 = 100 g for products sold by the kilo). Over the tolerance the order is blocked; under it the cashier is warned but may continue, except for products set to Mandatory, which are blocked too. Skipped when the units are not convertible.">

@@ -13,8 +13,8 @@ class ProductProduct(models.Model):
         Restricted to storable (inventory-tracked) products only —
         not services or combos. Stock quantity is not checked here.
 
-        When the POS has a Raw Material Category set, only products in
-        that category or one of its subcategories are listed.
+        When the POS has Raw Material Categories set, only products in
+        one of them or in one of their subcategories are listed.
 
         The search term is split into words and every word must match,
         in any order, against the name, internal reference or barcode:
@@ -29,8 +29,8 @@ class ProductProduct(models.Model):
         domain = [('is_storable', '=', True)]
 
         config = self.env['pos.config'].browse(config_id).exists()
-        if config.raw_material_categ_id:
-            domain.append(('categ_id', 'child_of', config.raw_material_categ_id.id))
+        if config.raw_material_categ_ids:
+            domain.append(('categ_id', 'child_of', config.raw_material_categ_ids.ids))
 
         for word in self._split_raw_material_search(search_term):
             domain += [

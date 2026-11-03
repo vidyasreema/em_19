@@ -1,6 +1,6 @@
 {
     'name': 'POS Direct Manufacturing Integration',
-    'version': '19.0.1.2.0',
+    'version': '19.0.1.3.0',
     'category': 'Point of Sale',
     'summary': 'Create Manufacturing Orders directly from POS for '
                'meat-shop style ad-hoc raw material usage',
