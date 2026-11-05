@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Annex 4A: one screen, product name + Available / Out of stock switch -->
+    <record id="action_online_product_availability" model="ir.actions.client">
+        <field name="name">Product Availability</field>
+        <field name="tag">online_orders.product_availability</field>
+    </record>
+
+    <!-- Product page: an out-of-stock product shows why it cannot be bought
+         (Odoo's own message would say "no valid combination"). -->
+    <template id="product_title_out_of_stock" inherit_id="website_sale.product_title"
+              name="Online Orders: out-of-stock product page">
+        <xpath expr="//p[@t-elif='not is_add_to_cart_possible']" position="before">
+            <p t-elif="not is_add_to_cart_possible and product._online_is_sold_out(website)"
+               class="alert alert-dark fw-semibold o_online_product_out_of_stock">
+                Out of stock: this product is not available at the moment.
+            </p>
+        </xpath>
+    </template>
+</odoo>

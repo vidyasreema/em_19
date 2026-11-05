@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+    <t t-name="online_orders.ProductAvailability">
+        <div class="o_action o_online_availability h-100 overflow-auto">
+            <div class="o_online_availability_sheet">
+                <div class="o_online_availability_header d-flex flex-wrap align-items-center justify-content-between gap-2">
+                    <div>
+                        <div class="o_online_availability_app">Online Orders</div>
+                        <h1 class="o_online_availability_title">Product Availability</h1>
+                    </div>
+                    <div class="o_online_availability_search">
+                        <i class="fa fa-search" aria-hidden="true"/>
+                        <input type="search" class="form-control" placeholder="Search products..."
+                               aria-label="Search products"
+                               t-att-value="state.search" t-on-input="onSearch"/>
+                    </div>
+                </div>
+
+                <div class="o_online_availability_filters d-flex flex-wrap gap-2" role="group">
+                    <t t-foreach="filters" t-as="filter" t-key="filter.key">
+                        <button type="button"
+                                t-attf-class="o_online_availability_filter o_online_filter_{{filter.key}} {{state.filter === filter.key ? 'active' : ''}}"
+                                t-att-aria-pressed="state.filter === filter.key ? 'true' : 'false'"
+                                t-on-click="() => this.setFilter(filter.key)">
+                            <t t-out="filter.label"/>
+                            <span class="o_online_availability_count" t-out="filter.count"/>
+                        </button>
+                    </t>
+                </div>
+
+                <ul class="o_online_availability_list list-unstyled m-0">
+                    <t t-foreach="visible" t-as="product" t-key="product.id">
+                        <li t-attf-class="o_online_availability_row d-flex align-items-center justify-content-between gap-3 {{product.out_of_stock ? 'o_out_of_stock' : ''}}"
+                            t-att-data-product-id="product.id">
+                            <span class="o_online_availability_name" t-out="product.name"/>
+                            <button type="button" role="switch"
+                                    t-attf-class="o_online_availability_switch {{product.out_of_stock ? 'o_off' : 'o_on'}}"
+                                    t-att-aria-checked="product.out_of_stock ? 'false' : 'true'"
+                                    t-att-aria-label="product.name"
+                                    t-att-disabled="state.saving[product.id] ? 'disabled' : undefined"
+                                    t-on-click="() => this.toggle(product)">
+                                <span class="o_online_switch_knob">
+                                    <i t-attf-class="fa {{product.out_of_stock ? 'fa-times' : 'fa-check'}}" aria-hidden="true"/>
+                                </span>
+                                <span class="o_online_switch_label"
+                                      t-out="product.out_of_stock ? 'OUT OF STOCK' : 'AVAILABLE'"/>
+                            </button>
+                        </li>
+                    </t>
+                    <li t-if="state.loaded and !visible.length" class="o_online_availability_empty">
+                        No products match.
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </t>
+
+</templates>
