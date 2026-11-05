@@ -1,4 +1,5 @@
 import json
+import re
 
 from odoo import Command, http
 from odoo.tests import new_test_user, tagged
@@ -220,11 +221,104 @@ class TestOrderPage(OrderCommon):
         self.assertEqual(order.order_note, 'Gate 2, then the lift')
         self.assertEqual(guest.delivery_directions, 'Gate 2, then the lift', "saved for this address")
 
-    def test_consent_unticked_by_default(self):
+    def test_consent_ticked_until_answered(self):
+        """Annex 3B, 4.2: ticked by default; unticked, it stays unticked."""
         order = self._guest_cart(10)
+        consent = re.compile(r'<input id="o_journey_consent"[^>]*checked')
+        self.assertRegex(self.url_open('/shop/order').text, consent, "ticked before the address")
         guest = self._give_address(order)
-        self.make_jsonrpc_request('/shop/order/prepare', {'email': 'buyer@example.com'})
+        self.assertRegex(self.url_open('/shop/order').text, consent, "ticked until the customer answers")
+        self.make_jsonrpc_request('/shop/order/prepare', {'email': 'buyer@example.com', 'consent': False})
         self.assertFalse(guest.marketing_consent)
+        self.assertTrue(guest.marketing_consent_date, "the answer is remembered")
+        self.assertNotRegex(self.url_open('/shop/order').text, consent)
+
+    def test_summary_open_by_default(self):
+        """Annex 3B, 4.1: the order summary opens expanded (phones), every visit."""
+        order = self._guest_cart(10)
+        self._give_address(order)
+        for _visit in range(2):
+            page = self.url_open('/shop/order').text
+            self.assertIn('Hide order summary', page)
+            self.assertIn('id="o_journey_summary" class="collapse show d-lg-block', page)
+
+    def test_new_account_asked_for_an_address(self):
+        """Annex 3B, 4.6: a new account with no address is asked for one, with no zone error."""
+        new_test_user(self.env, login='noaddress', groups='base.group_portal', email='noaddress@example.com')
+        self.authenticate('noaddress', 'noaddress')
+        self._guest_cart(10)
+        page = self.url_open('/shop/order').text
+        self.assertIn('data-needs-address="1"', page, "the Address details sheet opens")
+        self.assertNotIn('unable to ship', page)
+        self.assertNotIn('No shipping method', page)
+        result = self.make_jsonrpc_request('/shop/order/prepare', {})
+        self.assertEqual(result.get('field'), 'address')
+
+    def test_header_shows_the_checkout_address(self):
+        """Annex 3B, 2.2: the address chosen at checkout is the "Deliver to" of every page."""
+        order = self._guest_cart(10)
+        self.assertIn('data-has-location="0"', self.url_open('/shop').text)
+        self._give_address(order, lat=24.47, lng=54.36)
+        self.url_open('/shop/order')
+        shop = self.url_open('/shop').text
+        self.assertIn('data-has-location="1"', shop)
+        self.assertIn('Deliver to <strong>Apt 5</strong>', shop)
+
+    def _pickup_method(self):
+        product = self.env['product.product'].create({'name': 'Pickup', 'type': 'service'})
+        return self.env['delivery.carrier'].create({
+            'name': 'Pick up in store', 'product_id': product.id, 'delivery_type': 'fixed', 'fixed_price': 0.0,
+            'online_pickup': True, 'website_published': True,
+            'enable_same_day_delivery': True, 'promise_same_day_cutoff': 24.0, 'promise_same_day_hours': 1.0,
+            'message_scenario_1': 'Ready for pickup within 1 hour',
+        })
+
+    def test_guest_pickup(self):
+        """Annex 3B, 5.1: pickup from the shop, free, with no address."""
+        self.env.company.partner_id.write({'street': 'Shop No. 22', 'street2': 'Meat Market, Mushrif Mall'})
+        order = self._guest_cart(10)
+        self.assertNotIn('o_journey_fulfil', self.url_open('/shop/order').text, "no pickup method: no choice")
+        pickup = self._pickup_method()
+        page = self.url_open('/shop/order').text
+        self.assertIn('How would you like to get your order?', page)
+        self.assertIn('Or pick up from our shop', page, "also in the Address details sheet")
+
+        self.assertTrue(self.make_jsonrpc_request('/shop/order/fulfilment', {'pickup': True}).get('ok'))
+        self.assertEqual(order.carrier_id, pickup)
+        page = self.url_open('/shop/order').text
+        self.assertEqual(order.carrier_id, pickup, "the page keeps the pickup")
+        self.assertIn('Pickup details', page)
+        self.assertIn('Shop No. 22, Meat Market, Mushrif Mall', page)
+        self.assertIn('Ready for pickup within 1 hour', page)
+        self.assertIn('data-needs-address="0"', page)
+        self.assertNotIn('Delivery address</h3>', page)
+        self.assertNotIn('Instructions for the driver', page)
+        self.assertEqual(order.amount_delivery, 0.0)
+
+        result = self.make_jsonrpc_request('/shop/order/prepare', {'email': 'picker@example.com'})
+        self.assertEqual(result.get('field'), 'pickup_name')
+        result = self.make_jsonrpc_request('/shop/order/prepare', {
+            'email': 'picker@example.com', 'pickup_name': 'Sara Picker', 'pickup_phone': '0501234567'})
+        self.assertTrue(result.get('ok'), result)
+        self.assertEqual(order.partner_id.name, 'Sara Picker')
+        self.assertEqual(order.partner_id.email, 'picker@example.com')
+        self.assertEqual(order.carrier_id, pickup, "a new customer keeps the pickup")
+        self.assertIn(order.carrier_id, order._get_delivery_methods(), "ready to be paid")
+
+        # Back to delivery: the address is asked again
+        self.make_jsonrpc_request('/shop/order/fulfilment', {'pickup': False})
+        self.assertFalse(order.carrier_id)
+
+    def test_pickup_off_the_shop_needs_no_address(self):
+        pickup = self._pickup_method()
+        order = self._guest_cart(10)
+        with MockRequest(self.env, website=self.website):
+            self.assertTrue(self.website._journey_cart_needs_address(order))
+            order._set_delivery_method(pickup)
+            self.assertFalse(self.website._journey_cart_needs_address(order), "View cart goes straight to the order")
+        pickup.website_published = False
+        self.assertEqual(self.make_jsonrpc_request('/shop/order/fulfilment', {'pickup': True}).get('error'),
+                         'Pickup from our shop is not available right now.')
 
     def test_coupon_routes(self):
         order = self._guest_cart(405)
@@ -255,7 +349,7 @@ class TestOrderPage(OrderCommon):
         })
         self.authenticate('member', 'member')
         page = self.url_open('/shop/order').text
-        self.assertIn('Signed in as', page)
+        self.assertNotIn('Signed in as', page, "Annex 3B, 4.3")
         self.assertNotIn('New here? Sign up', page)
         self.assertTrue(order.order_line.filtered(lambda l: l.reward_id.program_id == self.welcome),
                         "the welcome coupon is applied after signing up")
@@ -281,19 +375,21 @@ class TestOrderPage(OrderCommon):
         self.assertIn('o_journey_mycoupon_apply', page, "and Apply")
         self.assertNotIn('href="/my/coupons" class="small d-inline-block', page, "no link away from the page")
 
-    def test_news_and_offers_for_new_customers(self):
+    def test_news_and_offers_not_asked_to_members(self):
+        """Annex 3B, 4.3: a signed-in customer sees no consent box, even on a first order."""
         user, _order = self._member_cart('newbuyer')
         page = self.url_open('/shop/order').text
-        self.assertIn('o_journey_consent', page, "first order: asked")
-        self.make_jsonrpc_request('/shop/order/prepare', {'consent': True})
-        self.assertTrue(user.partner_id.marketing_consent)
+        self.assertNotIn('o_journey_consent', page)
+        self.assertNotIn('Signed in as', page)
+        self.assertTrue(self.make_jsonrpc_request('/shop/order/prepare', {}).get('ok'))
+        self.assertFalse(user.partner_id.marketing_consent_date, "no answer given: nothing saved")
 
     def test_news_and_offers_not_asked_again(self):
         user, _order = self._member_cart('regular')
         user.partner_id._journey_set_marketing_consent(True)
         self._order(10, self.island, user.partner_id).action_confirm()
         page = self.url_open('/shop/order').text
-        self.assertIn('Signed in as', page)
+        self.assertNotIn('Signed in as', page)
         self.assertNotIn('o_journey_consent', page, "returning customer: not asked")
         self.assertTrue(self.make_jsonrpc_request('/shop/order/prepare', {}).get('ok'))
         self.assertTrue(user.partner_id.marketing_consent, "their choice stays")

@@ -1,4 +1,5 @@
 from . import online_order_stage
+from . import delivery_carrier
 from . import sale_order
 from . import res_partner
 from . import product

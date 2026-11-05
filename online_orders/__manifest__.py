@@ -1,6 +1,6 @@
 {
     'name': 'Online Orders',
-    'version': '19.0.1.3.0',
+    'version': '19.0.1.4.0',
     'category': 'Sales/Sales',
     'summary': 'Sales team board for website orders: stages, dispatch page, customer addresses',
     'description': """
@@ -37,6 +37,7 @@
         'data/ir_cron_data.xml',
         'wizard/online_order_cancel_wizard_views.xml',
         'views/online_order_stage_views.xml',
+        'views/delivery_carrier_views.xml',
         'views/sale_order_views.xml',
         'views/res_partner_views.xml',
         'views/report_views.xml',

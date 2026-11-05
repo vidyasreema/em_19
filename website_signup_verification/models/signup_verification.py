@@ -31,6 +31,9 @@ class WebsiteSignupVerification(models.TransientModel):
     password_hash = fields.Char(help='Password chosen on the sign-up form (encrypted). '
                                      'Empty: the password is chosen with the code.')
     redirect = fields.Char()
+    marketing_consent = fields.Selection(
+        [('yes', 'Yes'), ('no', 'No')],
+        help='"Email me with news and offers" of the sign-up form. Empty: not asked.')
     lang = fields.Char()
     email_from = fields.Char()
     code_hash = fields.Char()
@@ -40,7 +43,7 @@ class WebsiteSignupVerification(models.TransientModel):
     attempts = fields.Integer()
 
     @api.model
-    def _start(self, website, email, name='', password=None, redirect=''):
+    def _start(self, website, email, name='', password=None, redirect='', consent=None):
         """New sign-up waiting for its code; the code is sent."""
         company = website.sudo().company_id  # visitors may not read the email domain
         domain = company.alias_domain_id.name
@@ -51,6 +54,7 @@ class WebsiteSignupVerification(models.TransientModel):
             'name': (name or '').strip(),
             'password_hash': self.env['res.users']._crypt_context().hash(password) if password else False,
             'redirect': redirect if redirect and redirect.startswith('/') and not redirect.startswith('//') else '',
+            'marketing_consent': False if consent is None else ('yes' if consent else 'no'),
             'lang': self.env.context.get('lang'),
             'email_from': email_from,
         })
@@ -131,5 +135,7 @@ class WebsiteSignupVerification(models.TransientModel):
         elif self.password_hash:
             Users._set_encrypted_password(user.id, self.password_hash)
         records[1:]._signup_flag_duplicates(user.partner_id)
+        if self.marketing_consent:
+            user.partner_id._journey_set_marketing_consent(self.marketing_consent == 'yes')
         self.unlink()
         return user

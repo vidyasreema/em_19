@@ -22,6 +22,7 @@ export class JourneyAddressSheet extends Interaction {
             "t-on-click": this.onDocumentClick,
         },
         ".o_journey_address_edit_pin": { "t-on-click": this.editPin },
+        ".o_journey_pickup_instead": { "t-on-click": this.locked(this.pickupInstead, true) },
         ".o_journey_address_form": { "t-on-submit.prevent": this.locked(this.save, true) },
     };
 
@@ -58,6 +59,19 @@ export class JourneyAddressSheet extends Interaction {
             this.pickerEl.addEventListener("hidden.bs.modal", onPickerHidden);
             this.registerCleanup(() => this.pickerEl.removeEventListener("hidden.bs.modal", onPickerHidden));
         }
+    }
+
+    /** No address needed: the order is picked up from the shop (Annex 3B, 5.1). */
+    async pickupInstead() {
+        const result = await this.waitFor(rpc("/shop/order/fulfilment", { pickup: true }));
+        if (result.error && !result.reload) {
+            const errorEl = this.el.querySelector(".o_journey_address_error");
+            errorEl.textContent = result.error;
+            errorEl.classList.remove("d-none");
+            return;
+        }
+        window.location = "/shop/order";
+        return new Promise(() => {}); // keep the button locked while the page changes
     }
 
     onDocumentClick(ev) {

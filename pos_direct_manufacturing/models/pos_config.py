@@ -50,6 +50,17 @@ class PosConfig(models.Model):
              "example meat measured in kg used for a product sold in Units.",
     )
 
+    raw_material_categ_ids = fields.Many2many(
+        'product.category',
+        'pos_config_raw_material_categ_rel',
+        'config_id',
+        'categ_id',
+        string='Raw Material Categories',
+        help="Only products in one of these categories, or in one of "
+             "their subcategories, can be picked in the raw material popup. "
+             "Leave empty to allow any storable product.",
+    )
+
     @api.model
     def _load_pos_data_fields(self, config):
         fields_list = super()._load_pos_data_fields(config)

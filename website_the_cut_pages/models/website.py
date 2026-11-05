@@ -158,6 +158,21 @@ class Website(models.Model):
         methods = self._cut_delivery_methods() if methods is None else methods
         return methods.filtered(lambda m: m.cut_area == 'abu_dhabi' and m.enable_same_day_delivery)[:1]
 
+    def _cut_product_delivery_line(self):
+        """Line of the product page (Annex 3B, 3.1): same-day delivery and free pickup,
+        from the delivery methods ('' when neither is offered)."""
+        self.ensure_one()
+        methods = self._cut_delivery_methods()
+        parts = []
+        same_day = self._cut_same_day_method(methods)
+        if same_day:
+            parts.append("Same-day delivery in Abu Dhabi for orders before %s" % cut_time(same_day.promise_same_day_cutoff))
+        pickup = methods.filtered(lambda m: m.cut_area == 'pickup')[:1]
+        price = self._cut_delivery_price(pickup)
+        if price is not None and self.company_id.currency_id.is_zero(price):
+            parts.append("Free pickup from our shop")
+        return ' · '.join(parts)
+
     def _journey_location_values(self):
         # "Deliver to" bar, before the customer sets a location: the cut-off time of the delivery method
         values = super()._journey_location_values()

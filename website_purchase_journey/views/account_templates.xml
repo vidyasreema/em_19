@@ -10,6 +10,21 @@
         </a>
     </template>
 
+    <!-- My Account > account details (Edit): "Email me with news and offers", as chosen
+         at sign-up or checkout; the customer can change it here -->
+    <template id="portal_my_details_consent" inherit_id="portal.portal_my_details" name="Purchase Journey: news and offers">
+        <xpath expr="//div[@name='address_details']" position="inside">
+            <div t-if="website.journey_enabled" class="col-12 mt-2 mb-2 o_journey_account_consent">
+                <input type="hidden" name="journey_consent_shown" value="1"/>
+                <div class="form-check">
+                    <input id="o_journey_account_consent" type="checkbox" name="journey_consent" value="1"
+                           class="form-check-input" t-att-checked="partner_sudo.marketing_consent or None"/>
+                    <label for="o_journey_account_consent" class="form-check-label">Email me with news and offers</label>
+                </div>
+            </div>
+        </xpath>
+    </template>
+
     <!-- My Account, customer card: lifetime savings (C7) and WhatsApp help
          instead of "Your contact" (B6) -->
     <template id="portal_side_content_journey" inherit_id="portal.side_content" name="Purchase Journey: customer card">

@@ -46,3 +46,33 @@ export class TheCutVideos extends Interaction {
 }
 
 registry.category("public.interactions").add("website_the_cut_pages.videos", TheCutVideos);
+
+// Menu button of the header on phones: opens and closes the menu below the header
+export class TheCutMenu extends Interaction {
+    static selector = ".tc-header";
+    dynamicContent = {
+        ".tc-menu-btn": {
+            "t-on-click": this.toggle,
+            "t-att-aria-expanded": () => String(this.open),
+        },
+        _root: { "t-att-class": () => ({ "tc-menu-open": this.open }) },
+        _document: { "t-on-keydown": this.onKeydown },
+    };
+
+    setup() {
+        this.open = false;
+    }
+
+    toggle() {
+        this.open = !this.open;
+    }
+
+    onKeydown(ev) {
+        if (ev.key === "Escape" && this.open) {
+            this.open = false;
+            this.el.querySelector(".tc-menu-btn").focus();
+        }
+    }
+}
+
+registry.category("public.interactions").add("website_the_cut_pages.menu", TheCutMenu);

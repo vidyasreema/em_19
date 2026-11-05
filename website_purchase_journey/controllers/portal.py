@@ -92,6 +92,16 @@ class JourneyPortal(CustomerPortal):
         values = self.my_orders_reorder(order_id, access_token=access_token)
         return {'cart_quantity': values['cart_quantity']}
 
+    def _create_or_update_address(self, partner_sudo, *args, **form_data):
+        """Account details: "Email me with news and offers" is saved on the
+        customer (it is not an address field)."""
+        consent_shown = form_data.pop('journey_consent_shown', None)
+        consent = form_data.pop('journey_consent', None)
+        partner_sudo, feedback = super()._create_or_update_address(partner_sudo, *args, **form_data)
+        if consent_shown and 'redirectUrl' in feedback and partner_sudo == request.env.user.partner_id:
+            partner_sudo._journey_set_marketing_consent(bool(consent))
+        return partner_sudo, feedback
+
     def _validate_address_values(self, address_values, partner_sudo, address_type, *args, **kwargs):
         """The phone of the account and address forms is a UAE number (stored
         in its international format), like the one of the address sheet."""

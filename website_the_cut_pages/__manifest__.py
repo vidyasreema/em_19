@@ -1,6 +1,6 @@
 {
     'name': 'The Cut: Website Pages',
-    'version': '19.0.1.1.0',
+    'version': '19.0.1.2.0',
     'category': 'Website/Website',
     'summary': 'The Cut homepage, Delivery & Pickup, Privacy, Terms, About Us, and the header and footer of the site',
     'description': """

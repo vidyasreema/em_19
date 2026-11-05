@@ -49,6 +49,13 @@ class TestJourneyShop(JourneyCommon):
         self.assertIn('o_journey_from', page)
         self.assertIn('Same-day delivery in Abu Dhabi for orders before 7:00 PM', page, "general message")
 
+    def test_out_of_stock_last(self):
+        self.sold_out.website_sequence = 1  # first in the shop order
+        (self.multi | self.single).website_sequence = 50
+        page = self.url_open('/shop?search=TOUR').text
+        self.assertLess(page.index('TOUR Sausages'), page.index('TOUR Tomahawk'), "in stock first")
+        self.assertLess(page.index('TOUR Ribeye'), page.index('TOUR Tomahawk'), "out of stock last")
+
     def test_switch_off(self):
         self.website.journey_enabled = False
         page = self.url_open('/shop').text

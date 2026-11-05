@@ -26,6 +26,15 @@
             <field name="portal_label">Delivered</field>
             <field name="portal_color">success</field>
         </record>
+        <!-- Annex 3B, 5.2: pickup orders go from New straight here -->
+        <record id="stage_picked_up" model="online.order.stage">
+            <field name="name">Picked up</field>
+            <field name="sequence">35</field>
+            <field name="code">picked_up</field>
+            <field name="mail_template_id" ref="mail_template_picked_up"/>
+            <field name="portal_label">Picked up</field>
+            <field name="portal_color">success</field>
+        </record>
         <record id="stage_completed" model="online.order.stage">
             <field name="name">Completed</field>
             <field name="sequence">40</field>

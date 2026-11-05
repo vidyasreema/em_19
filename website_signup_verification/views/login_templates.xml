@@ -50,6 +50,19 @@
         </xpath>
     </template>
 
+    <!-- "Email me with news and offers", ticked by default; as chosen when the form comes back with an error -->
+    <template id="signup_marketing_consent" inherit_id="auth_signup.signup" name="Sign-up: news and offers">
+        <xpath expr="//form[hasclass('oe_signup_form')]/t[@t-call='auth_signup.fields']" position="after">
+            <t t-set="consent_unticked" t-value="request.httprequest.method == 'POST' and not request.params.get('journey_consent')"/>
+            <input type="hidden" name="journey_consent_shown" value="1"/>
+            <div class="form-check mb-3 o_signup_consent">
+                <input id="journey_consent" type="checkbox" name="journey_consent" value="1"
+                       class="form-check-input" t-att-checked="None if consent_unticked else 'checked'"/>
+                <label for="journey_consent" class="form-check-label">Email me with news and offers</label>
+            </div>
+        </xpath>
+    </template>
+
     <!-- The Google / Facebook buttons are at the top: not again under the form
          (other sign-in options, e.g. passkeys, stay there) -->
     <template id="login_oauth_social_first" inherit_id="web.login_oauth" name="Sign-in options: without Google / Facebook">

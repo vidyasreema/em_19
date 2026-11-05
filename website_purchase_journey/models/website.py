@@ -115,7 +115,7 @@ class Website(models.Model):
             ('website_id', '=', self.id),
             ('state', '=', 'sale'),
             ('stage_id', '!=', False),
-            ('stage_id.code', 'not in', ('delivered', 'completed', 'cancelled')),
+            ('stage_id.code', 'not in', ('delivered', 'picked_up', 'completed', 'cancelled')),
         ])
         if self.env.user._is_public():
             order_id = request and request.session.get('sale_last_order_id')
@@ -163,10 +163,27 @@ class Website(models.Model):
     # ──────────────────────────────────────────────────────────────────────────
 
     def _journey_cart_needs_address(self, cart):
-        """Whether View cart asks for the delivery address first (the cart has none yet)."""
-        if not cart or cart.only_services:
+        """Whether View cart asks for the delivery address first (the cart has none
+        yet). Pickup from the shop needs none."""
+        if not cart or cart.only_services or cart.carrier_id.online_pickup:
             return False
         return cart._is_anonymous_cart() or not cart.partner_shipping_id.street
+
+    def _journey_pickup_method(self):
+        """The published "Pickup from the Shop" delivery method of this website (empty: no pickup)."""
+        self.ensure_one()
+        return self.env['delivery.carrier'].sudo().search([
+            ('online_pickup', '=', True),
+            ('is_published', '=', True),
+            ('website_id', 'in', (False, self.id)),
+            ('company_id', 'in', (False, self.company_id.id)),
+        ], order='sequence, id', limit=1)
+
+    def _journey_shop_address(self):
+        """'Shop No. 22, Meat Market, Mushrif Mall': where pickup orders are collected."""
+        self.ensure_one()
+        partner = self.company_id.sudo().partner_id
+        return ', '.join(filter(None, [partner.street, partner.street2]))
 
     def _journey_address_sheet_values(self):
         """Pin, receiver name and mobile a new address starts with."""
@@ -233,6 +250,14 @@ class Website(models.Model):
     def _journey_session_point(self):
         lat, lng = request.session.get(SESSION_LAT), request.session.get(SESSION_LNG)
         return (lat, lng) if lat and lng else None
+
+    def _journey_sync_location(self, address):
+        """The delivery address chosen at checkout becomes the location of the
+        "Deliver to" bar on every page (Annex 3B, 2.2)."""
+        self.ensure_one()
+        point = (address.partner_latitude, address.partner_longitude)
+        if all(point) and point != self._journey_session_point():
+            self._journey_set_location(*point, area=address.street2 or address.city or '')
 
     def _journey_set_location(self, latitude, longitude, area=''):
         request.session[SESSION_LAT] = latitude

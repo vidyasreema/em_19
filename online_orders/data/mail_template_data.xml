@@ -48,6 +48,29 @@
             </field>
         </record>
 
+        <record id="mail_template_picked_up" model="mail.template">
+            <field name="name">Online Orders: Picked up</field>
+            <field name="model_id" ref="sale.model_sale_order"/>
+            <field name="subject">Thank you for your order {{ object.name }}</field>
+            <field name="email_from">{{ (object.website_id.online_orders_email_from or object.company_id.email_formatted or user.email_formatted) }}</field>
+            <field name="partner_to">{{ object.partner_id.id }}</field>
+            <field name="lang">{{ object.partner_id.lang }}</field>
+            <field name="auto_delete" eval="True"/>
+            <field name="use_default_to" eval="False"/>
+            <field name="description">Sent when a pickup order is collected at the shop</field>
+            <field name="body_html" type="html">
+                <div style="margin: 0px; padding: 0px;">
+                    <p>Hello <t t-out="object.partner_id.name or ''">Customer</t>,</p>
+                    <p>You have picked up your order <strong t-out="object.name or ''">S00001</strong>. Enjoy!</p>
+                    <t t-if="object.online_next_order_coupons">
+                        <p>Your coupon for your next order:
+                            <strong t-out="object.online_next_order_coupons">CODE</strong></p>
+                    </t>
+                    <p>Thank you for shopping with <t t-out="object.company_id.name or ''">The Cut</t>!</p>
+                </div>
+            </field>
+        </record>
+
         <record id="mail_template_cancelled" model="mail.template">
             <field name="name">Online Orders: Cancelled</field>
             <field name="model_id" ref="sale.model_sale_order"/>

@@ -9,6 +9,11 @@
                 ('Out for delivery', 'Your driver is on the way.'),
                 ('Delivered', 'Enjoy. Your next-order coupon is in your account.' if track_order.online_next_order_coupons else 'Enjoy.'),
             ]"/>
+            <!-- Pickup from the shop: no delivery step (Annex 3B, 5.2) -->
+            <t t-if="track_order.sudo().carrier_id.online_pickup" t-set="steps" t-value="[
+                ('Order received', 'We are preparing your cuts. Collect them at %s.' % website._journey_shop_address() if website._journey_shop_address() else 'We are preparing your cuts.'),
+                ('Picked up', 'Enjoy. Your next-order coupon is in your account.' if track_order.online_next_order_coupons else 'Enjoy.'),
+            ]"/>
             <div class="o_journey_track_page mx-auto my-3">
                 <div class="text-center mb-4">
                     <span t-attf-class="o_journey_track_icon d-inline-flex align-items-center justify-content-center rounded-circle mb-2 #{'o_journey_track_icon_cancel' if step == -1 else ''}">

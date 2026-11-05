@@ -16,3 +16,7 @@ class ResConfigSettings(models.TransientModel):
         related='pos_config_id.raw_material_tolerance',
         readonly=False,
     )
+    pos_raw_material_categ_ids = fields.Many2many(
+        related='pos_config_id.raw_material_categ_ids',
+        readonly=False,
+    )

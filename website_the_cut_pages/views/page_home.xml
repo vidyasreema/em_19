@@ -5,8 +5,8 @@
         <t t-call="website.layout">
             <t t-set="pageName" t-value="'homepage'"/>
             <div id="wrap" class="tc-root" style="overflow: hidden; background: #FFFFFF; color: #1B1414">
-                <!-- 1. Header (red): title, the two delivery cards, Shop now, the tomahawk -->
-                <section style="background: #7E1416; color: #FFFFFF; border-top: 1px solid #94262A; overflow: hidden">
+                <!-- 1. Header (red, with The Cut pattern): title, the two delivery cards, Shop now, the tomahawk -->
+                <section class="tc-pattern-red tc-top" style="background-color: #7E1416; color: #FFFFFF; border-top: 1px solid #94262A; overflow: hidden">
                     <div style="max-width: 1120px; margin: 0 auto; padding: 56px 24px 40px; display: flex; flex-wrap: wrap; gap: 40px; align-items: center">
                         <div style="flex: 999 1 440px; min-width: 0">
                             <h1 style="margin: 0; font-family: 'Capture it', Impact, sans-serif; font-weight: 400; font-size: clamp(44px, 9vw, 84px); line-height: 1; color: #FFFFFF">EVERY CUT HAS A STORY</h1>
@@ -33,21 +33,23 @@
                         <div style="flex: 1 1 320px; min-width: 0; max-width: 440px; margin: 0 auto; position: relative; display: flex; align-items: center; justify-content: center; min-height: 440px">
                             <div aria-hidden="true" class="tc-anim tc-blob" style="position: absolute; top: 18%; right: 0; bottom: 4%; left: 6%; background: #F5A524; border-radius: 46% 54% 42% 58% / 58% 40% 60% 42%; transform: rotate(-6deg)"/>
                             <img src="/website_the_cut_pages/static/src/img/home_tomahawk.webp" alt="Wagyu tomahawk steak" class="tc-anim tc-float"
+                                 srcset="/website_the_cut_pages/static/src/img/home_tomahawk_400.webp 400w, /website_the_cut_pages/static/src/img/home_tomahawk.webp 600w"
+                                 sizes="(max-width: 480px) 62vw, 280px"
                                  width="600" height="1098" fetchpriority="high"
                                  style="position: relative; width: 62%; max-width: 280px; height: auto; display: block; filter: drop-shadow(0 22px 24px rgba(40, 0, 0, 0.45))"/>
                         </div>
                     </div>
                 </section>
 
-                <!-- 2. It starts in New Zealand -->
+                <!-- 2. It starts in New Zealand (min-height: Odoo drops the height of sections on phones) -->
                 <div id="nz"/>
-                <section style="position: relative; height: 660px; overflow: hidden; background: #1B1414">
+                <section style="position: relative; min-height: 660px; overflow: hidden; background: #1B1414">
                     <video data-src="/website_the_cut_pages/static/src/video/home_nz_aerial_landscape.mp4"
                            poster="/website_the_cut_pages/static/src/img/home_nz_poster.webp"
                            muted="" loop="" playsinline="" preload="none" aria-hidden="true"
                            style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover"/>
                     <div aria-hidden="true" style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: linear-gradient(#7E1416 0%, rgba(126, 20, 22, 0) 28%, rgba(0, 0, 0, 0) 50%, rgba(20, 16, 16, 0.8) 88%, #141010 100%)"/>
-                    <div style="position: relative; max-width: 1120px; height: 100%; margin: 0 auto; padding: 0 24px 64px; box-sizing: border-box; display: flex; flex-direction: column; justify-content: flex-end; gap: 14px; color: #FFFFFF">
+                    <div style="position: relative; max-width: 1120px; min-height: 660px; margin: 0 auto; padding: 0 24px 64px; box-sizing: border-box; display: flex; flex-direction: column; justify-content: flex-end; gap: 14px; color: #FFFFFF">
                         <h2 style="margin: 0; max-width: 760px; font-family: 'Capture it', Impact, sans-serif; font-weight: 400; font-size: clamp(40px, 8vw, 76px); line-height: 1; color: #FFFFFF">IT STARTS IN NEW ZEALAND</h2>
                         <p style="margin: 0; max-width: 560px; font-size: 19px; color: #F1ECE8">Green hills, clean rivers and animals raised on open pasture. This is where our Wagyu and venison come from.</p>
                     </div>
@@ -146,13 +148,14 @@
                     </div>
                 </section>
 
-                <!-- 5. Marbling you can see -->
-                <section style="position: relative; height: 560px; overflow: hidden; background: #1B1414">
+                <!-- 5. Marbling you can see (grows with its text on phones, clear of the edge above and the yellow strip).
+                     Light top under the edge and video 2px lower: no dark hairline on phone screens -->
+                <section style="position: relative; min-height: 560px; overflow: hidden; background: linear-gradient(#EEF0E8 0 6px, #1B1414 6px)">
                     <t t-call="website_the_cut_pages.horizon"><t t-set="tc_fill" t-value="'#EEF0E8'"/><t t-set="tc_z" t-value="2"/></t>
                     <video data-src="/website_the_cut_pages/static/src/video/home_ribeye_marbling.mp4" muted="" loop="" playsinline="" preload="none" aria-hidden="true"
-                           style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover"/>
-                    <div aria-hidden="true" style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: linear-gradient(90deg, rgba(10, 6, 6, 0.75) 0%, rgba(10, 6, 6, 0.2) 65%)"/>
-                    <div style="position: relative; max-width: 1120px; height: 100%; margin: 0 auto; padding: 0 24px; box-sizing: border-box; display: flex; flex-direction: column; justify-content: center; gap: 16px; color: #FFFFFF">
+                           style="position: absolute; top: 2px; left: 0; width: 100%; height: calc(100% - 2px); object-fit: cover"/>
+                    <div aria-hidden="true" style="position: absolute; top: 2px; left: 0; right: 0; bottom: 0; background: linear-gradient(90deg, rgba(10, 6, 6, 0.75) 0%, rgba(10, 6, 6, 0.2) 65%)"/>
+                    <div style="position: relative; max-width: 1120px; min-height: 560px; margin: 0 auto; padding: 104px 24px 96px; box-sizing: border-box; display: flex; flex-direction: column; justify-content: center; gap: 16px; color: #FFFFFF">
                         <h2 style="margin: 0; max-width: 620px; font-family: 'Capture it', Impact, sans-serif; font-weight: 400; font-size: clamp(40px, 8vw, 72px); line-height: 1; color: #FFFFFF">MARBLING YOU CAN SEE</h2>
                         <p style="margin: 0; max-width: 460px; font-size: 19px; color: #EDE6E2">From the pasture to our butchers’ block in Abu Dhabi. Every cut prepared by hand, the same way we prepare it for five-star kitchens.</p>
                         <a href="/shop" style="align-self: flex-start; margin-top: 8px; display: inline-flex; align-items: center; padding: 14px 32px; min-height: 52px; box-sizing: border-box; background: #F5A524; color: #1B1414; text-decoration: none; font-family: Anton, Impact, 'Arial Narrow', sans-serif; font-size: 20px; letter-spacing: 0.05em; border-radius: 40px">SHOP ALL CUTS</a>
@@ -170,7 +173,7 @@
                 </div>
 
                 <!-- 7. Chapter 03: Abu Dhabi -->
-                <section style="background: #7E1416; color: #FFFFFF; position: relative; overflow: hidden">
+                <section class="tc-pattern-red" style="background-color: #7E1416; color: #FFFFFF; position: relative; overflow: hidden">
                     <div style="max-width: 1120px; margin: 0 auto; padding: 80px 24px; display: flex; flex-wrap: wrap; gap: 48px; align-items: center">
                         <div style="flex: 1 1 420px; min-width: 0; display: flex; flex-direction: column; gap: 16px">
                             <span style="font-family: Anton, Impact, 'Arial Narrow', sans-serif; font-size: 15px; letter-spacing: 0.08em">CHAPTER 03 · ABU DHABI</span>

@@ -2,14 +2,24 @@
 <templates id="template" xml:space="preserve">
     <t t-name="pos_direct_manufacturing.RawMaterialPopup">
         <Dialog title="'Select Raw Materials'">
-            <div class="raw-material-popup p-2">
+            <div class="raw-material-popup p-2" t-ref="root">
                 <div t-foreach="state.lines" t-as="line" t-key="line.id"
                      class="d-flex align-items-center gap-2 mb-2">
-                    <div class="flex-grow-1">
+                    <div class="o_raw_material_search flex-grow-1 d-flex flex-wrap align-items-center gap-1"
+                         t-att-data-line-id="line.id"
+                         t-on-keydown="(ev) => this.onSearchKeydown(line, ev)">
+                        <span t-foreach="line.terms" t-as="term" t-key="term_index"
+                              class="o_raw_material_facet d-inline-flex align-items-center">
+                            <t t-esc="term"/>
+                            <i class="fa fa-times ms-1" role="button" title="Remove"
+                               t-on-click="() => this.onRemoveTerm(line, term_index)"/>
+                        </span>
                         <AutoComplete
                             value="line.productName"
                             sources="getSources(line)"
-                            placeholder="'Search raw material...'"
+                            placeholder="line.terms.length ? 'Add another word...' : 'Search raw material...'"
+                            menuCssClass="'o_raw_material_menu'"
+                            class="'o_raw_material_input'"
                         />
                     </div>
                     <input type="number"

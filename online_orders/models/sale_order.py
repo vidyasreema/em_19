@@ -1,13 +1,17 @@
 from datetime import datetime, time, timedelta
 
+import logging
+
 import pytz
 
 from odoo import _, api, fields, models
-from odoo.exceptions import UserError
-from odoo.fields import Domain
+from odoo.exceptions import UserError, ValidationError
+from odoo.fields import Command, Domain
 from odoo.tools.misc import format_date
 
 from .online_order_stage import CLOSED_CODES
+
+_logger = logging.getLogger(__name__)
 
 CANCEL_REASONS = [
     ('address', 'Wrong address / unreachable'),
@@ -20,6 +24,11 @@ SOON_MINUTES = 45
 # Card stripe (kanban colors): Purple for today, Blue for scheduled
 DAY_COLOR_TODAY = 5
 DAY_COLOR_SCHEDULED = 8
+# The order has reached the customer: off the "open" counters
+DONE_CODES = ('delivered', 'picked_up')
+# Stages of one kind of order only (Annex 3B, 5.2)
+DELIVERY_ONLY_CODES = ('out_for_delivery', 'delivered')
+PICKUP_ONLY_CODES = ('picked_up',)
 
 
 class SaleOrder(models.Model):
@@ -138,7 +147,7 @@ class SaleOrder(models.Model):
         """On the board and not delivered yet."""
         self.ensure_one()
         return bool(self.stage_id) and not self.online_delivered_date \
-            and self.stage_id.code not in ('delivered',) + CLOSED_CODES
+            and self.stage_id.code not in DONE_CODES + CLOSED_CODES
 
     @api.depends('delivery_promise_until', 'stage_id', 'online_delivered_date')
     def _compute_online_time_status(self):
@@ -190,7 +199,7 @@ class SaleOrder(models.Model):
             ('website_id', '!=', False),
             ('stage_id', '!=', False),
             ('online_delivered_date', '=', False),
-            ('stage_id.code', 'not in', ('delivered',) + CLOSED_CODES),
+            ('stage_id.code', 'not in', DONE_CODES + CLOSED_CODES),
         ])
 
     def _search_online_is_late(self, operator, value):
@@ -199,23 +208,42 @@ class SaleOrder(models.Model):
         late = self._online_open_domain() & Domain('delivery_promise_until', '<', fields.Datetime.now())
         return late if (operator == '=') == value else ~late
 
-    @api.depends('stage_id')
+    def _online_is_pickup(self):
+        """Collected at the shop (delivery method "Pickup from the Shop")."""
+        self.ensure_one()
+        return bool(self.carrier_id.online_pickup)
+
+    def get_delivery_method_for_location(self):
+        # Pickup: no delivery zone, the address is not needed (website_delivery_geolocation
+        # would replace the method with the one of the address zone)
+        if self.carrier_id.online_pickup and self.carrier_id.is_published:
+            return self.carrier_id
+        return super().get_delivery_method_for_location()
+
+    def _online_stage_allowed(self, stage):
+        """Pickup orders skip the delivery stages; delivery orders never go to Picked up."""
+        self.ensure_one()
+        return stage.code not in (DELIVERY_ONLY_CODES if self._online_is_pickup() else PICKUP_ONLY_CODES)
+
+    @api.depends('stage_id', 'carrier_id')
     def _compute_online_next_stage_id(self):
         """Next stage a person can move the order to (Completed and Cancelled excluded)."""
         stages = self.env['online.order.stage'].search([('code', 'not in', CLOSED_CODES)])
         for order in self:
             current = order.stage_id
             following = stages.filtered(
-                lambda s: current and current.code not in CLOSED_CODES and s._position() > current._position())
+                lambda s: current and current.code not in CLOSED_CODES and s._position() > current._position()
+                and order._online_stage_allowed(s))
             order.online_next_stage_id = following[:1]
 
-    @api.depends('partner_shipping_id', 'amount_total', 'amount_paid')
+    @api.depends('partner_shipping_id', 'amount_total', 'amount_paid', 'carrier_id')
     def _compute_online_dispatch(self):
         for order in self:
             address = order.partner_shipping_id
             order.online_address_text = ', '.join(filter(None, [
                 address.street, address.street2, address.city, address.state_id.name]))
-            order.online_area = address.city or address.state_id.name or ''
+            order.online_area = _("Pickup from the shop") if order.carrier_id.online_pickup \
+                else address.city or address.state_id.name or ''
             cash = order.amount_total - order.sudo().amount_paid
             cash = cash if order.currency_id.compare_amounts(cash, 0) > 0 else 0.0
             order.online_cash_to_collect = cash
@@ -315,12 +343,17 @@ class SaleOrder(models.Model):
         if old_stage and not new_stage._is_at_or_after(old_stage):
             raise UserError(_("Orders only move forward: %(old)s cannot go back to %(new)s.",
                               old=old_stage.name, new=new_stage.name))
+        if not self._online_stage_allowed(new_stage):
+            raise UserError(_("%(order)s is a pickup order: it goes from New to Picked up.", order=self.name)
+                            if self._online_is_pickup() else
+                            _("%(order)s is a delivery order: Picked up is for pickup orders only.", order=self.name))
 
         Stage = self.env['online.order.stage']
         extra = {}
         if new_stage._is_at_or_after(Stage._get_by_code('out_for_delivery')) \
                 and not self.online_out_for_delivery_date:
             self._online_validate_delivery()
+            self._online_create_invoice()
             extra['online_out_for_delivery_date'] = now
         if new_stage._is_at_or_after(Stage._get_by_code('delivered')) and not self.online_delivered_date:
             self._online_release_next_order_coupons()
@@ -355,6 +388,48 @@ class SaleOrder(models.Model):
                     "validated (e.g. lots or quantities). Please complete it in Inventory.",
                     picking=picking.name))
 
+    # ──────────────────────────────────────────────────────────────────────────
+    # Invoice (Annex 2, 5.1 and 5.2; Annex 3B, 5.3)
+    # ──────────────────────────────────────────────────────────────────────────
+
+    def _online_create_invoice(self):
+        """Out for Delivery / Picked up: the invoice is created and posted, not sent.
+        Paid online, it is matched with the payment. A problem never blocks the
+        dispatch: it is noted on the order for the accountant."""
+        self.ensure_one()
+        order = self.sudo()
+        if order.invoice_status != 'to invoice':
+            return
+        try:
+            with self.env.cr.savepoint():
+                invoices = order.with_context(raise_if_nothing_to_invoice=False)._create_invoices(final=True)
+                invoices.action_post()
+                transactions = order.transaction_ids.filtered(lambda tx: tx.state == 'done')
+                transactions.invoice_ids = [Command.link(invoice.id) for invoice in invoices]
+                for payment in transactions.payment_id.filtered(lambda p: p.state != 'canceled'):
+                    (payment.move_id.line_ids + invoices.line_ids).filtered(
+                        lambda line: line.account_id == payment.destination_account_id and not line.reconciled
+                    ).reconcile()
+        except (UserError, ValidationError) as error:
+            _logger.warning("Invoice of the online order %s not created: %s", order.name, error)
+            order.message_post(body=_("The invoice could not be created automatically: %s", error))
+
+    def _online_send_invoice(self):
+        """Delivered / Picked up: the posted invoices are emailed to the customer
+        (guests have no account to see them in), like the invoice of a paid order."""
+        self.ensure_one()
+        invoices = self.sudo().invoice_ids.filtered(
+            lambda inv: inv.move_type == 'out_invoice' and inv.state == 'posted' and not inv.is_move_sent)
+        if not invoices:
+            return
+        send_values = {'allow_raising': False, 'allow_fallback_pdf': True}
+        template_id = self.env['ir.config_parameter'].sudo().get_param('sale.default_invoice_email_template')
+        template = template_id and self.env['mail.template'].sudo().browse(int(template_id)).exists()
+        if template:
+            send_values['mail_template'] = template
+        invoices.is_move_sent = True
+        self.env['account.move.send'].sudo()._generate_and_send_invoices(invoices, **send_values)
+
     def _track_template(self, changes):
         """Email of the stage (like Project / Helpdesk stages)."""
         res = super()._track_template(changes)
@@ -368,9 +443,12 @@ class SaleOrder(models.Model):
         return res
 
     def _online_after_stage_change(self):
-        """Activity of the new stage (e.g. refund for Accounts on Cancelled)."""
+        """Invoice email when the order reaches the customer; activity of the new
+        stage (e.g. refund for Accounts on Cancelled)."""
         for order in self:
             stage = order.stage_id
+            if stage.code in DONE_CODES:
+                order._online_send_invoice()
             if stage.activity_user_id:
                 order.activity_schedule(
                     'mail.mail_activity_data_todo',

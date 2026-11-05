@@ -20,7 +20,8 @@ class ResPartner(models.Model):
     marketing_consent_date = fields.Datetime(string='Consent Date', readonly=True)
 
     def _journey_set_marketing_consent(self, consent):
-        for partner in self.filtered(lambda p: p.marketing_consent != bool(consent)):
+        # The date also tells that the customer answered (the box is ticked until then)
+        for partner in self.filtered(lambda p: p.marketing_consent != bool(consent) or not p.marketing_consent_date):
             partner.write({
                 'marketing_consent': bool(consent),
                 'marketing_consent_date': fields.Datetime.now(),

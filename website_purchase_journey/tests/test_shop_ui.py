@@ -49,7 +49,7 @@ class TestJourneyOrderUi(JourneyCommon):
         self.assertTrue(order.delivery_call_on_arrival)
         self.assertFalse(order.delivery_leave_at_door, "no Leave at my door option")
         self.assertEqual(order.order_note, 'Gate 2, then the lift')
-        self.assertTrue(user.partner_id.marketing_consent)
+        self.assertFalse(user.partner_id.marketing_consent_date, "not asked to a signed-in customer (Annex 3B, 4.3)")
         self.assertEqual(order.order_line.filtered('is_reward_line').reward_id.program_id, welcome)
         self.assertTrue(order.delivery_promise_until, "the promise was stored when paying")
         self.assertEqual(order.carrier_id, self.island)

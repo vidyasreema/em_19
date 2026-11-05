@@ -5,6 +5,7 @@ STAGE_CODES = [
     ('new', 'New'),
     ('out_for_delivery', 'Out for Delivery'),
     ('delivered', 'Delivered'),
+    ('picked_up', 'Picked up'),
     ('completed', 'Completed'),
     ('cancelled', 'Cancelled / Returned'),
 ]
@@ -29,6 +30,8 @@ class OnlineOrderStage(models.Model):
              "- Out for Delivery: validates the delivery order (stock is deducted)"
              " and records the departure time.\n"
              "- Delivered: records the delivery time.\n"
+             "- Picked up: pickup orders only, straight from New: validates the delivery"
+             " order and records the pickup time.\n"
              "- Completed: set automatically after closing.\n"
              "- Cancelled: only through the Cancel order button (reason required).\n"
              "Leave empty for an extra stage.",

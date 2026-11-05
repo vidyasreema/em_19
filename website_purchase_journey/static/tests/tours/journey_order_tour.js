@@ -20,8 +20,8 @@ registry.category("web_tour.tours").add("journey_order", {
             trigger: "body:not(:has(.modal.show)):not(.modal-open)",
         },
         {
-            content: "Signed in: no sign-up box",
-            trigger: ".o_journey_order:contains('Signed in as'):not(:has(.o_journey_gbox))",
+            content: "Signed in: no sign-up box, no \"Signed in as\" nor consent box (Annex 3B, 4.3)",
+            trigger: ".o_journey_order:not(:has(.o_journey_gbox)):not(:has(.o_journey_consent)):not(:contains('Signed in as'))",
         },
         {
             content: "The welcome coupon was applied after signing up",
@@ -166,11 +166,6 @@ registry.category("web_tour.tours").add("journey_order", {
         {
             trigger: ".o_journey_note",
             run: "edit Gate 2, then the lift",
-        },
-        {
-            content: "Explicit consent (unticked by default)",
-            trigger: ".o_journey_consent:not(:checked)",
-            run: "click",
         },
         {
             content: "The payment form of Odoo (one method, selected) enables the order button",

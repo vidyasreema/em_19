@@ -25,9 +25,16 @@ def current_verification():
     return verification.filtered(lambda v: v.website_id == request.website)
 
 
-def start_verification(email, name='', password=None, redirect=''):
+def signup_form_consent():
+    """"Email me with news and offers" of the sign-up form: True / False, None when not on the form."""
+    if not request.params.get('journey_consent_shown'):
+        return None
+    return bool(request.params.get('journey_consent'))
+
+
+def start_verification(email, name='', password=None, redirect='', consent=None):
     verification = request.env['website.signup.verification'].sudo()._start(
-        request.website, email, name=name, password=password, redirect=redirect)
+        request.website, email, name=name, password=password, redirect=redirect, consent=consent)
     request.session[SESSION_VERIFICATION] = verification.id
     return verification
 
@@ -60,11 +67,20 @@ class SignupVerificationHome(AuthSignupHome):
                 qcontext['signup_account_exists'] = email
                 return self._signup_render(qcontext)
             start_verification(email, name=values['name'], password=values['password'],
-                               redirect=qcontext.get('redirect') or '')
+                               redirect=qcontext.get('redirect') or '', consent=signup_form_consent())
         except UserError as e:
             qcontext['error'] = e.args[0]
             return self._signup_render(qcontext)
         return request.redirect(VERIFY_PATH)
+
+    def do_signup(self, qcontext, do_login=True):
+        """Sign-up without a code (switched off, or an invitation): the choice of
+        "Email me with news and offers" is saved on the new account too."""
+        super().do_signup(qcontext, do_login=do_login)
+        consent = signup_form_consent()
+        if consent is not None and qcontext.get('login'):
+            user = request.env['res.users'].sudo().search([('login', '=', qcontext['login'])], limit=1)
+            user.partner_id._journey_set_marketing_consent(consent)
 
     def _signup_render(self, qcontext):
         response = request.render('auth_signup.signup', qcontext)

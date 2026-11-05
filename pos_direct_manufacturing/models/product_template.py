@@ -13,7 +13,7 @@ class ProductTemplate(models.Model):
              "This flag identifies products that trigger the 'add raw "
              "material' button when sold at POS. It does NOT restrict which "
              "products can be picked as raw materials inside the popup — "
-             "any product is selectable there.",
+             "that is the POS Raw Material Categories setting.",
     )
 
     raw_material_enforcement = fields.Selection(
