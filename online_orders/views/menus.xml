@@ -9,6 +9,9 @@
     <menuitem id="menu_online_orders_customers" name="Customers" sequence="20"
               parent="menu_online_orders_root" action="contacts.action_contacts"/>
 
+    <menuitem id="menu_online_product_availability" name="Product Availability" sequence="25"
+              parent="menu_online_orders_root" action="action_online_product_availability"/>
+
     <menuitem id="menu_online_orders_reporting" name="Reporting" sequence="30"
               parent="menu_online_orders_root"
               groups="group_online_orders_marketing,group_online_orders_management"/>

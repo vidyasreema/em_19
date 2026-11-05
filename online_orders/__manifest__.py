@@ -1,6 +1,6 @@
 {
     'name': 'Online Orders',
-    'version': '19.0.1.4.0',
+    'version': '19.0.1.5.0',
     'category': 'Sales/Sales',
     'summary': 'Sales team board for website orders: stages, dispatch page, customer addresses',
     'description': """
@@ -16,6 +16,10 @@
         - Stage emails (email template on the stage) and activities
         - Delivery quality report (Pivot / Graph)
         - Access groups: Sales, Marketing, Management
+        - Product Availability (Annex 4A): one switch per published product,
+          Available / Out of stock. It writes the website ribbon read by the
+          shop and the Meta catalog; an out-of-stock product cannot be added
+          to a website cart (backend orders and POS are not affected).
 
         The standard order state does not change, except on cancellation.
     """,
@@ -28,6 +32,7 @@
         'contacts',
         'delivery_timeslot_module',
         'website_delivery_geolocation',
+        'website_sale_meta_feed',
     ],
     'data': [
         'security/online_orders_security.xml',
@@ -41,6 +46,7 @@
         'views/sale_order_views.xml',
         'views/res_partner_views.xml',
         'views/report_views.xml',
+        'views/product_availability_views.xml',
         'views/menus.xml',
         'views/res_config_settings_views.xml',
         'views/portal_templates.xml',
@@ -48,6 +54,7 @@
     'assets': {
         'web.assets_backend': [
             'online_orders/static/src/kanban/*',
+            'online_orders/static/src/availability/*',
         ],
         'web.assets_tests': [
             'online_orders/static/tests/tours/*',
