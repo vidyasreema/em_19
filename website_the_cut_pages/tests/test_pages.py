@@ -178,6 +178,10 @@ class TestTheCutPages(HttpCase):
         self.assertIn('/image_512', page, "the cards load the 512 px photos (speed)")
         self.assertNotIn('/image_1024', page)
 
+    def test_about_halal(self):
+        page = self._page('/about-us')
+        self.assertIn('حلال</span>HALAL', page, "What We Sell: the halal line")
+
     def test_contact_page_top(self):
         page = self._page('/contactus')
         self.assertIn('tc-contact-hero', page)

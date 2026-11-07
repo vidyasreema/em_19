@@ -7,3 +7,5 @@ from . import stock_picking
 from . import res_config_settings
 from . import website
 from . import payment_transaction
+from . import product_availability
+from . import sale_order_cart

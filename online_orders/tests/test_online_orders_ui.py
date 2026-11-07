@@ -56,3 +56,28 @@ class TestOnlineOrdersUi(HttpCase):
         order_page = self.url_open(order.get_portal_url()).text
         self.assertIn('On the way', order_page)
         self.assertNotIn('Last Delivery Orders', order_page)
+
+    def test_product_availability_screen(self):
+        """Annex 4A: one tap saves; the website follows the switch."""
+        rump = self.env['product.template'].create({
+            'name': 'Tour Wagyu Rump', 'type': 'consu', 'list_price': 89.0,
+            'sale_ok': True, 'is_published': True,
+        })
+        ribeye = self.env['product.template'].create({
+            'name': 'Tour Wagyu Ribeye', 'type': 'consu', 'list_price': 120.0,
+            'sale_ok': True, 'is_published': True,
+            'website_ribbon_id': self.env.ref('website_sale.sale_ribbon').id,
+        })
+        self.env['product.template'].create({
+            'name': 'Tour Wagyu Hidden', 'type': 'consu', 'sale_ok': True, 'is_published': False,
+        })
+        self.start_tour('/odoo/action-online_orders.action_online_product_availability',
+                        'online_orders_product_availability', login='admin')
+        self.assertFalse(rump.website_ribbon_id)
+        self.assertEqual(self.env.ref('website_sale.out_of_stock_ribbon'), ribeye.website_ribbon_id)
+
+        # The customer sees the reason and no weight / Add to cart
+        page = self.url_open(ribeye.website_url).text
+        self.assertIn('Out of stock: this product is not available at the moment.', page)
+        self.assertNotIn('id="add_to_cart"', page)
+        self.assertIn('id="add_to_cart"', self.url_open(rump.website_url).text)

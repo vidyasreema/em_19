@@ -30,6 +30,7 @@
                             <span t-att-style="tc_claim"><span t-attf-style="#{tc_pill} background: #F5C518; color: #1B1414; transform: rotate(1.2deg)">NO</span>HORMONES</span>
                             <span t-att-style="tc_claim"><span t-attf-style="#{tc_pill} background: #F5C518; color: #1B1414; transform: rotate(-1deg)">NO</span>ANTIBIOTICS</span>
                             <span t-att-style="tc_claim"><span t-attf-style="#{tc_pill} background: #7E1416; color: #FFFFFF; transform: rotate(1.3deg)">RICH</span>IN PROTEIN AND OMEGA-3</span>
+                            <span t-att-style="tc_claim"><span lang="ar" dir="rtl" t-attf-style="#{tc_pill} background: #7E1416; color: #FFFFFF; transform: rotate(-1.2deg); font-family: 'Noto Kufi Arabic', 'Segoe UI', Tahoma, Arial, sans-serif; font-weight: 700">حلال</span>HALAL</span>
                         </div>
                     </div>
                     <div style="flex: 1 1 300px; min-width: 0">
