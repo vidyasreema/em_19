@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Members can open /my/hr/dashboard and see every employee.
+         Backend HR Managers (hr.group_hr_manager) get access automatically. -->
+    <record id="group_portal_hr_admin" model="res.groups">
+        <field name="name">Employee Portal: HR Admin</field>
+        <field name="comment">Can open the HR dashboard in the portal and view all employees.</field>
+    </record>
+</odoo>

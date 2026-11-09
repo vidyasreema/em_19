@@ -1,0 +1,604 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- Entry points on the standard /my page (internal users and admins still see it) -->
+    <template id="ep_portal_my_home" inherit_id="portal.portal_my_home" name="Employee portal entries">
+        <xpath expr="//div[hasclass('o_portal_docs')]" position="before">
+            <div t-if="ep_employee or ep_is_admin" class="ep-home">
+                <a t-if="ep_employee" href="/my/employee" class="ep-home-link">
+                    <span class="ep-home-title">My employee portal</span>
+                    <span class="ep-home-text">Your details, leave and payslips</span>
+                </a>
+                <a t-if="ep_is_admin" href="/my/hr/dashboard" class="ep-home-link">
+                    <span class="ep-home-title">HR dashboard</span>
+                    <span class="ep-home-text">Everyone's leave, documents and details</span>
+                </a>
+            </div>
+        </xpath>
+    </template>
+
+    <!-- Status pill -->
+    <template id="ep_pill" name="Employee portal: pill">
+        <span t-attf-class="ep-pill ep-pill-#{kind}" t-out="label"/>
+    </template>
+
+    <!-- Progress ring: `b` is a leave balance. The numbers are also written next
+         to the ring, so the ring itself is decorative. -->
+    <template id="ep_ring" name="Employee portal: ring">
+        <span t-attf-class="ep-ring #{ring_class or ''}" t-attf-style="--p: #{b['percent']}" aria-hidden="true">
+            <span class="ep-ring-value" t-out="b['remaining_display']"/>
+        </span>
+    </template>
+
+    <!-- Message kept in the session for one page view -->
+    <template id="ep_flash" name="Employee portal: flash message">
+        <div t-if="flash" t-attf-class="ep-banner ep-banner-#{flash['kind']}"
+             t-att-role="'status' if flash['kind'] == 'ok' else 'alert'">
+            <t t-call="hr_employee_portal.ep_icon"><t t-set="icon" t-value="'check' if flash['kind'] == 'ok' else 'alert'"/></t>
+            <span t-out="flash['message']"/>
+        </div>
+    </template>
+
+    <!-- Not linked to an employee -->
+    <template id="ep_no_employee" name="Employee portal: no employee">
+        <t t-call="hr_employee_portal.ep_shell">
+            <section class="ep-surface ep-surface-lg ep-empty ep-reveal">
+                <span class="ep-orb-icon"><t t-call="hr_employee_portal.ep_icon"><t t-set="icon" t-value="'profile'"/></t></span>
+                <h1 class="ep-title-sm">Your account isn't linked to an employee record</h1>
+                <p class="ep-muted">Ask HR to set your user on your employee record. Your profile, leave and payslips will appear here once it's linked.</p>
+            </section>
+        </t>
+    </template>
+
+    <!-- Profile (admins use it to view any employee) -->
+    <template id="ep_profile" name="Employee portal: profile">
+        <t t-call="hr_employee_portal.ep_shell">
+
+            <div t-attf-class="ep-page-head ep-reveal #{'' if admin_view else 'ep-desk-only'}">
+                <div>
+                    <t t-if="admin_view">
+                        <a href="/my/hr/dashboard" class="ep-back">Back to HR dashboard</a>
+                        <h1 class="ep-title" t-out="employee.name"/>
+                    </t>
+                    <t t-else="">
+                        <p class="ep-eyebrow" t-out="ep_today_label"/>
+                        <h1 class="ep-title"><em><t t-out="ep_greeting"/>,</em> <t t-out="ep_first_name"/></h1>
+                    </t>
+                </div>
+                <!-- Wide screens: New request at the top right, the choices drop down -->
+                <t t-if="request_tiles and not admin_view" t-call="hr_employee_portal.ep_ask">
+                    <t t-set="ask_id" t-value="'ep-ask-menu'"/>
+                    <t t-set="ask_class" t-value="'ep-ask-menu'"/>
+                </t>
+            </div>
+
+            <!-- Phones: a compact staff card instead of the badge, so the details come first -->
+            <section class="ep-me ep-reveal" aria-label="Staff details">
+                <t t-call="hr_employee_portal.ep_avatar"><t t-set="person" t-value="employee"/><t t-set="cls" t-value="'ep-me-photo'"/></t>
+                <div class="ep-me-text">
+                    <p class="ep-me-name" t-out="employee.name"/>
+                    <p t-if="role_line" class="ep-me-role" t-out="role_line"/>
+                    <p class="ep-me-meta">
+                        <t t-if="employee_number">ID <t t-out="employee_number"/> · </t>Joined <t t-out="join_date_label"/> · <t t-out="tenure"/>
+                    </p>
+                </div>
+            </section>
+
+            <!-- Phones: New request under the staff card -->
+            <t t-if="request_tiles and not admin_view" t-call="hr_employee_portal.ep_ask">
+                <t t-set="ask_id" t-value="'ep-ask'"/>
+                <t t-set="ask_class" t-value="'ep-ask-phone'"/>
+            </t>
+
+            <div class="ep-hero ep-desk-only">
+                <!-- Staff badge on a lanyard: swings gently, tilts with the pointer and
+                     flips to show service details, like a real ID badge. -->
+                <div class="ep-badge ep-reveal">
+                    <div class="ep-badge-swing">
+                        <span class="ep-lanyard" aria-hidden="true">
+                            <span class="ep-lanyard-strap"/>
+                            <span class="ep-lanyard-clip"/>
+                        </span>
+                        <div class="ep-card3d" data-ep-tilt="">
+                            <div class="ep-card3d-inner">
+                                <section class="ep-card3d-face ep-card3d-front" aria-label="Staff badge">
+                                    <span class="ep-card3d-slot" aria-hidden="true"/>
+                                    <div class="ep-card3d-top">
+                                        <span class="ep-gold-logo ep-card3d-logo"><img src="/hr_employee_portal/static/src/img/the_cut_logo.png" alt=""/></span>
+                                        <span class="ep-card3d-chip" aria-hidden="true"/>
+                                    </div>
+                                    <div class="ep-card3d-body">
+                                        <t t-call="hr_employee_portal.ep_avatar"><t t-set="person" t-value="employee"/><t t-set="cls" t-value="'ep-card3d-photo'"/><t t-set="alt" t-value="employee.name"/></t>
+                                        <p class="ep-card3d-name" t-out="employee.name"/>
+                                        <p class="ep-card3d-role" t-out="role_line"/>
+                                    </div>
+                                    <div class="ep-card3d-foot">
+                                        <span class="ep-card3d-label">Staff ID</span>
+                                        <span class="ep-card3d-number" t-out="employee_number or '—'"/>
+                                    </div>
+                                    <span class="ep-card3d-holo" aria-hidden="true"/>
+                                    <span class="ep-card3d-glare" aria-hidden="true"/>
+                                </section>
+                                <section class="ep-card3d-face ep-card3d-back" aria-label="Service details">
+                                    <span class="ep-card3d-slot" aria-hidden="true"/>
+                                    <dl class="ep-card3d-facts">
+                                        <div><dt>Joined</dt><dd t-out="join_date_label"/></div>
+                                        <div><dt>Length of service</dt><dd t-out="tenure"/></div>
+                                        <div t-if="employee.department_id"><dt>Department</dt><dd t-out="employee.department_id.name"/></div>
+                                        <div t-if="employee.parent_id"><dt>Manager</dt><dd t-out="employee.parent_id.name"/></div>
+                                    </dl>
+                                    <span class="ep-card3d-barcode" aria-hidden="true"/>
+                                </section>
+                            </div>
+                            <button type="button" class="ep-card3d-flip" data-ep-flip="" aria-pressed="false">
+                                <t t-call="hr_employee_portal.ep_icon"><t t-set="icon" t-value="'flip'"/></t>
+                                <span class="visually-hidden">Flip the staff badge</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <section class="ep-stats" aria-label="Summary">
+                    <div t-foreach="stats" t-as="s" class="ep-stat ep-reveal" data-ep-tilt="soft">
+                        <span t-if="s.get('icon')" class="ep-card-icon" aria-hidden="true"><t t-call="hr_employee_portal.ep_icon"><t t-set="icon" t-value="s['icon']"/></t></span>
+                        <span class="ep-stat-label" t-out="s['label']"/>
+                        <span class="ep-stat-value" t-out="s['value']"/>
+                        <span class="ep-stat-note" t-out="s['note']"/>
+                    </div>
+                </section>
+            </div>
+
+            <t t-foreach="documents" t-as="doc">
+                <div t-if="doc['status'] == 'expired'" class="ep-banner ep-banner-bad ep-reveal" role="alert">
+                    <t t-call="hr_employee_portal.ep_icon"><t t-set="icon" t-value="'alert'"/></t>
+                    <span><t t-out="doc['label']"/> expired on <strong t-out="doc['date']"/>. <t t-if="not admin_view">Contact HR to renew it.</t></span>
+                </div>
+                <div t-elif="doc['status'] == 'soon'" class="ep-banner ep-banner-wait ep-reveal" role="status">
+                    <t t-call="hr_employee_portal.ep_icon"><t t-set="icon" t-value="'alert'"/></t>
+                    <span><t t-out="doc['label']"/> expires on <strong t-out="doc['date']"/>, in <t t-out="doc['days']"/> days.</span>
+                </div>
+            </t>
+
+            <!-- All the details, one folding section per topic. Each title shows the
+                 short answer; a tap opens the rest. Other modules add their sections. -->
+            <div class="ep-details">
+                <details id="ep-sec-personal" class="ep-sec ep-reveal">
+                    <t t-call="hr_employee_portal.ep_sec_head"><t t-set="key" t-value="'personal'"/><t t-set="icon" t-value="'profile'"/><t t-set="title">Personal</t></t>
+                    <div class="ep-sec-body">
+                        <t t-if="profile_rows['personal']" t-call="hr_employee_portal.ep_facts"><t t-set="rows" t-value="profile_rows['personal']"/></t>
+                        <p t-else="" class="ep-muted">Nothing on file yet. Ask HR to add your details.</p>
+                    </div>
+                </details>
+
+                <details id="ep-sec-job" class="ep-sec ep-reveal">
+                    <t t-call="hr_employee_portal.ep_sec_head"><t t-set="key" t-value="'job'"/><t t-set="icon" t-value="'briefcase'"/><t t-set="title">Job &amp; contract</t></t>
+                    <div class="ep-sec-body">
+                        <t t-call="hr_employee_portal.ep_facts"><t t-set="rows" t-value="profile_rows['job']"/></t>
+                    </div>
+                </details>
+
+                <details id="ep-sec-documents" class="ep-sec ep-reveal">
+                    <t t-call="hr_employee_portal.ep_sec_head"><t t-set="key" t-value="'documents'"/><t t-set="icon" t-value="'idcard'"/><t t-set="title">Documents</t></t>
+                    <div class="ep-sec-body">
+                        <div class="ep-sec-docs">
+                            <ul t-if="documents" class="ep-wallet">
+                                <t t-foreach="documents" t-as="doc" t-call="hr_employee_portal.ep_wallet_card">
+                                    <t t-set="name" t-value="doc['label']"/>
+                                    <t t-set="tone" t-value="doc['status']"/>
+                                    <t t-if="doc['status'] == 'expired'"><t t-set="label">Expired</t></t>
+                                    <t t-elif="doc['status'] == 'soon'"><t t-set="label">Renew soon</t></t>
+                                    <t t-else=""><t t-set="label">Valid</t></t>
+                                    <t t-set="body">Expires <t t-out="doc['date']"/></t>
+                                </t>
+                            </ul>
+                            <t t-if="profile_rows['documents']" t-call="hr_employee_portal.ep_facts"><t t-set="rows" t-value="profile_rows['documents']"/></t>
+                            <p t-if="not documents and not profile_rows['documents']" class="ep-muted">No documents on file yet.</p>
+                        </div>
+                    </div>
+                </details>
+
+                <details id="ep-sec-leave" class="ep-sec ep-reveal">
+                    <t t-call="hr_employee_portal.ep_sec_head"><t t-set="key" t-value="'leave'"/><t t-set="icon" t-value="'leave'"/><t t-set="title">Leave</t></t>
+                    <div class="ep-sec-body">
+                        <ul t-if="balances" class="ep-balances">
+                            <li t-foreach="balances" t-as="b" class="ep-balance">
+                                <t t-call="hr_employee_portal.ep_ring"/>
+                                <div class="ep-balance-text">
+                                    <span class="ep-balance-name" t-out="b['name']"/>
+                                    <span class="ep-balance-figure"><t t-out="b['remaining_label']"/> left of <t t-out="b['allocated_display']"/></span>
+                                    <span class="ep-balance-meta" t-out="b['meta']"/>
+                                </div>
+                            </li>
+                        </ul>
+                        <p t-else="" class="ep-muted">No leave allocated yet.</p>
+                        <ul t-if="pending_leaves or (next_leave and next_leave['kind'] == 'ok')" class="ep-rows">
+                            <li t-if="next_leave and next_leave['kind'] == 'ok'" class="ep-row">
+                                <span class="ep-row-text ep-grow">
+                                    <span class="ep-row-title">Next leave</span>
+                                    <span class="ep-row-sub"><t t-out="next_leave['type']"/>, <t t-out="next_leave['dates']"/></span>
+                                </span>
+                                <t t-call="hr_employee_portal.ep_pill"><t t-set="kind" t-value="'ok'"/><t t-set="label" t-value="next_leave['state_label']"/></t>
+                            </li>
+                            <li t-foreach="pending_leaves" t-as="l" class="ep-row">
+                                <span class="ep-row-text ep-grow">
+                                    <span class="ep-row-title" t-out="l['type']"/>
+                                    <span class="ep-row-sub" t-out="l['dates']"/>
+                                </span>
+                                <t t-call="hr_employee_portal.ep_pill"><t t-set="kind" t-value="'wait'"/><t t-set="label">Waiting for approval</t></t>
+                            </li>
+                        </ul>
+                        <div t-if="not admin_view" class="ep-sec-actions">
+                            <a href="/my/employee/leaves" class="ep-btn ep-btn-primary ep-btn-sm">
+                                <t t-call="hr_employee_portal.ep_icon"><t t-set="icon" t-value="'plus'"/></t>
+                                Request leave
+                            </a>
+                            <a href="/my/employee/leaves" class="ep-link">All my leave</a>
+                        </div>
+                    </div>
+                </details>
+
+                <details t-if="has_payroll" id="ep-sec-pay" class="ep-sec ep-reveal">
+                    <t t-call="hr_employee_portal.ep_sec_head"><t t-set="key" t-value="'pay'"/><t t-set="icon" t-value="'payslip'"/><t t-set="title">Salary &amp; payslips</t></t>
+                    <div class="ep-sec-body">
+                        <div class="ep-sec-slips">
+                            <p class="ep-sec-label">Latest payslips</p>
+                            <ul t-if="slips" class="ep-rows">
+                                <li t-foreach="slips" t-as="p">
+                                    <a class="ep-row ep-row-link" t-attf-href="/my/employee/payslips/#{p['id']}/pdf" target="_blank">
+                                        <span t-out="p['month']"/>
+                                        <strong t-out="p['net']"/>
+                                    </a>
+                                </li>
+                            </ul>
+                            <p t-else="" class="ep-muted">No payslips yet.</p>
+                        </div>
+                        <div t-if="not admin_view and slips" class="ep-sec-actions">
+                            <a href="/my/employee/payslips" class="ep-link">All payslips</a>
+                        </div>
+                    </div>
+                </details>
+            </div>
+
+            <section t-if="admin_view and leave_rows" class="ep-surface ep-surface-lg ep-reveal">
+                <h2 class="ep-h2">Recent leave</h2>
+                <t t-call="hr_employee_portal.ep_request_list"/>
+            </section>
+        </t>
+    </template>
+
+    <!-- New request: one button, then the employee picks what to ask for.
+         ask_id; ask_class: ep-ask-phone (list below) or ep-ask-menu (drop-down). -->
+    <template id="ep_ask" name="Employee portal: new request">
+        <details t-att-id="ask_id" t-attf-class="ep-ask #{ask_class}" data-ep-ask="">
+            <summary class="ep-btn ep-btn-primary ep-ask-head">
+                <t t-call="hr_employee_portal.ep_icon"><t t-set="icon" t-value="'plus'"/></t>
+                New request
+                <span class="ep-ask-chev" aria-hidden="true"><t t-call="hr_employee_portal.ep_icon"><t t-set="icon" t-value="'chevron-down'"/></t></span>
+            </summary>
+            <ul class="ep-ask-list">
+                <li t-foreach="request_tiles" t-as="tile">
+                    <a t-att-href="tile['href']" class="ep-ask-item">
+                        <span class="ep-ask-icon" aria-hidden="true"><t t-call="hr_employee_portal.ep_icon"><t t-set="icon" t-value="tile['icon']"/></t></span>
+                        <span class="ep-ask-text">
+                            <span class="ep-ask-label" t-out="tile['label']"/>
+                            <span t-if="tile['sub']" class="ep-ask-sub" t-out="tile['sub']"/>
+                        </span>
+                        <span class="ep-ask-go" aria-hidden="true"><t t-call="hr_employee_portal.ep_icon"><t t-set="icon" t-value="'arrow'"/></t></span>
+                    </a>
+                </li>
+            </ul>
+        </details>
+    </template>
+
+    <!-- Title row of a profile section: icon, title, the short answer and a chevron.
+         key: entry of `summaries`; icon; title. -->
+    <template id="ep_sec_head" name="Employee portal: profile section title">
+        <t t-set="summary" t-value="summaries.get(key) or {}"/>
+        <summary class="ep-sec-head">
+            <span class="ep-sec-icon" aria-hidden="true"><t t-call="hr_employee_portal.ep_icon"/></span>
+            <span class="ep-sec-text">
+                <span class="ep-sec-title" t-out="title"/>
+                <span t-if="summary.get('text')" t-attf-class="ep-sec-sum ep-sec-sum-#{summary.get('kind') or 'plain'}" t-out="summary['text']"/>
+            </span>
+            <span class="ep-sec-chev" aria-hidden="true"><t t-call="hr_employee_portal.ep_icon"><t t-set="icon" t-value="'chevron-down'"/></t></span>
+        </summary>
+    </template>
+
+    <!-- One card of the document wallet. name; label: status pill; tone: valid, soon or
+         expired (the card colour); body: the line under the name. -->
+    <template id="ep_wallet_card" name="Employee portal: wallet card">
+        <li t-attf-class="ep-wallet-card ep-wallet-#{tone}" tabindex="0">
+            <div class="ep-wallet-top">
+                <span class="ep-wallet-name" t-out="name"/>
+                <t t-call="hr_employee_portal.ep_pill">
+                    <t t-set="kind" t-value="{'valid': 'ok', 'soon': 'wait'}.get(tone, 'bad')"/>
+                </t>
+            </div>
+            <p t-if="body" class="ep-wallet-date" t-out="body"/>
+            <span class="ep-wallet-chip" aria-hidden="true"/>
+        </li>
+    </template>
+
+    <!-- Label and value rows. rows: [{'label', 'value'}] -->
+    <template id="ep_facts" name="Employee portal: facts">
+        <dl class="ep-facts">
+            <div t-foreach="rows" t-as="r">
+                <dt t-out="r['label']"/>
+                <dd t-out="r['value']"/>
+            </div>
+        </dl>
+    </template>
+
+    <!-- Leave request list (leave page and admin view) -->
+    <template id="ep_request_list" name="Employee portal: request list">
+        <ul class="ep-rows">
+            <li t-foreach="leave_rows" t-as="r" class="ep-row ep-row-tall">
+                <span t-attf-class="ep-row-dot ep-row-dot-#{r['kind']}" aria-hidden="true"/>
+                <div class="ep-row-text ep-grow">
+                    <p class="ep-row-title" t-out="r['type']"/>
+                    <p class="ep-row-sub" t-out="r['dates']"/>
+                </div>
+                <div class="ep-row-end">
+                    <t t-call="hr_employee_portal.ep_pill">
+                        <t t-set="kind" t-value="r['kind']"/>
+                        <t t-set="label" t-value="r['state_label']"/>
+                    </t>
+                    <form t-if="r.get('can_cancel') and not admin_view" method="post"
+                          t-attf-action="/my/employee/leaves/#{r['id']}/cancel" class="ep-inline-form">
+                        <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                        <button type="submit" class="ep-link-btn"
+                                t-attf-aria-label="Cancel request: #{r['type']}, #{r['dates']}">Cancel</button>
+                    </form>
+                </div>
+            </li>
+        </ul>
+    </template>
+
+    <!-- Leave page -->
+    <template id="ep_leaves" name="Employee portal: leave">
+        <t t-call="hr_employee_portal.ep_shell">
+            <div class="ep-page-head ep-reveal">
+                <div>
+                    <p class="ep-eyebrow">Balances as of <t t-out="balance_date"/></p>
+                    <h1 class="ep-title">Leave</h1>
+                </div>
+            </div>
+
+            <div class="ep-tiles">
+                <!-- One 3D block per day: taken days are spent, pending ones are on hold -->
+                <section t-foreach="balances" t-as="b"
+                         t-attf-class="ep-tile ep-tile-days ep-reveal #{'ep-tile-feature' if b_first else ''}">
+                    <div class="ep-tile-head">
+                        <p class="ep-tile-label" t-out="b['name']"/>
+                        <p class="ep-tile-figure"><t t-out="b['remaining_label']"/> left <span class="ep-tile-unit">of <t t-out="b['allocated_label']"/></span></p>
+                    </div>
+                    <t t-if="b['blocks']">
+                        <ul class="ep-days" aria-hidden="true">
+                            <li t-foreach="b['blocks']" t-as="block"
+                                t-attf-class="ep-day ep-day-#{block}" t-attf-style="--i: #{block_index}"/>
+                        </ul>
+                        <ul class="ep-days-legend">
+                            <li><span class="ep-day ep-day-free"/> <t t-out="b['remaining_display']"/> free</li>
+                            <li t-if="b['pending']"><span class="ep-day ep-day-pending"/> <t t-out="b['pending_display']"/> awaiting approval</li>
+                            <li><span class="ep-day ep-day-taken"/> <t t-out="b['taken_display']"/> taken</li>
+                        </ul>
+                        <p t-if="b['blocks_scaled']" class="ep-tile-note">Blocks are scaled to fit.</p>
+                    </t>
+                    <p t-else="" class="ep-tile-note" t-out="b['meta']"/>
+                </section>
+
+                <!-- Next leave on a tear-off desk calendar -->
+                <section class="ep-tile ep-tile-cal ep-reveal">
+                    <div class="ep-desk" aria-hidden="true">
+                        <span class="ep-desk-rings"><span/><span/></span>
+                        <span class="ep-desk-page ep-desk-page-final">
+                            <t t-if="next_leave">
+                                <span class="ep-desk-month" t-out="next_leave['month']"/>
+                                <span class="ep-desk-day" t-out="next_leave['day']"/>
+                                <span class="ep-desk-weekday" t-out="next_leave['weekday']"/>
+                            </t>
+                            <t t-else="">
+                                <span class="ep-desk-month">—</span>
+                                <span class="ep-desk-day ep-desk-day-icon"><t t-call="hr_employee_portal.ep_icon"><t t-set="icon" t-value="'leave'"/></t></span>
+                                <span class="ep-desk-weekday">Free</span>
+                            </t>
+                        </span>
+                        <span class="ep-desk-page ep-desk-page-tear ep-desk-page-2"/>
+                        <span class="ep-desk-page ep-desk-page-tear ep-desk-page-1"/>
+                    </div>
+                    <div class="ep-tile-text">
+                        <p class="ep-tile-label">Next leave</p>
+                        <t t-if="next_leave">
+                            <p class="ep-tile-heading" t-out="next_leave['dates']"/>
+                            <p class="ep-tile-note"><t t-out="next_leave['type']"/>, <t t-out="next_leave['state']"/></p>
+                        </t>
+                        <t t-else="">
+                            <p class="ep-tile-heading">Nothing booked</p>
+                            <p class="ep-tile-note">Use the form below to plan time off.</p>
+                        </t>
+                    </div>
+                </section>
+            </div>
+
+            <t t-call="hr_employee_portal.ep_flash"/>
+
+            <div class="ep-split ep-split-even">
+                <section class="ep-surface ep-surface-lg ep-reveal">
+                    <h2 class="ep-h2 ep-h2-lg">Request leave</h2>
+                    <p t-if="not leave_types" class="ep-muted">No time off types are available in the portal yet. Contact HR.</p>
+                    <form t-else="" action="/my/employee/leaves/request" method="post" class="ep-form"
+                          enctype="multipart/form-data">
+                        <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                        <fieldset class="ep-fieldset">
+                            <legend class="ep-label">Leave type</legend>
+                            <div class="ep-pill-options">
+                                <t t-foreach="leave_types" t-as="lt">
+                                    <input type="radio" name="leave_type_id" class="ep-pill-radio"
+                                           t-att-id="'lt_%s' % lt.id" t-att-value="lt.id"
+                                           t-att-data-ep-half="'1' if lt.request_unit == 'half_day' else None"
+                                           t-att-checked="lt_first or None" required="required"/>
+                                    <label t-att-for="'lt_%s' % lt.id" class="ep-pill-option" t-out="lt.name"/>
+                                </t>
+                            </div>
+                        </fieldset>
+                        <fieldset t-if="any(lt.request_unit == 'half_day' for lt in leave_types)"
+                                  class="ep-fieldset" data-ep-day-part="">
+                            <legend class="ep-label">Duration</legend>
+                            <div class="ep-pill-options">
+                                <t t-foreach="[('full', 'Full day(s)'), ('am', 'Morning'), ('pm', 'Afternoon')]" t-as="part">
+                                    <input type="radio" name="day_part" class="ep-pill-radio"
+                                           t-att-id="'ep_part_%s' % part[0]" t-att-value="part[0]"
+                                           t-att-checked="part_first or None"/>
+                                    <label t-att-for="'ep_part_%s' % part[0]" class="ep-pill-option" t-out="part[1]"/>
+                                </t>
+                            </div>
+                        </fieldset>
+                        <div class="ep-form-row">
+                            <div class="ep-form-field">
+                                <label for="ep_date_from" class="ep-label">First day</label>
+                                <input id="ep_date_from" type="date" name="date_from" class="ep-input" required="required"/>
+                            </div>
+                            <div class="ep-form-field" data-ep-date-to="">
+                                <label for="ep_date_to" class="ep-label">Last day</label>
+                                <input id="ep_date_to" type="date" name="date_to" class="ep-input" required="required"/>
+                            </div>
+                        </div>
+                        <p class="ep-hint">Days off in your work schedule and public holidays are not counted. Past dates are allowed, for example for sick leave.</p>
+                        <div class="ep-form-field">
+                            <label for="ep_description" class="ep-label">Note for your manager <span class="ep-muted">(optional)</span></label>
+                            <textarea id="ep_description" name="description" rows="3" class="ep-input ep-textarea"/>
+                        </div>
+                        <div class="ep-form-field">
+                            <label for="ep_attachments" class="ep-label">Supporting documents <span class="ep-muted">(optional)</span></label>
+                            <label class="ep-drop" for="ep_attachments">
+                                <span class="ep-drop-icon"><t t-call="hr_employee_portal.ep_icon"><t t-set="icon" t-value="'clip'"/></t></span>
+                                <span class="ep-drop-text" data-ep-files="">Choose files</span>
+                            </label>
+                            <input id="ep_attachments" type="file" name="attachments" class="ep-file" multiple="multiple"
+                                   accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png"
+                                   aria-describedby="ep_attachments_hint"/>
+                            <p id="ep_attachments_hint" class="ep-hint ep-hint-flush">
+                                For example a medical certificate. PDF, JPG or PNG, up to <t t-out="attachment_max_count"/> files of <t t-out="attachment_max_mb"/> MB each.
+                            </p>
+                        </div>
+                        <button type="submit" class="ep-btn ep-btn-primary">
+                            Send request
+                            <t t-call="hr_employee_portal.ep_icon"><t t-set="icon" t-value="'arrow'"/></t>
+                        </button>
+                    </form>
+                </section>
+
+                <section class="ep-surface ep-surface-lg ep-reveal">
+                    <h2 class="ep-h2 ep-h2-lg">Your requests</h2>
+                    <t t-if="leave_rows" t-call="hr_employee_portal.ep_request_list"/>
+                    <p t-else="" class="ep-muted">You haven't requested any leave yet.</p>
+                </section>
+            </div>
+        </t>
+    </template>
+
+    <!-- Payslips page -->
+    <template id="ep_payslips" name="Employee portal: payslips">
+        <t t-call="hr_employee_portal.ep_shell">
+            <div class="ep-page-head ep-reveal">
+                <div>
+                    <p class="ep-eyebrow">Confirmed payslips</p>
+                    <h1 class="ep-title">Payslips</h1>
+                </div>
+            </div>
+            <section class="ep-surface ep-surface-lg ep-reveal">
+                <p t-if="not has_payroll" class="ep-muted">Payslips will appear here once payroll is set up.</p>
+                <p t-elif="not slips" class="ep-muted">You don't have any confirmed payslips yet.</p>
+                <!-- One envelope per month: it opens on hover or focus and the payslip
+                     slides out. The whole envelope is the download link. -->
+                <ul t-else="" class="ep-envelopes">
+                    <li t-foreach="slips" t-as="p" class="ep-reveal">
+                        <a t-attf-href="/my/employee/payslips/#{p['id']}/pdf" target="_blank" class="ep-env">
+                            <span class="ep-env-art" aria-hidden="true">
+                                <span class="ep-env-back"/>
+                                <span class="ep-env-letter">
+                                    <span class="ep-env-letter-head">
+                                        <img src="/hr_employee_portal/static/src/img/the_cut_logo.png" alt=""/>
+                                        <span>Payslip</span>
+                                    </span>
+                                    <span class="ep-env-lines"><span/><span/><span/></span>
+                                    <span class="ep-env-net" t-out="p['net']"/>
+                                </span>
+                                <span class="ep-env-pocket"/>
+                                <span class="ep-env-flap"/>
+                                <span class="ep-env-seal"><t t-call="hr_employee_portal.ep_icon"><t t-set="icon" t-value="'download'"/></t></span>
+                            </span>
+                            <span class="ep-env-caption">
+                                <span class="ep-row-title" t-out="p['month']"/>
+                                <span class="ep-row-sub" t-out="p['period']"/>
+                                <span class="ep-env-amount">Net pay <strong t-out="p['net']"/></span>
+                                <span class="visually-hidden">Download PDF</span>
+                            </span>
+                        </a>
+                    </li>
+                </ul>
+            </section>
+        </t>
+    </template>
+
+    <!-- Password field with show/hide (used by the password page) -->
+    <template id="ep_password_field" name="Employee portal: password field">
+        <div class="ep-form-field">
+            <label t-att-for="field_id" class="ep-label" t-out="label"/>
+            <div class="ep-pw-wrap">
+                <input type="password" t-att-id="field_id" t-att-name="name" class="ep-input ep-pill-input-pw"
+                       t-att-autocomplete="autocomplete" required="required" maxlength="4096"
+                       t-att-aria-invalid="'true' if errors.get(name) else None"
+                       t-att-aria-describedby="('%s_error' % field_id) if errors.get(name) else None"/>
+                <button type="button" class="ep-pw-toggle" t-att-aria-controls="field_id"
+                        aria-pressed="false" aria-label="Show password">
+                    <t t-call="hr_employee_portal.ep_icon"><t t-set="icon" t-value="'eye'"/></t>
+                </button>
+            </div>
+            <p t-if="errors.get(name)" t-att-id="'%s_error' % field_id" class="ep-field-error" t-out="errors.get(name)"/>
+        </div>
+    </template>
+
+    <!-- Change password -->
+    <template id="ep_password" name="Employee portal: change password">
+        <t t-call="hr_employee_portal.ep_shell">
+            <div class="ep-page-head ep-reveal">
+                <div>
+                    <p class="ep-eyebrow">Account</p>
+                    <h1 class="ep-title">Change password</h1>
+                </div>
+            </div>
+
+            <div t-if="success" class="ep-banner ep-banner-ok" role="status">
+                <t t-call="hr_employee_portal.ep_icon"><t t-set="icon" t-value="'check'"/></t>
+                <span>Your password has been changed. Use the new one next time you sign in.</span>
+            </div>
+            <div t-if="errors.get('general')" class="ep-banner ep-banner-bad" role="alert">
+                <t t-call="hr_employee_portal.ep_icon"><t t-set="icon" t-value="'alert'"/></t>
+                <span t-out="errors.get('general')"/>
+            </div>
+
+            <section class="ep-surface ep-surface-lg ep-narrow ep-reveal">
+                <span class="ep-orb-icon"><t t-call="hr_employee_portal.ep_icon"><t t-set="icon" t-value="'lock'"/></t></span>
+                <form method="post" action="/my/employee/password" class="ep-form">
+                    <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                    <t t-call="hr_employee_portal.ep_password_field">
+                        <t t-set="field_id" t-value="'ep_pw_old'"/><t t-set="name" t-value="'old'"/>
+                        <t t-set="label">Current password</t><t t-set="autocomplete" t-value="'current-password'"/>
+                    </t>
+                    <t t-call="hr_employee_portal.ep_password_field">
+                        <t t-set="field_id" t-value="'ep_pw_new1'"/><t t-set="name" t-value="'new1'"/>
+                        <t t-set="label">New password</t><t t-set="autocomplete" t-value="'new-password'"/>
+                    </t>
+                    <t t-call="hr_employee_portal.ep_password_field">
+                        <t t-set="field_id" t-value="'ep_pw_new2'"/><t t-set="name" t-value="'new2'"/>
+                        <t t-set="label">Confirm new password</t><t t-set="autocomplete" t-value="'new-password'"/>
+                    </t>
+                    <p class="ep-hint ep-hint-flush">Choose a password you don't use for any other account.</p>
+                    <button type="submit" class="ep-btn ep-btn-primary">Change password</button>
+                </form>
+            </section>
+        </t>
+    </template>
+
+</odoo>

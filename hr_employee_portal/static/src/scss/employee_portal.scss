@@ -1,0 +1,914 @@
+// The Cut employee portal, in the design of the website (website_the_cut_pages):
+// The Cut red on cream and white, Anton capitals for headings, Figtree for text,
+// "Capture it" for page titles and The Cut icon pattern fading out from the top.
+// Motion is calm, and dropped for prefers-reduced-motion.
+// Fonts served by the module itself (Anton, Figtree: SIL Open Font License; latin).
+
+@font-face {
+    font-family: 'Anton';
+    src: url('/hr_employee_portal/static/src/fonts/anton.woff2') format('woff2');
+    font-weight: 400;
+    font-display: swap;
+}
+@font-face {
+    font-family: 'Figtree';
+    src: url('/hr_employee_portal/static/src/fonts/figtree.woff2') format('woff2');
+    font-weight: 300 900;
+    font-display: swap;
+}
+@font-face {
+    font-family: 'Capture it';
+    src: url('/hr_employee_portal/static/src/fonts/capture_it.woff2') format('woff2');
+    font-display: swap;
+}
+
+$ep-red: #7E1416;
+$ep-red-dark: #5A0E10;
+$ep-red-hi: #94262A;
+$ep-yellow: #F5A524;
+$ep-yellow-soft: #F4C430;
+$ep-cream: #F1ECE8;
+
+$ep-paper: #FFFFFF;
+$ep-ink: #1B1414;
+$ep-text: #2E2626;
+$ep-muted: #5E5252;
+$ep-faint: #736565;
+$ep-blush: #F3DCDC;
+$ep-line: rgba(27, 20, 20, .09);
+$ep-line-red: rgba(126, 20, 22, .16);
+$ep-field-line: #DCD0CA;
+$ep-track: #EFE6E2;
+$ep-ok: #2E7D45;   $ep-ok-bg: #E7F3EA;
+$ep-wait: #8A5300; $ep-wait-bg: #FDF1DC;
+$ep-bad: #B0261E;  $ep-bad-bg: #FBE6E4;
+$ep-sans: 'Figtree', 'IBM Plex Sans Arabic', system-ui, -apple-system, 'Segoe UI', sans-serif;
+$ep-display: 'Anton', Impact, 'Arial Narrow', 'IBM Plex Sans Arabic', sans-serif;
+$ep-title-font: 'Capture it', 'Anton', Impact, 'IBM Plex Sans Arabic', sans-serif;
+$ep-mobile: 767.98px;
+$ep-ease: cubic-bezier(.22, .7, .2, 1);
+$ep-shadow: 0 14px 40px rgba($ep-red-dark, .12);
+$ep-shadow-sm: 0 6px 20px rgba($ep-red-dark, .07);
+$ep-yellow-metal: linear-gradient(90deg, #B97510, #FFE2A0 45%, $ep-yellow 62%, #A0630A);
+$ep-yellow-chip: linear-gradient(135deg, #FFE2A0 0%, $ep-yellow 45%, #FFD27A 62%, #C47F0E 100%);
+$ep-red-card: linear-gradient(160deg, #8E1A1C 0%, $ep-red 45%, $ep-red-dark 100%);
+
+// White card on the cream ground
+@mixin ep-panel($radius: 20px) {
+    border-radius: $radius;
+    border: 1px solid rgba($ep-red, .06);
+    background: $ep-paper;
+    box-shadow: $ep-shadow-sm;
+}
+// Anton capitals, as the menu and labels of the website
+@mixin ep-caps($size: 13px, $spacing: .06em) {
+    font-family: $ep-display; font-size: $size; font-weight: 400; letter-spacing: $spacing; text-transform: uppercase;
+}
+// The Cut icon pattern (600px tile) along the top of a block, fading out downwards
+@mixin ep-pattern-top($file, $opacity, $height: 260px) {
+    &::before {
+        content: ''; position: absolute; top: 0; left: 0; right: 0; height: $height; max-height: 100%; pointer-events: none;
+        background: url('/hr_employee_portal/static/src/img/#{$file}') 0 0 / 600px 600px repeat;
+        opacity: $opacity;
+        -webkit-mask-image: linear-gradient(#000 0%, #000 20%, transparent 100%);
+        mask-image: linear-gradient(#000 0%, #000 20%, transparent 100%);
+    }
+}
+
+// ---------- Base ----------
+html:has(.ep-app), html:has(.ep-login),
+body:has(.ep-app), body:has(.ep-login) { background: $ep-cream; }
+html:has(.ep-login), body:has(.ep-login) { background: $ep-yellow; }
+// The shop's bars ("Deliver to", order tracking) do not belong on the staff pages
+body:has(.ep-app), body:has(.ep-login) {
+    .o_journey_location_bar, .o_journey_track_bar { display: none !important; }
+}
+
+.ep-app, .ep-login {
+    position: relative;
+    isolation: isolate;
+    min-height: 100vh;
+    overflow-x: clip;
+    font-family: $ep-sans;
+    color: $ep-text;
+    font-size: 15px;
+    line-height: 1.6;
+    font-variant-numeric: tabular-nums lining-nums;
+    -webkit-font-smoothing: antialiased;
+    color-scheme: light;
+    background: $ep-cream;
+
+    // Low-priority reset (:where), so component spacing below always wins
+    :where(p, h1, h2, h3, dl, dd, ul) { margin: 0; }
+    :where(ul) { padding: 0; list-style: none; }
+    // Fields (.ep-input, .ep-line-input) show focus with their red border instead
+    a:focus-visible, button:focus-visible, select:focus-visible:not(.ep-input),
+    input:focus-visible:not(.ep-input):not(.ep-line-input), textarea:focus-visible:not(.ep-input),
+    .ep-pill-radio:focus-visible + .ep-pill-option {
+        outline: 2px solid $ep-red;
+        outline-offset: 3px;
+    }
+}
+.ep-muted { color: $ep-muted; }
+.ep-link { color: $ep-red; font-size: 14px; font-weight: 600; text-decoration: underline; text-underline-offset: 3px;
+    &:hover { color: $ep-red-dark; } }
+.ep-plain-link { color: $ep-ink; text-decoration: none;
+    &:hover { color: $ep-red; text-decoration: underline; text-underline-offset: 3px; } }
+.ep-skip { position: absolute; inset-inline-start: 16px; top: -60px; z-index: 50; padding: 10px 16px; border-radius: 10px;
+    background: $ep-red; color: $ep-paper; font-weight: 600; text-decoration: none;
+    &:focus { top: 16px; color: $ep-paper; } }
+
+// The white logo on red. A slow light sweep passes over it.
+.ep-gold-logo { position: relative; display: inline-block; line-height: 0;
+    img { width: 100%; height: auto; }
+    &::after { content: ''; position: absolute; inset: 0; pointer-events: none;
+        background: linear-gradient(110deg, transparent 35%, rgba(255, 255, 255, .55) 50%, transparent 65%) 200% 0 / 250% 100% no-repeat;
+        -webkit-mask: url('/hr_employee_portal/static/src/img/the_cut_logo.png') center / contain no-repeat;
+        mask: url('/hr_employee_portal/static/src/img/the_cut_logo.png') center / contain no-repeat;
+        animation: ep-shine 7s ease-in-out infinite; } }
+@keyframes ep-shine { 0%, 55% { background-position: 200% 0; } 85%, 100% { background-position: -100% 0; } }
+// The black logo, on the light pages (sign in)
+.ep-logo { display: inline-block; line-height: 0; img { width: 100%; height: auto; } }
+
+// ---------- Background: cream, with the red pattern fading out at the top.
+// The sign-in page is yellow. ----------
+.ep-scene { position: absolute; inset: 0; z-index: -1; overflow: hidden; pointer-events: none; }
+.ep-glow-a { position: absolute; inset: 0; @include ep-pattern-top('the_cut_pattern_reddeep.svg', .13, 240px); }
+.ep-login { background: $ep-yellow;
+    .ep-glow-a::before { opacity: .16; }
+    .ep-eyebrow { color: $ep-red-dark; } }
+.ep-glow-b, .ep-grain { display: none; }
+
+// Content rises in gently as it scrolls into view. Uses `translate`, so
+// `transform` stays free for the tilt effect on the same elements.
+.ep-js .ep-reveal { opacity: 0; translate: 0 14px; }
+.ep-js .ep-reveal.is-in { opacity: 1; translate: 0 0;
+    transition: opacity 1s $ep-ease, translate 1s $ep-ease; transition-delay: calc(var(--d, 0) * 80ms); }
+
+// ---------- Type ----------
+.ep-eyebrow { display: flex; align-items: center; gap: 12px; color: $ep-muted; @include ep-caps(14px, .08em);
+    &::before { content: ''; width: 28px; height: 3px; border-radius: 2px; background: $ep-red; } }
+.ep-eyebrow-plain::before { display: none; }
+.ep-rule { display: block; width: 56px; height: 4px; border-radius: 2px; background: $ep-red; }
+// !important: the website (website_the_cut_pages) sets Anton on every page title of the site
+.ep-title { font-family: $ep-title-font !important; font-size: clamp(40px, 5vw, 66px); font-weight: 400; line-height: 1; letter-spacing: .01em !important;
+    text-transform: uppercase; color: $ep-red; overflow-wrap: anywhere;
+    em { display: block; margin-bottom: 8px; font-style: normal; color: $ep-muted; @include ep-caps(20px, .06em); } }
+.ep-title-sm { color: $ep-ink; margin-bottom: 8px !important; @include ep-caps(28px, .02em); }
+.ep-h2 { line-height: 1.15; color: $ep-ink; margin-bottom: 14px !important; @include ep-caps(22px, .03em); }
+.ep-h2-lg { font-size: 26px; margin-bottom: 10px !important; }
+// In white cards, a short yellow bar under the heading ties them to the yellow cards
+.ep-surface .ep-h2::after { content: ''; display: block; width: 36px; height: 4px; margin-top: 8px; border-radius: 2px; background: $ep-yellow; }
+.ep-back { display: inline-block; margin-bottom: 10px; color: $ep-muted; text-decoration: none; @include ep-caps(14px, .06em);
+    &::before { content: '‹  '; } &:hover { color: $ep-red; } }
+
+// ---------- Buttons: red pills in Anton capitals, as "SHOP NOW" ----------
+.ep-btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 10px;
+    height: 52px; padding: 0 32px; border: 0; border-radius: 40px; box-sizing: border-box; cursor: pointer; white-space: nowrap; text-decoration: none;
+    @include ep-caps(18px, .05em);
+    transition: background-color .25s, box-shadow .25s, color .25s, translate .15s;
+    svg { transition: transform .3s $ep-ease; }
+}
+.ep-btn-primary { color: $ep-paper; background: $ep-red; box-shadow: 0 5px 0 $ep-red-dark;
+    &:hover, &:focus-visible { color: $ep-paper; background: $ep-red-hi;
+        svg { transform: translateX(3px); } }
+    &:active { translate: 0 3px; box-shadow: 0 2px 0 $ep-red-dark; } }
+.ep-btn-soft { background: transparent; color: $ep-red; box-shadow: inset 0 0 0 2px $ep-red;
+    &:hover { color: $ep-paper; background: $ep-red; } }
+.ep-btn-sm { height: 40px; padding: 0 20px; @include ep-caps(15px, .05em); }
+.ep-btn-block { width: 100%; height: 56px; }
+
+.ep-icon-btn { width: 44px; height: 44px; flex: 0 0 44px; display: inline-flex; align-items: center; justify-content: center;
+    border-radius: 50%; color: $ep-muted; text-decoration: none; transition: color .2s, background-color .2s;
+    &:hover { color: $ep-red; background: rgba($ep-red, .08); } }
+.ep-link-btn { background: none; border: 0; padding: 0 2px; min-height: 44px; cursor: pointer; color: $ep-red;
+    font: inherit; font-size: 14px; font-weight: 600; text-decoration: underline; text-underline-offset: 3px;
+    &:hover { color: $ep-red-dark; } }
+.ep-inline-form { margin: 0; }
+
+// ---------- Banners, pills, rings ----------
+.ep-banner { display: flex; align-items: center; gap: 12px; padding: 14px 18px; border-radius: 14px; font-weight: 500;
+    border: 1px solid currentColor; border-color: color-mix(in srgb, currentColor 25%, transparent);
+    svg { flex: 0 0 18px; } strong { font-weight: 700; } }
+.ep-banner-ok { background: $ep-ok-bg; color: $ep-ok; }
+.ep-banner-wait { background: $ep-wait-bg; color: $ep-wait; }
+.ep-banner-bad { background: $ep-bad-bg; color: $ep-bad; }
+
+.ep-pill { display: inline-flex; align-items: center; gap: 7px; flex: 0 0 auto; padding: 4px 12px; border-radius: 999px; white-space: nowrap;
+    font-size: 12px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase;
+    &::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: currentColor; } }
+.ep-pill-ok { color: $ep-ok; background: $ep-ok-bg; }
+.ep-pill-wait { color: $ep-wait; background: $ep-wait-bg; }
+.ep-pill-bad { color: $ep-bad; background: $ep-bad-bg; }
+
+// Ring drawn with a conic gradient. --ep-ring is registered so it animates
+// from 0 to the balance; browsers without @property just show the end value.
+@property --ep-ring { syntax: '<number>'; inherits: true; initial-value: 0; }
+.ep-ring { position: relative; display: inline-flex; align-items: center; justify-content: center;
+    width: 68px; height: 68px; flex: 0 0 68px; border-radius: 50%;
+    --ep-ring: var(--p, 0); transition: --ep-ring 1.8s $ep-ease .3s;
+    &::before { content: ''; position: absolute; inset: 0; border-radius: 50%;
+        background: conic-gradient($ep-red 0%, $ep-red calc(var(--ep-ring) * 1%), $ep-track calc(var(--ep-ring) * 1%) 100%);
+        -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 6px), #000 calc(100% - 5px));
+        mask: radial-gradient(farthest-side, transparent calc(100% - 6px), #000 calc(100% - 5px)); } }
+.ep-js .ep-reveal:not(.is-in) .ep-ring { --ep-ring: 0; }
+.ep-ring-value { position: relative; color: $ep-ink; @include ep-caps(24px, .01em); }
+
+// ---------- App shell: the red side menu of the website ----------
+.ep-app { display: flex; align-items: flex-start; }
+
+.ep-sidebar {
+    position: sticky; top: 0; flex: 0 0 256px; width: 256px; height: 100vh; box-sizing: border-box; overflow-y: auto;
+    padding: 30px 18px 24px; display: flex; flex-direction: column; gap: 30px;
+    background: $ep-red; color: $ep-paper;
+    @include ep-pattern-top('the_cut_pattern_white.svg', .17, 340px);
+    > * { position: relative; }
+    a:focus-visible { outline-color: $ep-yellow; }
+}
+.ep-brand { display: flex; flex-direction: column; align-items: center; gap: 12px; padding-bottom: 24px; border-bottom: 1px solid rgba(255, 255, 255, .18); }
+.ep-brand-logo { width: 88px; }
+.ep-brand-text { color: $ep-blush; @include ep-caps(15px, .1em); }
+.ep-nav { display: flex; flex-direction: column; gap: 2px; }
+.ep-nav-label { margin: 20px 14px 6px !important; color: rgba(255, 255, 255, .62); @include ep-caps(12px, .1em); }
+.ep-nav-link {
+    position: relative; display: flex; align-items: center; gap: 14px; min-height: 48px; padding: 0 14px; border-radius: 12px;
+    color: $ep-paper; text-decoration: none; @include ep-caps(17px, .05em);
+    transition: color .25s, background-color .25s;
+    svg { flex: 0 0 18px; color: $ep-blush; transition: color .25s; }
+    &::before { content: ''; position: absolute; inset-inline-start: 0; top: 12px; bottom: 12px; width: 3px; border-radius: 2px;
+        background: $ep-yellow; opacity: 0; transition: opacity .25s; }
+    &:hover { color: $ep-yellow; background: rgba(255, 255, 255, .06); svg { color: $ep-yellow; } }
+    &.is-active { color: $ep-yellow; background: rgba(0, 0, 0, .18);
+        svg { color: $ep-yellow; } &::before { opacity: 1; } }
+}
+.ep-user { margin-top: auto; display: flex; align-items: center; gap: 12px; padding: 18px 6px 0; border-top: 1px solid rgba(255, 255, 255, .18); }
+.ep-user-avatar { width: 40px; height: 40px; flex: 0 0 40px; border-radius: 50%; background: $ep-yellow; color: $ep-ink;
+    display: inline-flex; align-items: center; justify-content: center; @include ep-caps(16px, .02em); }
+.ep-user-text { min-width: 0; }
+.ep-user-name { color: $ep-paper; font-weight: 700; font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ep-user-logout { color: $ep-blush; font-size: 13px; text-decoration: none; &:hover { color: $ep-yellow; text-decoration: underline; } }
+
+.ep-topbar, .ep-tabbar { display: none; }
+
+.ep-main { flex: 1 1 auto; min-width: 0; padding: 52px 56px 72px; box-sizing: border-box; outline: none; }
+.ep-main-inner { width: 100%; max-width: 1400px; margin: 0 auto; display: flex; flex-direction: column; gap: 28px; }
+
+.ep-page-head { display: flex; justify-content: space-between; align-items: flex-end; flex-wrap: wrap; gap: 20px;
+    padding-bottom: 26px; border-bottom: 1px solid $ep-line-red;
+    .ep-eyebrow { margin-bottom: 14px !important; } }
+
+// ---------- Surfaces ----------
+.ep-surface { @include ep-panel; padding: 26px 28px; box-sizing: border-box; min-width: 0; }
+.ep-surface-lg { padding: 32px 34px; }
+.ep-surface-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; margin-bottom: 16px;
+    .ep-h2 { margin: 0 !important; } }
+.ep-empty { max-width: 640px; display: flex; flex-direction: column; gap: 6px; }
+.ep-orb-icon { width: 56px; height: 56px; margin-bottom: 16px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center;
+    background: rgba($ep-red, .08); color: $ep-red;
+    svg { width: 22px; height: 22px; } }
+
+.ep-split { display: grid; grid-template-columns: minmax(0, 2fr) minmax(320px, 1fr); gap: 24px; align-items: start; }
+.ep-split-even { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.ep-side { min-width: 0; display: flex; flex-direction: column; gap: 24px; }
+@media (max-width: 1100px) { .ep-split, .ep-split-even { grid-template-columns: minmax(0, 1fr); } }
+
+.ep-rows { display: flex; flex-direction: column; }
+.ep-row { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 12px 0; border-top: 1px solid $ep-line; }
+.ep-rows > li:first-child, .ep-rows > li:first-child > .ep-row { border-top: 0; }
+.ep-row-tall { padding: 15px 0; }
+.ep-row-link { color: $ep-ink; text-decoration: none; min-height: 44px; transition: color .2s;
+    &:hover { color: $ep-red; } strong { @include ep-caps(18px, .02em); } }
+.ep-row-dot { width: 8px; height: 8px; flex: 0 0 8px; border-radius: 50%; background: currentColor; }
+.ep-row-dot-ok { color: $ep-ok; } .ep-row-dot-wait { color: $ep-yellow; } .ep-row-dot-bad { color: $ep-bad; }
+.ep-row-text { min-width: 0; }
+.ep-grow { flex: 1 1 180px; }
+.ep-row-title { display: block; font-weight: 700; color: $ep-ink; overflow-wrap: anywhere; }
+.ep-row-sub { color: $ep-muted; font-size: 13px; }
+.ep-row-end { display: flex; align-items: center; gap: 14px; }
+.ep-avatar-round { width: 40px; height: 40px; flex: 0 0 40px; border-radius: 50%; background: $ep-yellow; color: $ep-red;
+    display: inline-flex; align-items: center; justify-content: center; @include ep-caps(16px, .02em); }
+
+// ---------- Profile ----------
+.ep-hero { display: flex; flex-wrap: wrap; gap: 36px; align-items: center; }
+
+// Staff badge on a lanyard: a red card with The Cut pattern. The swing uses
+// `rotate`; the pointer tilt (--rx/--ry/--mx/--my, set by employee_portal.js) uses `transform`.
+.ep-badge { flex: 0 0 290px; width: 290px; display: flex; justify-content: center; }
+.ep-badge-swing { display: flex; flex-direction: column; align-items: center; transform-origin: 50% 0;
+    animation: ep-swing 8s ease-in-out infinite; }
+.ep-badge:hover .ep-badge-swing, .ep-badge:focus-within .ep-badge-swing { animation-play-state: paused; }
+@keyframes ep-swing { 0%, 100% { rotate: -1.2deg; } 50% { rotate: 1.2deg; } }
+.ep-lanyard { display: flex; flex-direction: column; align-items: center; }
+.ep-lanyard-strap { display: block; width: 34px; height: 76px;
+    background:
+        linear-gradient(90deg, transparent 3px, rgba($ep-yellow, .8) 3px 4px, transparent 4px calc(100% - 4px),
+                        rgba($ep-yellow, .8) calc(100% - 4px) calc(100% - 3px), transparent calc(100% - 3px)),
+        linear-gradient(180deg, #2E2626, $ep-ink);
+    box-shadow: 0 10px 20px -10px rgba(0, 0, 0, .5); }
+.ep-lanyard-clip { position: relative; z-index: 2; display: block; width: 26px; height: 34px; margin-top: -6px; border-radius: 6px 6px 12px 12px;
+    background: $ep-yellow-metal; box-shadow: 0 6px 12px rgba(0, 0, 0, .3), inset 0 -7px 0 rgba(0, 0, 0, .15); }
+
+.ep-card3d { position: relative; width: 264px; height: 372px; margin-top: -14px; perspective: 1200px;
+    --rx: 0deg; --ry: 0deg; --mx: 50%; --my: 30%; --flip: 0deg; }
+.ep-card3d.is-flipped { --flip: 180deg; }
+.ep-card3d-inner { position: relative; width: 100%; height: 100%; transform-style: preserve-3d;
+    transform: rotateX(var(--rx)) rotateY(calc(var(--ry) + var(--flip)));
+    transition: transform 1s $ep-ease; }
+.ep-card3d.is-tilting:not(.is-turning) .ep-card3d-inner { transition: transform .2s linear; }
+.ep-card3d-face { position: absolute; inset: 0; box-sizing: border-box; padding: 38px 26px 20px; border-radius: 24px; overflow: hidden;
+    display: flex; flex-direction: column; align-items: center; gap: 12px; text-align: center; color: $ep-paper;
+    transform-style: preserve-3d; -webkit-backface-visibility: hidden; backface-visibility: hidden;
+    background: $ep-red-card;
+    box-shadow: 0 30px 60px -24px rgba($ep-red-dark, .6);
+    @include ep-pattern-top('the_cut_pattern_white.svg', .14, 220px);
+    &::before { -webkit-backface-visibility: hidden; backface-visibility: hidden; }
+    > * { -webkit-backface-visibility: hidden; backface-visibility: hidden; } }
+.ep-card3d-back { transform: rotateY(180deg); justify-content: center; gap: 24px; }
+.ep-badge-slot, .ep-card3d-slot { position: absolute; top: 15px; left: 50%; width: 54px; height: 9px; margin-left: -27px; border-radius: 6px;
+    background: $ep-red-dark; box-shadow: inset 0 2px 4px rgba(0, 0, 0, .5); }
+.ep-card3d-top { width: 100%; display: flex; justify-content: space-between; align-items: center; padding-bottom: 14px;
+    border-bottom: 1px solid rgba(255, 255, 255, .2); transform: translateZ(18px); }
+.ep-card3d-logo { width: 46px; }
+.ep-card3d-chip { width: 36px; height: 26px; border-radius: 6px; background: $ep-yellow-chip;
+    box-shadow: inset 0 0 0 1px rgba(0, 0, 0, .15), 0 3px 8px rgba(0, 0, 0, .3); }
+.ep-card3d-body { display: flex; flex-direction: column; align-items: center; gap: 2px; width: 100%; min-width: 0; transform: translateZ(40px); }
+.ep-card3d-photo { width: 100px; height: 100px; margin: 4px 0 12px; border-radius: 50%; object-fit: cover; background: $ep-red-dark;
+    border: 3px solid $ep-yellow; box-shadow: 0 0 0 5px rgba($ep-red-dark, .9), 0 18px 30px -10px rgba(0, 0, 0, .6); }
+.ep-card3d-name { line-height: 1.1; overflow-wrap: anywhere; @include ep-caps(25px, .03em);
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.ep-card3d-role { color: $ep-blush; font-size: 13px;
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.ep-card3d-foot { margin-top: auto; width: 100%; box-sizing: border-box; display: flex; justify-content: space-between; align-items: baseline; gap: 10px;
+    padding-top: 14px; padding-inline-end: 44px; border-top: 1px dashed rgba(255, 255, 255, .3); transform: translateZ(16px); }
+.ep-card3d-label { color: $ep-blush; @include ep-caps(11px, .1em); }
+.ep-card3d-number { color: $ep-yellow; @include ep-caps(18px, .06em); }
+// A soft light that follows the pointer across the card
+.ep-card3d-holo { position: absolute; inset: 0; border-radius: inherit; pointer-events: none;
+    background: linear-gradient(115deg, transparent 32%, rgba(255, 255, 255, .08) 46%, transparent 60%);
+    background-size: 240% 240%; background-position: var(--mx) var(--my); }
+.ep-card3d-glare { position: absolute; inset: 0; border-radius: inherit; pointer-events: none; opacity: 0; transition: opacity .4s;
+    background: radial-gradient(circle at var(--mx) var(--my), rgba(255, 255, 255, .12), transparent 50%); }
+.ep-card3d.is-tilting .ep-card3d-glare { opacity: 1; }
+.ep-card3d-facts { display: grid; grid-template-columns: 1fr; gap: 16px; width: 100%; transform: translateZ(26px);
+    dt { color: $ep-yellow; @include ep-caps(11px, .1em); }
+    dd { margin-top: 3px; font-size: 18px; font-weight: 600; overflow-wrap: anywhere; } }
+.ep-card3d-barcode { display: block; width: 100%; height: 30px; opacity: .5; transform: translateZ(14px);
+    background: repeating-linear-gradient(90deg, $ep-paper 0 2px, transparent 2px 4px, $ep-paper 4px 5px, transparent 5px 9px,
+                                          $ep-paper 9px 12px, transparent 12px 14px); }
+.ep-card3d-flip { position: absolute; inset-block-end: 14px; inset-inline-end: 14px; z-index: 2;
+    width: 40px; height: 40px; border-radius: 50%; border: 1px solid rgba(255, 255, 255, .35); cursor: pointer;
+    display: inline-flex; align-items: center; justify-content: center; background: rgba(0, 0, 0, .22); color: $ep-paper;
+    transition: transform .6s $ep-ease, color .3s;
+    svg { width: 16px; height: 16px; }
+    &:hover { color: $ep-yellow; transform: rotate(180deg); }
+    &:focus-visible { outline-color: $ep-yellow !important; } }
+
+.ep-stats { flex: 1 1 420px; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }
+// Directly in the page (My pay), the 420px basis would become a height
+.ep-main-inner > .ep-stats { flex: none; }
+// Number cards (profile, My pay, dashboard): the yellow of the sign-in page with the red
+// pattern, as the red headcount card; the cards with lists and forms stay white.
+@mixin ep-number-card {
+    @include ep-panel(18px); overflow: hidden; border-color: transparent; background: $ep-yellow;
+    @include ep-pattern-top('the_cut_pattern_reddeep.svg', .16, 200px);
+    > * { position: relative; }
+}
+.ep-stat { @include ep-number-card; position: relative; padding: 22px 24px; display: flex; flex-direction: column; gap: 4px; min-width: 0;
+    transform: perspective(900px) rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg));
+    transition: transform .6s $ep-ease, translate .3s $ep-ease, box-shadow .3s; }
+// Number cards rise a little under the pointer
+.ep-stat:hover, .ep-kpi:hover { translate: 0 -4px; box-shadow: 0 20px 36px -18px rgba($ep-red-dark, .5); }
+// A red icon in the top corner of each number card
+.ep-stat > .ep-card-icon, .ep-kpi > .ep-card-icon { position: absolute; top: 16px; inset-inline-end: 16px;
+    width: 40px; height: 40px; border-radius: 12px; display: inline-flex; align-items: center; justify-content: center;
+    background: rgba($ep-red, .12); color: $ep-red;
+    svg { width: 20px; height: 20px; } }
+.ep-stat-label, .ep-kpi-label { padding-inline-end: 48px; }
+.ep-stat-label { color: $ep-red-dark; @include ep-caps(13px, .06em); }
+.ep-stat-value { line-height: 1.1; color: $ep-ink; @include ep-caps(34px, .01em); }
+.ep-stat-note { color: #4D3B2E; font-size: 13px; }
+
+.ep-balances { display: flex; flex-direction: column; gap: 18px; }
+.ep-balance { display: flex; align-items: center; gap: 18px; }
+.ep-balance-text { display: flex; flex-direction: column; min-width: 0; }
+.ep-balance-name { color: $ep-ink; @include ep-caps(18px, .03em); }
+.ep-balance-figure { color: $ep-muted; font-size: 14px; }
+.ep-balance-meta { color: $ep-faint; font-size: 13px; }
+
+// New request: a red button that opens the list of everything the employee can ask for.
+// Wide screens: in the page head, the list drops down as a panel. Phones: under the staff card.
+.ep-ask { min-width: 0; }
+.ep-ask-phone { display: none; }
+// Above the badge and cards that follow (they make their own layers when revealed)
+.ep-page-head:has(.ep-ask-menu) { position: relative; z-index: 30; }
+.ep-ask-menu { position: relative;
+    .ep-ask-list { position: absolute; top: calc(100% + 12px); inset-inline-end: 0; width: 680px; max-width: calc(100vw - 380px);
+        grid-template-columns: repeat(2, minmax(0, 1fr)); margin: 0 !important; padding: 12px; box-sizing: border-box;
+        border-radius: 22px; background: $ep-cream; box-shadow: 0 24px 60px -18px rgba($ep-red-dark, .45);
+        border: 1px solid $ep-line-red; }
+    .ep-ask-item { box-shadow: none; } }
+.ep-ask-head { width: fit-content; list-style: none;
+    &::-webkit-details-marker { display: none; } }
+.ep-ask-chev { display: inline-flex; transition: transform .3s $ep-ease; }
+.ep-ask[open] .ep-ask-chev { transform: rotate(180deg); }
+.ep-ask-list { display: grid; grid-template-columns: minmax(0, 1fr); gap: 10px; margin-top: 16px !important;
+    animation: ep-sec-open .35s $ep-ease; }
+.ep-ask-item { @include ep-panel(16px); display: flex; align-items: center; gap: 14px; height: 100%; min-height: 68px; box-sizing: border-box;
+    padding: 12px 16px; color: $ep-ink; text-decoration: none; transition: translate .25s $ep-ease, border-color .25s, color .2s;
+    &:hover, &:focus-visible { translate: 0 -2px; border-color: $ep-line-red; color: $ep-red;
+        .ep-ask-go { color: $ep-red; transform: translateX(3px); } } }
+.ep-ask-icon { width: 42px; height: 42px; flex: 0 0 42px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center;
+    background: $ep-yellow; color: $ep-red;
+    svg { width: 21px; height: 21px; } }
+.ep-ask-text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.ep-ask-label { line-height: 1.15; @include ep-caps(16px, .04em); }
+.ep-ask-sub { color: $ep-muted; font-size: 13px; line-height: 1.35; }
+.ep-ask-go { flex: none; display: inline-flex; color: $ep-faint; transition: transform .25s $ep-ease, color .2s; }
+
+// Document wallet: cards stacked like in a wallet, coloured by status.
+// The top band of each card stays visible; a tap, hover or focus lifts a card out.
+.ep-wallet { display: flex; flex-direction: column; padding-top: 14px; perspective: 900px; }
+.ep-wallet-card { position: relative; height: 106px; box-sizing: border-box; margin-top: -56px; padding: 15px 18px; border-radius: 16px;
+    color: var(--wtext); cursor: pointer; -webkit-tap-highlight-color: transparent;
+    background: radial-gradient(120% 100% at 0% 0%, rgba(255, 255, 255, .12), transparent 55%), linear-gradient(150deg, var(--wc1), var(--wc2));
+    box-shadow: 0 -10px 22px -16px rgba(0, 0, 0, .55);
+    transform: rotateX(10deg); transform-origin: 50% 100%;
+    transition: transform .5s $ep-ease, translate .5s $ep-ease, box-shadow .5s;
+    &:first-child { margin-top: 0; }
+    &:hover, &:focus { z-index: 5; translate: 0 -12px; transform: rotateX(0deg); outline: 0;
+        box-shadow: 0 22px 34px -14px rgba(0, 0, 0, .45); }
+    &:focus-visible { outline: 2px solid $ep-red; outline-offset: 3px; } }
+.ep-wallet-valid { --wc1: #2F7A3B; --wc2: #1E5428; --wtext: #{$ep-paper}; --wsub: rgba(255, 255, 255, .8); }
+.ep-wallet-soon { --wc1: #{$ep-yellow-soft}; --wc2: #{$ep-yellow}; --wtext: #{$ep-ink}; --wsub: rgba(27, 20, 20, .75); }
+.ep-wallet-expired { --wc1: #{$ep-red}; --wc2: #{$ep-red-dark}; --wtext: #{$ep-paper}; --wsub: rgba(255, 255, 255, .8); }
+.ep-wallet-top { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+.ep-wallet-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; @include ep-caps(19px, .03em); }
+.ep-wallet-card .ep-pill { background: rgba(0, 0, 0, .16); color: var(--wtext); }
+.ep-wallet-date { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden;
+    margin-top: 12px !important; padding-inline-end: 44px; font-size: 13px; line-height: 1.45; color: var(--wsub);
+    strong { color: var(--wtext); } }
+.ep-wallet-chip { position: absolute; inset-inline-end: 18px; bottom: 15px; width: 30px; height: 22px; border-radius: 5px; background: $ep-yellow-chip; opacity: .9; }
+.ep-wallet-soon .ep-wallet-chip { background: rgba(27, 20, 20, .18); }
+
+// All the details: one folding section per topic (<details>), phone first.
+// The title row is a big tap target with the short answer under the title.
+.ep-details { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px 24px; align-items: start; }
+@media (max-width: 1100px) { .ep-details { grid-template-columns: minmax(0, 1fr); } }
+.ep-sec { @include ep-panel(18px); min-width: 0; overflow: hidden; }
+.ep-sec-head { display: flex; align-items: center; gap: 14px; min-height: 76px; box-sizing: border-box; padding: 14px 18px;
+    list-style: none; cursor: pointer; -webkit-tap-highlight-color: transparent;
+    &::-webkit-details-marker { display: none; }
+    &:hover .ep-sec-title { color: $ep-red; }
+    &:focus-visible { outline: 2px solid $ep-red; outline-offset: -3px; border-radius: 18px; } }
+.ep-sec-icon { width: 44px; height: 44px; flex: 0 0 44px; border-radius: 14px; display: inline-flex; align-items: center; justify-content: center;
+    background: rgba($ep-red, .08); color: $ep-red;
+    svg { width: 22px; height: 22px; } }
+.ep-sec-text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.ep-sec-title { line-height: 1.2; color: $ep-ink; transition: color .2s; @include ep-caps(18px, .03em); }
+// Up to two lines, so the answer is readable without opening the section
+.ep-sec-sum { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden;
+    line-height: 1.4; color: $ep-muted; font-size: 14px; }
+.ep-sec-sum-ok { color: $ep-ok; }
+.ep-sec-sum-wait { color: $ep-wait; }
+.ep-sec-sum-bad { color: $ep-bad; font-weight: 600; }
+.ep-sec-chev { flex: none; display: inline-flex; color: $ep-faint; transition: transform .3s $ep-ease, color .2s;
+    svg { width: 20px; height: 20px; } }
+.ep-sec[open] > .ep-sec-head { border-bottom: 1px solid $ep-line;
+    .ep-sec-icon { background: $ep-red; color: $ep-paper; }
+    .ep-sec-chev { transform: rotate(180deg); color: $ep-red; } }
+.ep-sec-body { display: flex; flex-direction: column; gap: 14px; padding: 8px 18px 20px; }
+.ep-sec[open] > .ep-sec-body { animation: ep-sec-open .35s $ep-ease; }
+@keyframes ep-sec-open { from { opacity: 0; translate: 0 -6px; } }
+.ep-sec-docs, .ep-sec-slips, .ep-sec-salary { display: flex; flex-direction: column; gap: 10px; }
+.ep-sec .ep-row-sub { display: block; }
+.ep-sec-label { margin-top: 6px !important; color: $ep-muted; @include ep-caps(12px, .06em); }
+.ep-sec-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 20px; padding-top: 4px; }
+// Label on the left, value on the right: quick to scan on a phone
+.ep-facts { display: flex; flex-direction: column;
+    > div { display: flex; justify-content: space-between; align-items: baseline; gap: 16px; padding: 11px 0; border-top: 1px solid $ep-line; }
+    > div:first-child { border-top: 0; }
+    dt { flex: 0 1 auto; max-width: 45%; color: $ep-muted; font-size: 14px; }
+    dd { min-width: 0; text-align: end; font-weight: 600; color: $ep-ink; overflow-wrap: anywhere; } }
+
+// Phones: compact staff card at the top of the profile (the badge is for wide screens)
+.ep-me { display: none; }
+.ep-me-photo { width: 64px; height: 64px; flex: 0 0 64px; border-radius: 50%; object-fit: cover; box-sizing: border-box;
+    border: 3px solid $ep-yellow; }
+.ep-me-photo.ep-initials { font-size: 24px; }
+.ep-me-text { min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.ep-me-name { line-height: 1.1; color: $ep-paper; overflow-wrap: anywhere; @include ep-caps(24px, .02em); }
+.ep-me-role { color: $ep-blush; font-size: 14px; }
+.ep-me-meta { color: $ep-yellow; font-size: 13px; font-weight: 600; }
+
+
+// ---------- Leave ----------
+.ep-tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; }
+.ep-tile { @include ep-panel; padding: 26px 28px; display: flex; align-items: center; gap: 22px; min-width: 0; }
+.ep-tile-feature { border: 2px solid $ep-red; }
+.ep-tile-text { min-width: 0; display: flex; flex-direction: column; }
+.ep-tile-label { color: $ep-muted; @include ep-caps(13px, .06em); }
+.ep-tile-figure { margin-top: 6px !important; line-height: 1.05; color: $ep-ink; @include ep-caps(34px, .01em); }
+.ep-tile-unit { color: $ep-muted; font-family: $ep-sans; font-size: 14px; letter-spacing: 0; text-transform: none; }
+.ep-tile-heading { margin: 4px 0 !important; line-height: 1.1; color: $ep-ink; @include ep-caps(26px, .02em); }
+.ep-tile-note { margin-top: 8px !important; color: $ep-faint; font-size: 13px; }
+
+// One small 3D block per day: yellow = free, red = awaiting approval
+.ep-tile-days { flex-direction: column; align-items: stretch; gap: 18px; }
+.ep-days { display: flex; flex-wrap: wrap; gap: 8px 7px; }
+.ep-day { display: inline-block; flex: 0 0 15px; width: 15px; height: 15px; border-radius: 3px;
+    background: linear-gradient(145deg, var(--top1), var(--top2));
+    box-shadow: 0 3px 0 var(--side), 0 6px 8px -5px rgba(0, 0, 0, .35); }
+.ep-day-free { --top1: #FFD27A; --top2: #{$ep-yellow}; --side: #C47F0E; }
+.ep-day-pending { --top1: #B8383B; --top2: #{$ep-red}; --side: #4A0A0C; }
+.ep-day-taken { --top1: #F3ECE8; --top2: #E5DAD4; --side: #CDBFB8; }
+.ep-js .ep-reveal:not(.is-in) .ep-days .ep-day { opacity: 0; }
+.ep-js .ep-reveal.is-in .ep-days .ep-day { animation: ep-drop .6s $ep-ease both; animation-delay: calc(var(--i, 0) * 20ms); }
+@keyframes ep-drop { from { opacity: 0; translate: 0 -10px; } to { opacity: 1; translate: 0 0; } }
+.ep-days-legend { display: flex; flex-wrap: wrap; gap: 6px 20px; padding-top: 14px; border-top: 1px solid $ep-line; color: $ep-muted; font-size: 13px;
+    li { display: inline-flex; align-items: center; gap: 8px; }
+    .ep-day { flex-basis: 11px; width: 11px; height: 11px; } }
+
+// Next leave on a tear-off desk calendar: two pages tear away to the date
+.ep-tile-cal { gap: 28px; }
+.ep-desk { position: relative; flex: 0 0 108px; width: 108px; height: 122px; transform-style: preserve-3d;
+    transform: perspective(700px) rotateX(8deg) rotateY(-12deg); }
+.ep-desk-rings { position: absolute; top: -8px; left: 0; right: 0; z-index: 3; display: flex; justify-content: space-around; transform: translateZ(6px);
+    span { width: 9px; height: 20px; border-radius: 5px; background: $ep-yellow-metal; box-shadow: 0 2px 4px rgba(0, 0, 0, .35); } }
+.ep-desk-page { position: absolute; inset: 0; box-sizing: border-box; border-radius: 10px; overflow: hidden;
+    display: flex; flex-direction: column; align-items: center; background: $ep-paper; color: $ep-ink; }
+.ep-desk-page-final { box-shadow: 0 2px 0 #EFE6E2, 0 4px 0 #E3D8D3, 0 6px 0 #D5C8C1, 16px 22px 30px -14px rgba($ep-red-dark, .45); }
+.ep-desk-month { display: block; width: 100%; padding: 15px 0 5px; background: $ep-red;
+    border-bottom: 3px solid $ep-yellow; color: $ep-paper; text-align: center; @include ep-caps(14px, .08em); }
+.ep-desk-day { margin-top: 6px; line-height: 1; @include ep-caps(50px, 0); }
+.ep-desk-day-icon { color: $ep-red; svg { width: 32px; height: 32px; } }
+.ep-desk-weekday { margin-top: 2px; color: $ep-muted; @include ep-caps(11px, .06em); }
+.ep-desk-page-tear { display: none; transform-origin: 50% 0; -webkit-backface-visibility: hidden; backface-visibility: hidden;
+    background: linear-gradient(180deg, $ep-red, $ep-red) top / 100% 34px no-repeat, #FAF6F3; }
+.ep-js .ep-desk-page-tear { display: flex; }
+.ep-js .ep-reveal.is-in .ep-desk-page-1 { animation: ep-tear .9s cubic-bezier(.55, 0, .75, .2) .6s forwards; }
+.ep-js .ep-reveal.is-in .ep-desk-page-2 { animation: ep-tear .9s cubic-bezier(.55, 0, .75, .2) 1.3s forwards; }
+@keyframes ep-tear {
+    0% { transform: rotateX(0deg); opacity: 1; }
+    65% { opacity: 1; }
+    100% { transform: rotateX(-125deg) translateY(-8px); opacity: 0; }
+}
+
+// Form
+.ep-form { display: flex; flex-direction: column; gap: 24px; margin-top: 18px; }
+.ep-fieldset { border: 0; padding: 0; margin: 0; min-width: 0; }
+.ep-label { display: block; margin-bottom: 10px; padding: 0; float: none; width: auto; color: $ep-muted; @include ep-caps(13px, .06em);
+    .ep-muted { color: $ep-faint; font-family: $ep-sans; text-transform: none; letter-spacing: 0; font-weight: 400; } }
+.ep-pill-options { display: flex; flex-wrap: wrap; gap: 10px; }
+.ep-pill-radio { position: absolute; opacity: 0; width: 1px; height: 1px; }
+.ep-pill-option { display: inline-flex; align-items: center; min-height: 44px; padding: 0 20px; margin: 0; border-radius: 999px; cursor: pointer;
+    border: 2px solid #E4D9D3; background: $ep-paper; color: $ep-ink; font-size: 14px; font-weight: 600;
+    transition: background-color .25s, border-color .25s, color .25s;
+    &:hover { border-color: $ep-red; } }
+.ep-pill-radio:checked + .ep-pill-option { border-color: $ep-yellow; color: $ep-ink; background: $ep-yellow; }
+.ep-form-row { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 22px; }
+.ep-form-field { display: flex; flex-direction: column; min-width: 0; }
+.ep-fieldset[hidden], .ep-form-field[hidden] { display: none; }
+// Boxed fields, as the forms of the website; the border turns red on focus
+.ep-input { width: 100%; box-sizing: border-box; height: 48px; padding: 0 14px; border: 1.5px solid $ep-field-line; border-radius: 12px;
+    background: $ep-paper; color: $ep-ink; font: inherit; font-size: 15px; transition: border-color .25s, box-shadow .25s;
+    &::placeholder { color: $ep-faint; }
+    &:focus, &:focus-visible { outline: none; border-color: $ep-red; box-shadow: 0 0 0 3px rgba($ep-red, .15); }
+    option { background: $ep-paper; color: $ep-ink; } }
+.ep-textarea { height: auto; min-height: 96px; padding: 12px 14px; resize: vertical; }
+.ep-hint { margin-top: -10px !important; color: $ep-faint; font-size: 13px; }
+.ep-hint-flush { margin-top: 10px !important; }
+.ep-form .ep-btn { align-self: flex-start; }
+
+// File picker: the real input stays focusable, the label is the visible target
+.ep-file { position: absolute; width: 1px; height: 1px; opacity: 0; overflow: hidden; }
+.ep-drop { display: flex; align-items: center; gap: 14px; min-height: 64px; padding: 12px 16px; box-sizing: border-box; cursor: pointer; margin: 0;
+    border: 2px dashed #D8C9C2; border-radius: 14px; background: #FCFAF8; color: $ep-muted; transition: border-color .25s, color .25s, background-color .25s;
+    &:hover { border-color: $ep-red; color: $ep-ink; background: $ep-paper; } }
+.ep-form-field:has(.ep-file:focus-visible) .ep-drop { outline: 2px solid $ep-red; outline-offset: 3px; }
+.ep-drop-icon { width: 40px; height: 40px; flex: 0 0 40px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center;
+    background: rgba($ep-red, .08); color: $ep-red; }
+.ep-drop-text { font-size: 14px; overflow-wrap: anywhere; }
+
+// ---------- Payslips ----------
+// One red envelope per payslip, sealed in yellow. On hover or focus the
+// flap opens and the payslip slides out. Touch screens show it already open.
+.ep-envelopes { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 24px; }
+.ep-env { @include ep-panel; display: flex; flex-direction: column; gap: 16px; padding: 20px 20px 18px; text-decoration: none; color: $ep-ink;
+    transition: box-shadow .4s, translate .4s $ep-ease;
+    &:hover, &:focus-visible { color: $ep-ink; box-shadow: $ep-shadow; translate: 0 -2px; } }
+.ep-env-art { position: relative; display: block; height: 136px; margin-top: 48px; perspective: 900px; }
+.ep-env-back { position: absolute; inset: 0; border-radius: 8px; background: linear-gradient(160deg, $ep-red-dark, #3E080A); }
+.ep-env-letter { position: absolute; z-index: 1; left: 12px; right: 12px; top: 8px; height: 118px; box-sizing: border-box; padding: 12px 14px;
+    border-radius: 4px; background: $ep-paper; color: $ep-ink; display: flex; flex-direction: column; gap: 8px;
+    box-shadow: 0 6px 14px -6px rgba(0, 0, 0, .4); transition: translate .8s $ep-ease .05s; }
+.ep-env-letter-head { display: flex; align-items: center; gap: 8px; padding-bottom: 6px; border-bottom: 1px solid #EDE3DE;
+    color: $ep-red; @include ep-caps(14px, .04em);
+    img { width: 22px; height: 22px; padding: 2px; box-sizing: border-box; border-radius: 50%; background: $ep-red; } }
+.ep-env-lines { display: flex; flex-direction: column; gap: 6px;
+    span { display: block; height: 4px; border-radius: 2px; background: #EDE3DE;
+        &:nth-child(1) { width: 88%; } &:nth-child(2) { width: 64%; } &:nth-child(3) { width: 76%; } } }
+.ep-env-net { margin-top: auto; color: $ep-ink; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; @include ep-caps(18px, .01em); }
+.ep-env-pocket { position: absolute; z-index: 2; inset: 0; border-radius: 8px;
+    background: radial-gradient(120% 100% at 50% 0%, rgba(255, 255, 255, .08), transparent 60%), linear-gradient(160deg, $ep-red-hi, $ep-red);
+    clip-path: polygon(0 0, 50% 46%, 100% 0, 100% 100%, 0 100%); }
+.ep-env-flap { position: absolute; z-index: 3; left: 0; right: 0; top: 0; height: 60px; transform-origin: 50% 0;
+    background: linear-gradient(170deg, #A3292D, $ep-red-dark); clip-path: polygon(0 0, 100% 0, 50% 100%);
+    transition: transform .7s $ep-ease, z-index 0s .35s; }
+// Yellow seal, with the download icon pressed in
+.ep-env-seal { position: absolute; z-index: 4; left: 50%; bottom: 14px; translate: -50% 0; width: 40px; height: 40px; border-radius: 50%;
+    display: inline-flex; align-items: center; justify-content: center; color: $ep-ink;
+    background: radial-gradient(circle at 35% 30%, #FFE2A0, $ep-yellow 55%, #B97510 100%);
+    box-shadow: inset 0 -3px 6px rgba(0, 0, 0, .2), inset 0 2px 3px rgba(255, 255, 255, .45), 0 8px 16px -6px rgba(0, 0, 0, .5);
+    transition: scale .5s $ep-ease;
+    svg { width: 17px; height: 17px; } }
+.ep-env:hover, .ep-env:focus-visible {
+    .ep-env-flap { transform: rotateX(180deg); z-index: 0; transition: transform .7s $ep-ease, z-index 0s .3s; }
+    .ep-env-letter { translate: 0 -44px; }
+    .ep-env-seal { scale: 1.08; } }
+@media (hover: none) {
+    .ep-env-flap { transform: rotateX(180deg); z-index: 0; }
+    .ep-env-letter { translate: 0 -30px; }
+}
+.ep-env-caption { display: flex; flex-direction: column; gap: 2px;
+    .ep-row-title { @include ep-caps(21px, .03em); } }
+.ep-env-amount { margin-top: 8px; padding-top: 10px; border-top: 1px solid $ep-line; color: $ep-muted; @include ep-caps(13px, .06em);
+    strong { margin-inline-start: 6px; color: $ep-red; @include ep-caps(20px, .01em); } }
+
+// ---------- Change password ----------
+.ep-narrow { max-width: 560px; width: 100%; }
+.ep-field-error { margin-top: 6px !important; color: $ep-bad; font-size: 13px; }
+.ep-pw-wrap { position: relative; }
+.ep-pill-input-pw { padding-inline-end: 48px !important; }
+.ep-pw-toggle { position: absolute; inset-inline-end: 3px; bottom: 3px; width: 42px; height: 42px; border: 0; border-radius: 50%;
+    background: transparent; color: $ep-faint; cursor: pointer; display: flex; align-items: center; justify-content: center;
+    &:hover, &[aria-pressed="true"] { color: $ep-red; } }
+
+// ---------- Dashboard ----------
+.ep-dash-top { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, 2fr); gap: 20px; }
+@media (max-width: 1200px) { .ep-dash-top { grid-template-columns: minmax(0, 1fr); } }
+// Headcount on a red block with The Cut pattern, as the top of the website pages
+.ep-headcount { position: relative; overflow: hidden; min-width: 0; box-sizing: border-box; padding: 30px 32px; border-radius: 20px; color: $ep-paper;
+    background: $ep-red-card; box-shadow: $ep-shadow;
+    @include ep-pattern-top('the_cut_pattern_white.svg', .17);
+    > * { position: relative; }
+    transform: perspective(1000px) rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg)); transition: transform .6s $ep-ease;
+    .ep-legend { color: $ep-blush; } }
+.ep-headcount-figure { display: flex; align-items: baseline; flex-wrap: wrap; gap: 4px 12px; }
+.ep-headcount-number { line-height: .9; color: $ep-paper; @include ep-caps(76px, 0); }
+.ep-headcount-text { color: $ep-blush; @include ep-caps(15px, .08em); }
+// Isometric bars: a front face plus a skewed top and side face
+.ep-bars { display: flex; align-items: flex-end; gap: 16px; height: 130px; margin: 30px 0 28px; padding-inline-end: 10px; }
+.ep-bar { flex: 1 1 0; max-width: 42px; height: 100%; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; gap: 12px; }
+.ep-bar-count { color: $ep-blush; @include ep-caps(16px, 0); }
+.ep-bar-col { position: relative; width: 100%; height: calc(var(--h) * .76%); min-height: 8px; transform-origin: 50% 100%;
+    background: var(--c); background: linear-gradient(180deg, var(--c), color-mix(in srgb, var(--c) 72%, #000));
+    &::before { content: ''; position: absolute; left: 0; right: 0; top: -8px; height: 8px; transform: skewX(-45deg); transform-origin: 0 100%;
+        background: var(--c); background: color-mix(in srgb, var(--c) 70%, #fff); }
+    &::after { content: ''; position: absolute; left: 100%; top: 0; bottom: 0; width: 8px; transform: skewY(-45deg); transform-origin: 0 0;
+        background: color-mix(in srgb, var(--c) 55%, #000); } }
+.ep-js .ep-reveal:not(.is-in) .ep-bar-col { scale: 1 0; }
+.ep-js .ep-reveal.is-in .ep-bar-col { animation: ep-grow 1.1s $ep-ease both; animation-delay: calc(var(--i, 0) * 90ms); }
+@keyframes ep-grow { from { scale: 1 0; } to { scale: 1 1; } }
+.ep-legend { display: flex; flex-wrap: wrap; gap: 8px 22px; font-size: 13px; color: $ep-muted;
+    li { display: inline-flex; align-items: center; gap: 8px; } }
+.ep-legend-dot { width: 9px; height: 9px; border-radius: 2px; }
+.ep-kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 20px; }
+.ep-kpi { @include ep-number-card; position: relative; padding: 24px; display: flex; flex-direction: column; justify-content: flex-start; gap: 6px; min-height: 124px;
+    transform: perspective(900px) rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg)); transition: transform .6s $ep-ease, translate .3s $ep-ease, box-shadow .3s; }
+.ep-kpi-label { color: $ep-red-dark; @include ep-caps(13px, .06em); }
+.ep-kpi-note { margin-top: 6px !important; color: #4D3B2E; font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ep-kpi-value { margin-top: 8px !important; line-height: .9; color: $ep-ink; @include ep-caps(56px, 0);
+    &.is-flag { color: $ep-red; } }
+
+.ep-directory-head { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px; margin-bottom: 14px;
+    .ep-h2 { margin: 0 !important; } }
+.ep-filter { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 16px;
+    .ep-input { height: 44px; width: auto; min-width: 190px; } }
+.ep-search { position: relative;
+    svg { position: absolute; inset-inline-start: 14px; top: 13px; color: $ep-faint; pointer-events: none; }
+    .ep-input { padding-inline-start: 42px; width: 280px; max-width: 100%; } }
+.ep-table-wrap { overflow-x: auto; }
+.ep-table { width: 100%; border-collapse: collapse; min-width: 760px; color: $ep-text;
+    th { text-align: start; padding: 12px; white-space: nowrap; color: $ep-red-dark; background: #FFF4DC; border-bottom: 2px solid rgba($ep-yellow, .6); @include ep-caps(13px, .06em);
+        &:first-child { border-start-start-radius: 12px; } &:last-child { border-start-end-radius: 12px; } }
+    td { padding: 14px 12px; border-top: 1px solid $ep-line; vertical-align: middle; }
+    tbody tr { transition: background-color .3s; &:hover { background: #FFF8E8; } } }
+.ep-cell-soft { color: $ep-muted; }
+.ep-table td:nth-child(4), .ep-table td:nth-child(5) { white-space: nowrap; }
+.ep-table td:first-child { min-width: 220px; }
+.ep-person { display: inline-flex; align-items: center; gap: 14px; color: $ep-ink; text-decoration: none;
+    &:hover .ep-person-name { color: $ep-red; } }
+.ep-person-photo { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; background: $ep-cream; border: 2px solid $ep-cream; }
+.ep-person-name { display: block; font-size: 15px; font-weight: 700; color: $ep-ink; line-height: 1.2; }
+.ep-person-job { display: block; color: $ep-faint; font-size: 13px; }
+
+.ep-panel { display: flex; flex-direction: column; }
+.ep-panel-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 8px;
+    .ep-h2 { margin: 0 !important; } }
+.ep-count { min-width: 30px; height: 30px; padding: 0 9px; border-radius: 999px; box-sizing: border-box;
+    display: inline-flex; align-items: center; justify-content: center; background: $ep-red; color: $ep-paper; @include ep-caps(15px, 0); }
+.ep-row-stack { flex-direction: column; align-items: stretch; gap: 4px; padding: 14px 0; }
+// Approve / Refuse on the dashboard; under the name when the panel is narrow
+.ep-decide { display: flex; flex-wrap: wrap; gap: 8px; }
+.ep-row:has(> .ep-decide) { flex-wrap: wrap; }
+// Away today: a small stack of staff cards
+.ep-away { display: flex; flex-direction: column; padding-top: 8px; perspective: 900px; }
+.ep-away-card { position: relative; display: flex; align-items: center; gap: 14px; margin-top: -6px; padding: 14px 16px; border-radius: 14px;
+    border: 1px solid $ep-line; background: $ep-paper; box-shadow: 0 10px 22px -16px rgba($ep-red-dark, .5);
+    transform: rotateX(8deg) rotate(-.8deg); transition: transform .5s $ep-ease, translate .5s $ep-ease, border-color .4s;
+    &:first-child { margin-top: 0; }
+    &:nth-child(even) { transform: rotateX(8deg) rotate(.8deg); }
+    &:hover, &:focus-within { z-index: 2; transform: none; translate: 0 -3px; border-color: $ep-line-red; } }
+.ep-away-photo { width: 42px; height: 42px; flex: 0 0 42px; border-radius: 50%; object-fit: cover; background: $ep-cream; border: 2px solid $ep-yellow; }
+.ep-dash-main { display: grid; grid-template-columns: minmax(0, 1.7fr) minmax(320px, 1fr); gap: 24px; align-items: stretch; }
+.ep-dash-stack { display: flex; flex-direction: column; gap: 24px; min-width: 0;
+    > .ep-panel { flex: 1 1 0; } }
+@media (max-width: 1100px) { .ep-dash-main { grid-template-columns: minmax(0, 1fr); } }
+
+.ep-doc-table { display: flex; flex-direction: column; }
+.ep-doc-row { display: grid; grid-template-columns: minmax(0, 1fr) 130px 150px; align-items: center; gap: 16px;
+    padding: 15px 0; border-top: 1px solid $ep-line; }
+.ep-doc-table > .ep-doc-row:first-child { border-top: 0; }
+.ep-more .ep-doc-table > .ep-doc-row:first-child { border-top: 1px solid $ep-line; }
+.ep-doc-name { font-weight: 700; color: $ep-ink; overflow-wrap: anywhere; }
+.ep-doc-type { color: $ep-muted; font-size: 13px; }
+.ep-doc-when { text-align: end; }
+.ep-more { margin-top: 4px;
+    summary { display: inline-flex; align-items: center; min-height: 44px; cursor: pointer; color: $ep-red; font-size: 14px; font-weight: 600;
+        list-style: none; &::-webkit-details-marker { display: none; } &:hover { text-decoration: underline; } } }
+
+.ep-empty-state { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px;
+    text-align: center; padding: 20px 0; color: $ep-muted; min-height: 120px; font-size: 16px; }
+.ep-empty-icon { width: 46px; height: 46px; border-radius: 50%; background: $ep-yellow; color: $ep-red;
+    display: inline-flex; align-items: center; justify-content: center; }
+
+// ---------- /my home entries (inside the website's My Account page) ----------
+.ep-home { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px; margin-bottom: 24px; font-family: $ep-sans; }
+.ep-home-link { position: relative; overflow: hidden; display: flex; flex-direction: column; gap: 4px; padding: 22px 26px; border-radius: 20px;
+    color: $ep-paper; text-decoration: none; background: $ep-red-card; box-shadow: $ep-shadow-sm; transition: box-shadow .3s, translate .3s $ep-ease;
+    @include ep-pattern-top('the_cut_pattern_white.svg', .17, 160px);
+    > * { position: relative; }
+    &:hover { color: $ep-paper; box-shadow: $ep-shadow; translate: 0 -2px; } }
+.ep-home-title { @include ep-caps(22px, .04em); }
+.ep-home-text { font-size: 14px; color: $ep-blush; }
+
+// ---------- Login: yellow page, the sign-in form is a red staff badge ----------
+// The yellow and red of the website's homepage; red text on the yellow is 6:1.
+.ep-login { display: flex; color: $ep-ink; }
+.ep-login-frame { display: none; }
+.ep-login-grid { position: relative; z-index: 2; width: 100%; max-width: 1280px; min-height: 100vh; margin: 0 auto; box-sizing: border-box;
+    padding: 80px 88px; display: grid; grid-template-columns: 1.1fr .9fr; gap: 64px; align-items: center; }
+.ep-login-brand { display: flex; flex-direction: column; gap: 28px; min-width: 0; }
+.ep-login-logo { width: 120px; }
+.ep-login-title { font-family: $ep-title-font !important; font-size: clamp(54px, 6vw, 90px); font-weight: 400; line-height: .98; letter-spacing: .01em !important;
+    text-transform: uppercase; color: $ep-red;
+    em { display: block; margin-bottom: 10px; font-style: normal; color: $ep-ink; @include ep-caps(24px, .06em); } }
+.ep-login-lead { max-width: 440px; color: $ep-ink; font-size: 18px; font-weight: 500; }
+.ep-login-services { display: flex; align-items: center; gap: 16px; color: $ep-red-dark; @include ep-caps(15px, .08em);
+    i { width: 6px; height: 6px; border-radius: 50%; background: $ep-red; } }
+
+.ep-login-main { display: flex; justify-content: center; min-width: 0; perspective: 1400px; }
+.ep-login-hang { display: flex; flex-direction: column; align-items: center; transform-origin: 50% 0; animation: ep-swing 9s ease-in-out infinite;
+    .ep-lanyard-strap { height: 92px; margin-top: -60px;
+        background:
+            linear-gradient(90deg, transparent 3px, rgba(255, 255, 255, .45) 3px 4px, transparent 4px calc(100% - 4px),
+                            rgba(255, 255, 255, .45) calc(100% - 4px) calc(100% - 3px), transparent calc(100% - 3px)),
+            linear-gradient(180deg, #2E2626, $ep-ink); }
+    // Silver clip: a yellow one would vanish on the yellow page
+    .ep-lanyard-clip { background: linear-gradient(90deg, #7A7A7A, #F4F4F4 45%, #C9C9C9 62%, #6E6E6E); } }
+.ep-login-hang:focus-within { animation-play-state: paused; }
+.ep-login-form { position: relative; overflow: hidden; width: 100%; max-width: 420px; box-sizing: border-box; margin-top: -14px; padding: 50px 40px 30px;
+    border-radius: 24px; display: flex; flex-direction: column; gap: 24px; color: $ep-paper;
+    background: $ep-red-card;
+    box-shadow: 0 28px 60px rgba($ep-red-dark, .45);
+    @include ep-pattern-top('the_cut_pattern_white.svg', .14, 220px);
+    > * { position: relative; }
+    transform: rotateY(calc(-6deg + var(--ry, 0deg))) rotateX(calc(2deg + var(--rx, 0deg))); transition: transform .8s $ep-ease, box-shadow .6s;
+    &:focus-within { transform: rotateY(var(--ry, 0deg)) rotateX(var(--rx, 0deg));
+        box-shadow: 0 28px 60px rgba($ep-red-dark, .5), 0 0 0 3px rgba($ep-red-dark, .25); }
+    a:focus-visible, button:focus-visible { outline-color: $ep-yellow; }
+    .ep-badge-slot { position: absolute; background: $ep-red-dark; box-shadow: inset 0 2px 4px rgba(0, 0, 0, .5); }
+    .ep-eyebrow { color: $ep-blush; }
+    // White button with red letters, as "SHOP NOW" on the red sections of the website
+    .ep-btn-primary { background: $ep-paper; color: $ep-red; box-shadow: 0 5px 0 $ep-red-dark;
+        &:hover, &:focus-visible { background: $ep-yellow; color: $ep-ink; }
+        &:active { box-shadow: 0 2px 0 $ep-red-dark; } } }
+// A yellow line sweeps over the badge on Sign in, like a badge reader
+.ep-login-scan { position: absolute !important; z-index: 3; left: 0; right: 0; top: 0; height: 3px; opacity: 0; pointer-events: none;
+    background: linear-gradient(90deg, transparent, $ep-yellow, transparent); box-shadow: 0 0 18px 4px rgba($ep-yellow, .35); }
+.ep-login-form.is-scanning .ep-login-scan { animation: ep-scan 1.1s $ep-ease forwards; }
+@keyframes ep-scan { 0% { top: 0; opacity: 0; } 15% { opacity: 1; } 100% { top: 100%; opacity: 0; } }
+.ep-login-head { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding-bottom: 20px; border-bottom: 1px solid rgba(255, 255, 255, .2); }
+.ep-login-head-logo { width: 58px; }
+.ep-login-head-text { text-align: end; .ep-eyebrow { justify-content: flex-end; } }
+.ep-login-heading { margin-top: 4px !important; line-height: 1.05; color: $ep-paper; @include ep-caps(34px, .02em); }
+.ep-login-fields { display: flex; flex-direction: column; gap: 20px; }
+.ep-line-field { display: flex; flex-direction: column;
+    label { margin-bottom: 6px; color: $ep-blush; @include ep-caps(13px, .06em); } }
+.ep-line-input { width: 100%; height: 50px; box-sizing: border-box; padding: 0 14px; border: 2px solid transparent; border-radius: 12px;
+    background: $ep-paper; color: $ep-ink; font: inherit; font-size: 16px; transition: border-color .25s, box-shadow .25s;
+    // The yellow border is the focus indicator for these fields
+    &:focus, &:focus-visible { outline: none; border-color: $ep-yellow; box-shadow: 0 0 0 3px rgba($ep-yellow, .35); } }
+.ep-login-forgot { align-self: flex-end; margin-top: -6px; color: $ep-paper; font-size: 14px; font-weight: 600; text-decoration: underline; text-underline-offset: 3px;
+    &:hover { color: $ep-yellow; } }
+.ep-login-foot { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding-top: 18px;
+    border-top: 1px dashed rgba(255, 255, 255, .3); color: $ep-blush; font-size: 13px; }
+.ep-login-code { display: block; width: 74px; height: 16px; opacity: .45;
+    background: repeating-linear-gradient(90deg, $ep-paper 0 2px, transparent 2px 4px, $ep-paper 4px 5px, transparent 5px 8px); }
+
+// Initials on yellow for people without a photo (ep_avatar)
+.ep-initials { display: inline-flex; align-items: center; justify-content: center; flex: 0 0 auto; box-sizing: border-box;
+    background: $ep-yellow; color: $ep-red; @include ep-caps(16px, .02em); }
+.ep-card3d-photo.ep-initials { color: $ep-red-dark; font-size: 40px; }
+
+// ---------- Phones ----------
+@media (max-width: $ep-mobile) {
+    .ep-app { display: block; padding-bottom: calc(96px + env(safe-area-inset-bottom)); }
+    .ep-sidebar { display: none; }
+    .ep-topbar { position: sticky; top: 0; z-index: 20; display: flex; align-items: center; gap: 14px;
+        padding: calc(10px + env(safe-area-inset-top)) 16px 10px;
+        background: $ep-red; color: $ep-paper;
+        .ep-icon-btn { color: $ep-paper; &:hover { color: $ep-yellow; background: rgba(255, 255, 255, .1); } }
+        a:focus-visible { outline-color: $ep-yellow; } }
+    .ep-topbar-logo { width: 48px; }
+    .ep-topbar-text { flex: 1; min-width: 0; line-height: 1.2; }
+    .ep-topbar-greeting { color: $ep-blush; @include ep-caps(12px, .06em); }
+    .ep-topbar-name { color: $ep-paper; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; @include ep-caps(22px, .03em); }
+
+    .ep-tabbar { position: fixed; z-index: 30; left: 12px; right: 12px; bottom: calc(12px + env(safe-area-inset-bottom));
+        display: flex; gap: 2px; padding: 6px; border-radius: 22px;
+        background: $ep-red-dark; box-shadow: 0 16px 36px -12px rgba($ep-red-dark, .7);
+        a:focus-visible { outline-color: $ep-yellow; } }
+    .ep-tab { position: relative; flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px;
+        min-height: 56px; border-radius: 16px; color: $ep-blush; text-decoration: none; @include ep-caps(12px, .04em);
+        &.is-active { color: $ep-yellow; background: rgba(0, 0, 0, .22);
+            &::before { content: ''; position: absolute; top: 0; left: 30%; right: 30%; height: 3px; border-radius: 0 0 3px 3px; background: $ep-yellow; } } }
+    .ep-tab-icon { display: inline-flex; }
+    .ep-tab-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%; }
+
+    .ep-main { padding: 28px 16px 24px; }
+    .ep-main-inner { gap: 20px; }
+    .ep-page-head { padding-bottom: 20px; }
+    .ep-page-head .ep-btn { width: 100%; }
+    .ep-title { font-size: 44px; }
+    .ep-surface, .ep-surface-lg { padding: 22px 20px; }
+    .ep-surface, .ep-surface-lg { border-radius: 18px; }
+
+    .ep-desk-only { display: none !important; }
+    .ep-me { position: relative; overflow: hidden; display: flex; align-items: center; gap: 16px; padding: 18px;
+        border-radius: 20px; background: $ep-red-card; box-shadow: $ep-shadow;
+        @include ep-pattern-top('the_cut_pattern_white.svg', .14, 160px);
+        > * { position: relative; } }
+    .ep-details { gap: 12px; }
+    .ep-ask-phone { display: block; }
+    .ep-ask-head { width: 100%; }
+    .ep-ask-list { grid-template-columns: minmax(0, 1fr); gap: 8px; margin-top: 12px !important; }
+    .ep-sec-head { padding: 14px 16px; }
+    .ep-sec-body { padding: 8px 16px 18px; }
+    .ep-sec-actions .ep-btn { flex: 1 1 100%; }
+    .ep-badge { flex: 1 1 100%; width: 100%; }
+    .ep-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+    .ep-stat { padding: 16px; }
+    .ep-stat-value { font-size: 26px; }
+    .ep-tiles { grid-template-columns: 1fr; gap: 14px; }
+    .ep-tile { padding: 20px; }
+    .ep-form-row { grid-template-columns: 1fr; }
+    .ep-form .ep-btn { align-self: stretch; }
+    .ep-rows .ep-row-tall { flex-wrap: wrap; row-gap: 6px; }
+    .ep-row-tall .ep-row-end { width: 100%; justify-content: space-between; padding-inline-start: 20px; }
+    .ep-envelopes { grid-template-columns: 1fr; gap: 16px; }
+    .ep-kpis { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+    .ep-kpi { min-height: 0; padding: 16px 14px; }
+    .ep-kpi-value { font-size: 40px; }
+    .ep-headcount-number { font-size: 60px; }
+    .ep-doc-row { grid-template-columns: minmax(0, 1fr) auto; gap: 4px 12px; }
+    .ep-doc-name { grid-column: 1 / -1; }
+    .ep-search .ep-input, .ep-filter .ep-input { width: 100%; }
+    .ep-filter, .ep-search { width: 100%; }
+
+    .ep-login-grid { grid-template-columns: 1fr; gap: 64px; padding: calc(40px + env(safe-area-inset-top)) 16px 44px;
+        align-items: start; align-content: start; }
+    .ep-login-brand { align-items: center; text-align: center; gap: 16px;
+        .ep-eyebrow::after { content: ''; width: 28px; height: 3px; border-radius: 2px; background: $ep-red; } }
+    .ep-login-logo { width: 92px; }
+    .ep-login-title { font-size: 48px; }
+    .ep-login-brand .ep-rule, .ep-login-lead, .ep-login-services { display: none; }
+    .ep-login-main { justify-content: center; }
+    .ep-login-hang .ep-lanyard-strap { height: 64px; margin-top: -28px; }
+    .ep-login-form { max-width: 360px; padding: 44px 24px 24px; transform: none;
+        &:focus-within { transform: none; } }
+    .ep-login-heading { font-size: 28px; }
+}
+
+// ---------- Reduced motion ----------
+@media (prefers-reduced-motion: reduce) {
+    .ep-app, .ep-login {
+        *, *::before, *::after { animation: none !important; transition: none !important; }
+    }
+    .ep-js .ep-reveal { opacity: 1; translate: none; }
+    .ep-js .ep-reveal:not(.is-in) .ep-ring { --ep-ring: var(--p, 0); }
+    .ep-desk-page-tear { display: none !important; }
+    .ep-js .ep-reveal:not(.is-in) .ep-bar-col { scale: none; }
+    .ep-js .ep-reveal:not(.is-in) .ep-days .ep-day { opacity: 1; }
+}

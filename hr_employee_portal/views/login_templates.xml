@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- Employee login only (/employee/login). Shop customers keep the website login.
+         A yellow page; the sign-in form is a red staff badge, hanging from its lanyard. -->
+    <template id="ep_login" name="Employee portal: login">
+        <t t-call="web.frontend_layout">
+            <t t-set="no_header" t-value="True"/>
+            <t t-set="no_footer" t-value="True"/>
+            <t t-set="no_livechat" t-value="True"/>
+            <t t-call="hr_employee_portal.ep_fonts"/>
+            <t t-set="logo_url" t-value="'/hr_employee_portal/static/src/img/logo_black.png'"/>
+
+            <div class="ep-login">
+                <t t-call="hr_employee_portal.ep_scene"/>
+                <span class="ep-login-frame" aria-hidden="true"/>
+                <div class="ep-login-grid">
+                    <section class="ep-login-brand">
+                        <span class="ep-logo ep-login-logo">
+                            <img t-att-src="logo_url" alt="The Cut by Excellence Meats"/>
+                        </span>
+                        <p class="ep-eyebrow">Employee portal</p>
+                        <h1 class="ep-login-title"><em>Welcome to</em> The Cut family</h1>
+                        <span class="ep-rule" aria-hidden="true"/>
+                        <p class="ep-login-lead">Your details, time off and payslips, kept in one place. Sign in with the email HR sent you.</p>
+                        <p class="ep-login-services">
+                            <span>Leave</span><i aria-hidden="true"/><span>Payslips</span><i aria-hidden="true"/><span>Documents</span>
+                        </p>
+                    </section>
+
+                    <main class="ep-login-main">
+                        <div class="ep-login-hang">
+                            <span class="ep-lanyard-strap" aria-hidden="true"/>
+                            <span class="ep-lanyard-clip" aria-hidden="true"/>
+                            <form class="ep-login-form" role="form" method="post" data-ep-tilt="subtle" data-ep-login=""
+                                  t-attf-action="/web/login{{ '?debug' if debug else '' }}"
+                                  onsubmit="this.action = this.action + location.hash">
+                                <span class="ep-badge-slot" aria-hidden="true"/>
+                                <span class="ep-login-scan" aria-hidden="true"/>
+                                <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                                <input type="hidden" name="redirect" t-att-value="redirect or '/my/employee'"/>
+                                <input type="hidden" name="ep_portal" value="1"/>
+
+                                <div class="ep-login-head">
+                                    <span class="ep-logo ep-login-head-logo">
+                                        <img src="/hr_employee_portal/static/src/img/the_cut_logo.png" alt=""/>
+                                    </span>
+                                    <div class="ep-login-head-text">
+                                        <p class="ep-eyebrow ep-eyebrow-plain">Staff access</p>
+                                        <h2 class="ep-login-heading">Sign in</h2>
+                                    </div>
+                                </div>
+
+                                <div t-if="error" class="ep-banner ep-banner-bad" role="alert">
+                                    <t t-call="hr_employee_portal.ep_icon"><t t-set="icon" t-value="'alert'"/></t>
+                                    <span t-out="error"/>
+                                </div>
+                                <div t-if="message" class="ep-banner ep-banner-ok" role="status">
+                                    <t t-call="hr_employee_portal.ep_icon"><t t-set="icon" t-value="'check'"/></t>
+                                    <span t-out="message"/>
+                                </div>
+
+                                <div class="ep-login-fields">
+                                    <div class="ep-line-field">
+                                        <label for="login">Email</label>
+                                        <input type="text" name="login" id="login" t-att-value="login"
+                                               class="ep-line-input" required="required" autofocus="autofocus"
+                                               autocapitalize="off" autocomplete="username" inputmode="email"/>
+                                    </div>
+                                    <div class="ep-line-field ep-pw-wrap">
+                                        <label for="password">Password</label>
+                                        <input type="password" name="password" id="password"
+                                               class="ep-line-input ep-pill-input-pw" required="required"
+                                               autocomplete="current-password" maxlength="4096"/>
+                                        <button type="button" class="ep-pw-toggle" aria-controls="password"
+                                                aria-pressed="false" aria-label="Show password">
+                                            <t t-call="hr_employee_portal.ep_icon"><t t-set="icon" t-value="'eye'"/></t>
+                                        </button>
+                                    </div>
+                                    <a t-if="reset_password_enabled" class="ep-login-forgot"
+                                       t-attf-href="/web/reset_password?{{ keep_query() }}">Forgot password?</a>
+                                </div>
+
+                                <button type="submit" class="ep-btn ep-btn-primary ep-btn-block">Sign in</button>
+
+                                <div class="ep-login-foot">
+                                    <span>Need access? Contact HR.</span>
+                                    <span class="ep-login-code" aria-hidden="true"/>
+                                </div>
+                            </form>
+                        </div>
+                    </main>
+                </div>
+            </div>
+        </t>
+    </template>
+
+</odoo>

@@ -1,0 +1,153 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- Anton, Figtree and Capture it, the fonts of the website, are served by the
+         module (see employee_portal.scss); IBM Plex Sans Arabic for Arabic names. -->
+    <template id="ep_fonts" name="Employee portal: fonts">
+        <link rel="preload" as="font" type="font/woff2" crossorigin=""
+              href="/hr_employee_portal/static/src/fonts/anton.woff2"/>
+        <link rel="preload" as="font" type="font/woff2" crossorigin=""
+              href="/hr_employee_portal/static/src/fonts/figtree.woff2"/>
+        <link rel="preload" as="font" type="font/woff2" crossorigin=""
+              href="/hr_employee_portal/static/src/fonts/capture_it.woff2"/>
+        <link rel="preconnect" href="https://fonts.googleapis.com"/>
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin=""/>
+        <link rel="stylesheet"
+              href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600&amp;display=swap"/>
+    </template>
+
+    <!-- Icons (inline stroke SVG) -->
+    <template id="ep_icon" name="Employee portal: icon">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+             stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+            <t t-if="icon == 'profile'"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></t>
+            <t t-elif="icon == 'leave'"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 10h18"/></t>
+            <t t-elif="icon == 'payslip'"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6M8 13h8M8 17h5"/></t>
+            <t t-elif="icon == 'dashboard'"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></t>
+            <t t-elif="icon == 'lock'"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></t>
+            <t t-elif="icon == 'logout'"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></t>
+            <t t-elif="icon == 'plus'"><path d="M12 5v14M5 12h14"/></t>
+            <t t-elif="icon == 'alert'"><path d="M12 9v4M12 17h.01"/><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></t>
+            <t t-elif="icon == 'check'"><path d="M20 6 9 17l-5-5"/></t>
+            <t t-elif="icon == 'search'"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></t>
+            <t t-elif="icon == 'eye'"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></t>
+            <t t-elif="icon == 'download'"><path d="M12 3v12M7 10l5 5 5-5M5 21h14"/></t>
+            <t t-elif="icon == 'flip'"><path d="M3 12a9 9 0 0 1 15.5-6.2L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-15.5 6.2L3 16"/><path d="M3 21v-5h5"/></t>
+            <t t-elif="icon == 'clip'"><path d="m21 11-8.5 8.5a5 5 0 0 1-7-7L14 4a3.5 3.5 0 0 1 5 5l-8.5 8.5a2 2 0 0 1-3-3L15 7"/></t>
+            <t t-elif="icon == 'arrow'"><path d="M5 12h14M13 6l6 6-6 6"/></t>
+            <t t-elif="icon == 'sparkle'"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"/><path d="M19 17l.7 1.8 1.8.7-1.8.7L19 22l-.7-1.8-1.8-.7 1.8-.7z"/></t>
+            <t t-elif="icon == 'award'"><circle cx="12" cy="9" r="6"/><path d="M8.5 14 7 22l5-3 5 3-1.5-8"/></t>
+            <t t-elif="icon == 'hourglass'"><path d="M6 3h12M6 21h12"/><path d="M7 3v2a5 5 0 0 0 10 0V3M7 21v-2a5 5 0 0 1 10 0v2"/></t>
+            <t t-elif="icon == 'sun'"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></t>
+            <t t-elif="icon == 'gift'"><rect x="3" y="8" width="18" height="4" rx="1"/><path d="M12 8v13M5 12v9h14v-9"/><path d="M12 8S10.5 3.5 8 4.5 9 8 12 8zM12 8s1.5-4.5 4-3.5S15 8 12 8z"/></t>
+            <t t-elif="icon == 'minus'"><circle cx="12" cy="12" r="9"/><path d="M8 12h8"/></t>
+            <t t-elif="icon == 'briefcase'"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2M3 13h18"/></t>
+            <t t-elif="icon == 'idcard'"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="9" cy="11" r="2"/><path d="M6 16c.5-1.5 1.7-2 3-2s2.5.5 3 2M15 10h3M15 14h3"/></t>
+            <t t-elif="icon == 'chevron-down'"><path d="m6 9 6 6 6-6"/></t>
+            <t t-elif="icon == 'users'"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c0-3.5 3-5.5 6.5-5.5s6.5 2 6.5 5.5"/><path d="M16 4.5a3.5 3.5 0 0 1 0 7M18 14.8c2 .6 3.5 2.3 3.5 5.2"/></t>
+        </svg>
+    </template>
+
+    <!-- A person's photo, or their initials on yellow when they have none (instead of
+         Odoo's generated letter). person: hr.employee; cls: classes of the image. -->
+    <template id="ep_avatar" name="Employee portal: avatar">
+        <img t-if="person._ep_has_photo()" t-att-src="image_data_uri(person.avatar_128)" t-att-alt="alt or ''" t-att-class="cls"/>
+        <span t-else="" t-attf-class="#{cls} ep-initials" t-att-aria-label="alt or None" t-att-role="alt and 'img' or None"
+              t-out="''.join([w[0] for w in (person.name or '?').split()[:2]]).upper()"/>
+    </template>
+
+    <!-- Background: cream, with The Cut pattern fading out at the top. Decorative only. -->
+    <template id="ep_scene" name="Employee portal: background">
+        <div class="ep-scene" aria-hidden="true">
+            <span class="ep-glow ep-glow-a"/>
+            <span class="ep-glow ep-glow-b"/>
+            <span class="ep-grain"/>
+        </div>
+    </template>
+
+    <template id="ep_nav_link" name="Employee portal: nav link">
+        <a t-att-href="href" t-attf-class="ep-nav-link #{'is-active' if active else ''}"
+           t-att-aria-current="'page' if active else None">
+            <t t-call="hr_employee_portal.ep_icon"/>
+            <span t-out="label"/>
+        </a>
+    </template>
+
+    <template id="ep_tab_link" name="Employee portal: tab link">
+        <a t-att-href="href" t-attf-class="ep-tab #{'is-active' if active else ''}"
+           t-att-aria-current="'page' if active else None">
+            <span class="ep-tab-icon"><t t-call="hr_employee_portal.ep_icon"/></span>
+            <span class="ep-tab-label" t-out="label"/>
+        </a>
+    </template>
+
+    <!-- App shell: red side menu on desktop; red top bar and bottom tabs on phones -->
+    <template id="ep_shell" name="Employee portal: shell">
+        <t t-call="web.frontend_layout">
+            <t t-set="no_header" t-value="True"/>
+            <t t-set="no_footer" t-value="True"/>
+            <t t-set="no_livechat" t-value="True"/>
+            <t t-call="hr_employee_portal.ep_fonts"/>
+            <t t-set="logo_url" t-value="'/hr_employee_portal/static/src/img/the_cut_logo.png'"/>
+            <div class="ep-app">
+                <t t-call="hr_employee_portal.ep_scene"/>
+                <a href="#ep-main" class="ep-skip">Skip to content</a>
+
+                <aside class="ep-sidebar">
+                    <div class="ep-brand">
+                        <span class="ep-gold-logo ep-brand-logo"><img t-att-src="logo_url" alt="The Cut by Excellence Meats"/></span>
+                        <span class="ep-brand-text">Employee portal</span>
+                    </div>
+                    <nav class="ep-nav" aria-label="Employee portal">
+                        <t t-if="ep_employee">
+                            <t t-call="hr_employee_portal.ep_nav_link"><t t-set="href" t-value="'/my/employee'"/><t t-set="label">Profile</t><t t-set="icon" t-value="'profile'"/><t t-set="active" t-value="page_name == 'ep_profile'"/></t>
+                            <t t-call="hr_employee_portal.ep_nav_link"><t t-set="href" t-value="'/my/employee/leaves'"/><t t-set="label">Leave</t><t t-set="icon" t-value="'leave'"/><t t-set="active" t-value="page_name == 'ep_leaves'"/></t>
+                            <t t-call="hr_employee_portal.ep_nav_link"><t t-set="href" t-value="'/my/employee/payslips'"/><t t-set="label">Payslips</t><t t-set="icon" t-value="'payslip'"/><t t-set="active" t-value="page_name == 'ep_payslips'"/></t>
+                        </t>
+                        <t t-if="ep_is_admin">
+                            <p class="ep-nav-label">Administration</p>
+                            <t t-call="hr_employee_portal.ep_nav_link"><t t-set="href" t-value="'/my/hr/dashboard'"/><t t-set="label">HR dashboard</t><t t-set="icon" t-value="'dashboard'"/><t t-set="active" t-value="page_name == 'ep_admin_dashboard'"/></t>
+                        </t>
+                        <p class="ep-nav-label">Account</p>
+                        <t t-call="hr_employee_portal.ep_nav_link"><t t-set="href" t-value="'/my/employee/password'"/><t t-set="label">Change password</t><t t-set="icon" t-value="'lock'"/><t t-set="active" t-value="page_name == 'ep_password'"/></t>
+                    </nav>
+                    <div class="ep-user">
+                        <span class="ep-user-avatar" t-out="ep_user_initials"/>
+                        <div class="ep-user-text">
+                            <p class="ep-user-name" t-out="ep_user_name"/>
+                            <a href="/web/session/logout?redirect=/employee/login" class="ep-user-logout">Sign out</a>
+                        </div>
+                    </div>
+                </aside>
+
+                <header class="ep-topbar">
+                    <span class="ep-gold-logo ep-topbar-logo"><img t-att-src="logo_url" alt="The Cut by Excellence Meats"/></span>
+                    <div class="ep-topbar-text">
+                        <p class="ep-topbar-greeting" t-out="ep_greeting"/>
+                        <p class="ep-topbar-name" t-out="ep_first_name or ep_user_name"/>
+                    </div>
+                    <a href="/web/session/logout?redirect=/employee/login" class="ep-icon-btn" aria-label="Sign out">
+                        <t t-call="hr_employee_portal.ep_icon"><t t-set="icon" t-value="'logout'"/></t>
+                    </a>
+                </header>
+
+                <main class="ep-main" id="ep-main" tabindex="-1">
+                    <div class="ep-main-inner">
+                        <t t-out="0"/>
+                    </div>
+                </main>
+
+                <nav class="ep-tabbar" aria-label="Employee portal">
+                    <t t-if="ep_employee">
+                        <t t-call="hr_employee_portal.ep_tab_link"><t t-set="href" t-value="'/my/employee'"/><t t-set="label">Profile</t><t t-set="icon" t-value="'profile'"/><t t-set="active" t-value="page_name == 'ep_profile'"/></t>
+                        <t t-call="hr_employee_portal.ep_tab_link"><t t-set="href" t-value="'/my/employee/leaves'"/><t t-set="label">Leave</t><t t-set="icon" t-value="'leave'"/><t t-set="active" t-value="page_name == 'ep_leaves'"/></t>
+                        <t t-call="hr_employee_portal.ep_tab_link"><t t-set="href" t-value="'/my/employee/payslips'"/><t t-set="label">Payslips</t><t t-set="icon" t-value="'payslip'"/><t t-set="active" t-value="page_name == 'ep_payslips'"/></t>
+                    </t>
+                    <t t-if="ep_is_admin" t-call="hr_employee_portal.ep_tab_link"><t t-set="href" t-value="'/my/hr/dashboard'"/><t t-set="label">HR</t><t t-set="icon" t-value="'dashboard'"/><t t-set="active" t-value="page_name == 'ep_admin_dashboard'"/></t>
+                    <t t-call="hr_employee_portal.ep_tab_link"><t t-set="href" t-value="'/my/employee/password'"/><t t-set="label">Account</t><t t-set="icon" t-value="'lock'"/><t t-set="active" t-value="page_name == 'ep_password'"/></t>
+                </nav>
+            </div>
+        </t>
+    </template>
+
+</odoo>

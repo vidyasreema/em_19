@@ -1,0 +1,214 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <template id="ep_admin_dashboard" name="Employee portal: HR dashboard">
+        <t t-call="hr_employee_portal.ep_shell">
+
+            <div class="ep-page-head ep-reveal">
+                <div>
+                    <p class="ep-eyebrow" t-out="ep_today_label"/>
+                    <h1 class="ep-title"><em><t t-out="ep_greeting"/>,</em> <t t-out="ep_first_name"/></h1>
+                </div>
+            </div>
+
+            <t t-call="hr_employee_portal.ep_flash"/>
+
+            <div class="ep-dash-top">
+                <section class="ep-headcount ep-reveal" data-ep-tilt="soft">
+                    <p class="ep-headcount-figure">
+                        <span class="ep-headcount-number" data-ep-count="" t-out="len(employees)"/>
+                        <span class="ep-headcount-text">employees in <t t-out="len(departments)"/> department<t t-if="len(departments) != 1">s</t></span>
+                    </p>
+                    <!-- Isometric 3D bar per department; the legend below names them -->
+                    <ul t-if="dept_rows" class="ep-bars" role="img" t-att-aria-label="dept_label">
+                        <li t-foreach="dept_rows" t-as="r" class="ep-bar"
+                            t-attf-style="--h: #{r['height']}; --c: #{r['color']}; --i: #{r_index}">
+                            <span class="ep-bar-count" t-out="r['count']"/>
+                            <span class="ep-bar-col"/>
+                        </li>
+                    </ul>
+                    <ul class="ep-legend">
+                        <li t-foreach="dept_rows" t-as="r">
+                            <span class="ep-legend-dot" t-attf-style="background: #{r['color']}"/>
+                            <t t-out="r['name']"/> <t t-out="r['count']"/>
+                        </li>
+                    </ul>
+                </section>
+                <div class="ep-kpis">
+                    <div class="ep-kpi ep-reveal" data-ep-tilt="soft">
+                        <span class="ep-card-icon" aria-hidden="true"><t t-call="hr_employee_portal.ep_icon"><t t-set="icon" t-value="'users'"/></t></span>
+                        <p class="ep-kpi-label">Away today</p>
+                        <div>
+                            <p class="ep-kpi-value" data-ep-count="" t-out="len(away)"/>
+                            <p class="ep-kpi-note" t-out="kpi_notes['away']"/>
+                        </div>
+                    </div>
+                    <div class="ep-kpi ep-reveal" data-ep-tilt="soft">
+                        <span class="ep-card-icon" aria-hidden="true"><t t-call="hr_employee_portal.ep_icon"><t t-set="icon" t-value="'hourglass'"/></t></span>
+                        <p class="ep-kpi-label">Leave to approve</p>
+                        <div>
+                            <p t-attf-class="ep-kpi-value #{'is-flag' if approvals else ''}" data-ep-count="" t-out="len(approvals)"/>
+                            <p class="ep-kpi-note" t-out="kpi_notes['approvals']"/>
+                        </div>
+                    </div>
+                    <div class="ep-kpi ep-reveal" data-ep-tilt="soft">
+                        <span class="ep-card-icon" aria-hidden="true"><t t-call="hr_employee_portal.ep_icon"><t t-set="icon" t-value="'alert'"/></t></span>
+                        <p class="ep-kpi-label">Documents expiring</p>
+                        <div>
+                            <p t-attf-class="ep-kpi-value #{'is-flag' if expiring else ''}" data-ep-count="" t-out="len(expiring)"/>
+                            <p class="ep-kpi-note" t-out="kpi_notes['documents']"/>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="ep-dash-main">
+                <section class="ep-surface ep-surface-lg ep-panel ep-reveal">
+                    <div class="ep-panel-head">
+                        <h2 class="ep-h2 ep-h2-lg">Documents to renew</h2>
+                        <span t-if="expiring" class="ep-count" t-out="len(expiring)"/>
+                    </div>
+                    <t t-if="expiring">
+                        <ul class="ep-doc-table">
+                            <t t-foreach="expiring[:6]" t-as="d"><t t-call="hr_employee_portal.ep_doc_row"/></t>
+                        </ul>
+                        <details t-if="len(expiring) > 6" class="ep-more">
+                            <summary>Show <t t-out="len(expiring) - 6"/> more</summary>
+                            <ul class="ep-doc-table">
+                                <t t-foreach="expiring[6:]" t-as="d"><t t-call="hr_employee_portal.ep_doc_row"/></t>
+                            </ul>
+                        </details>
+                    </t>
+                    <t t-else="">
+                        <t t-call="hr_employee_portal.ep_empty_state"><t t-set="message">Nothing expires in the next 30 days.</t></t>
+                    </t>
+                </section>
+
+                <div class="ep-dash-stack">
+                    <section class="ep-surface ep-surface-lg ep-panel ep-reveal">
+                        <div class="ep-panel-head">
+                            <h2 class="ep-h2 ep-h2-lg">Leave to approve</h2>
+                            <span t-if="approvals" class="ep-count" t-out="len(approvals)"/>
+                        </div>
+                        <ul t-if="approvals" class="ep-rows">
+                            <li t-foreach="approvals" t-as="a" class="ep-row ep-row-tall">
+                                <span class="ep-avatar-round" aria-hidden="true" t-out="a['initials']"/>
+                                <div class="ep-row-text ep-grow">
+                                    <a class="ep-row-title ep-plain-link" t-attf-href="/my/hr/employee/#{a['employee'].id}" t-out="a['employee'].name"/>
+                                    <p class="ep-row-sub" t-out="a['detail']"/>
+                                </div>
+                                <div t-if="a['can_decide']" class="ep-decide">
+                                    <form method="post" t-attf-action="/my/hr/leave/#{a['id']}/refuse" class="ep-inline-form"
+                                          onsubmit="return confirm('Refuse this leave request?')">
+                                        <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                                        <button type="submit" class="ep-btn ep-btn-soft ep-btn-sm">Refuse</button>
+                                    </form>
+                                    <form method="post" t-attf-action="/my/hr/leave/#{a['id']}/approve" class="ep-inline-form">
+                                        <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                                        <button type="submit" class="ep-btn ep-btn-primary ep-btn-sm">Approve</button>
+                                    </form>
+                                </div>
+                                <span t-else="" class="ep-row-sub">Your own request</span>
+                            </li>
+                        </ul>
+                        <t t-else="">
+                            <t t-call="hr_employee_portal.ep_empty_state"><t t-set="message">No requests are waiting.</t></t>
+                        </t>
+                    </section>
+
+                    <section class="ep-surface ep-surface-lg ep-panel ep-reveal">
+                        <div class="ep-panel-head">
+                            <h2 class="ep-h2 ep-h2-lg">Away today</h2>
+                            <span t-if="away" class="ep-count" t-out="len(away)"/>
+                        </div>
+                        <!-- A small stack of staff cards -->
+                        <ul t-if="away" class="ep-away">
+                            <li t-foreach="away" t-as="w" class="ep-away-card" t-attf-style="--i: #{w_index}">
+                                <t t-call="hr_employee_portal.ep_avatar"><t t-set="person" t-value="w['employee']"/><t t-set="cls" t-value="'ep-away-photo'"/></t>
+                                <div class="ep-row-text">
+                                    <a class="ep-row-title ep-plain-link" t-attf-href="/my/hr/employee/#{w['employee'].id}" t-out="w['employee'].name"/>
+                                    <p class="ep-row-sub" t-out="w['detail']"/>
+                                </div>
+                            </li>
+                        </ul>
+                        <t t-else="">
+                            <t t-call="hr_employee_portal.ep_empty_state"><t t-set="message">Everyone is in today.</t></t>
+                        </t>
+                    </section>
+                </div>
+            </div>
+
+            <section class="ep-surface ep-surface-lg ep-reveal">
+                <div class="ep-directory-head">
+                    <h2 class="ep-h2 ep-h2-lg">Employees</h2>
+                    <form method="get" action="/my/hr/dashboard" class="ep-filter" role="search">
+                        <div class="ep-search">
+                            <label for="ep_q" class="visually-hidden">Search employees</label>
+                            <t t-call="hr_employee_portal.ep_icon"><t t-set="icon" t-value="'search'"/></t>
+                            <input id="ep_q" type="search" name="q" class="ep-input" t-att-value="q" placeholder="Search by name, role or email"/>
+                        </div>
+                        <label for="ep_dept" class="visually-hidden">Department</label>
+                        <select id="ep_dept" name="department" class="ep-input" onchange="this.form.submit()">
+                            <option value="">All departments</option>
+                            <option t-foreach="departments" t-as="dept" t-att-value="dept.id"
+                                    t-att-selected="dept.id == selected_department or None" t-out="dept.name"/>
+                        </select>
+                        <button type="submit" class="ep-btn ep-btn-soft">Search</button>
+                    </form>
+                </div>
+                <div t-if="directory" class="ep-table-wrap">
+                    <table class="ep-table">
+                        <thead>
+                            <tr><th>Name</th><th>Department</th><th>Email</th><th>Mobile</th><th>Status</th></tr>
+                        </thead>
+                        <tbody>
+                            <tr t-foreach="directory" t-as="row">
+                                <td>
+                                    <a t-attf-href="/my/hr/employee/#{row['employee'].id}" class="ep-person">
+                                        <t t-call="hr_employee_portal.ep_avatar"><t t-set="person" t-value="row['employee']"/><t t-set="cls" t-value="'ep-person-photo'"/></t>
+                                        <span>
+                                            <span class="ep-person-name" t-out="row['employee'].name"/>
+                                            <span class="ep-person-job" t-out="row['employee'].job_title or ''"/>
+                                        </span>
+                                    </a>
+                                </td>
+                                <td t-out="row['employee'].department_id.name or ''"/>
+                                <td class="ep-cell-soft" t-out="row['employee'].work_email or ''"/>
+                                <td class="ep-cell-soft" t-out="row['employee'].mobile_phone or ''"/>
+                                <td>
+                                    <t t-call="hr_employee_portal.ep_pill">
+                                        <t t-set="kind" t-value="'wait' if row['on_leave'] else 'ok'"/>
+                                        <t t-if="row['on_leave']"><t t-set="label">On leave</t></t>
+                                        <t t-else=""><t t-set="label">In</t></t>
+                                    </t>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <p t-else="" class="ep-muted">No employees match this search. Clear the search to see everyone.</p>
+            </section>
+        </t>
+    </template>
+
+    <template id="ep_doc_row" name="Employee portal: document row">
+        <li class="ep-doc-row">
+            <a class="ep-doc-name ep-plain-link" t-attf-href="/my/hr/employee/#{d['employee'].id}" t-out="d['employee'].name"/>
+            <span class="ep-doc-type" t-out="d['doc']"/>
+            <span class="ep-doc-when">
+                <t t-call="hr_employee_portal.ep_pill">
+                    <t t-set="kind" t-value="d['kind']"/>
+                    <t t-set="label" t-value="d['when']"/>
+                </t>
+            </span>
+        </li>
+    </template>
+
+    <template id="ep_empty_state" name="Employee portal: empty state">
+        <div class="ep-empty-state">
+            <span class="ep-empty-icon"><t t-call="hr_employee_portal.ep_icon"><t t-set="icon" t-value="'check'"/></t></span>
+            <p t-out="message"/>
+        </div>
+    </template>
+
+</odoo>
