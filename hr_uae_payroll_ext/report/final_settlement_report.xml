@@ -1,0 +1,135 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="action_report_final_settlement" model="ir.actions.report">
+        <field name="name">Final Settlement</field>
+        <field name="model">hr.end.of.service</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">hr_uae_payroll_ext.report_final_settlement</field>
+        <field name="report_file">hr_uae_payroll_ext.report_final_settlement</field>
+        <field name="print_report_name">'Final Settlement - %s' % object.employee_id.name</field>
+        <field name="binding_model_id" ref="model_hr_end_of_service"/>
+        <field name="binding_type">report</field>
+    </record>
+
+    <template id="report_final_settlement">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="doc">
+                <t t-set="g" t-value="gratuity[doc.id]"/>
+                <t t-set="lv" t-value="leave[doc.id]"/>
+                <t t-set="currency" t-value="doc.currency_id"/>
+                <t t-set="provision" t-value="doc.env.ref('l10n_ae_hr_payroll.l10n_ae_category_provision')"/>
+                <t t-set="employee" t-value="doc.employee_id.sudo()"/>
+                <t t-call="web.external_layout">
+                    <div class="page">
+                        <style>
+                            .fs-table { width: 100%; margin-bottom: 12px; }
+                            .fs-table td { padding: 4px 6px; vertical-align: top; }
+                            .fs-table td.text-end { text-align: right; white-space: nowrap; }
+                            .fs-table tr.fw-bold td { font-weight: bold; border-top: 1px solid #999; }
+                            .page h5 { font-size: 15px; font-weight: bold; margin-top: 18px; }
+                            .fs-sign { width: 100%; margin-top: 70px; }
+                            .fs-sign td { width: 33%; text-align: center; padding: 0 12px; }
+                            .fs-sign div { border-top: 1px solid #555; padding-top: 6px; }
+                        </style>
+                        <h2>Final Settlement <small class="text-muted" t-out="doc.name"/></h2>
+                        <p t-if="doc.state not in ('settlement', 'done')" class="text-muted">
+                            Estimate: the final settlement payslip is not computed yet.
+                        </p>
+
+                        <table class="fs-table mt-3">
+                            <tr>
+                                <td class="w-25"><strong>Employee</strong></td><td t-out="employee.name"/>
+                                <td class="w-25"><strong>Reason</strong></td><td><span t-field="doc.reason"/></td>
+                            </tr>
+                            <tr>
+                                <td><strong>Job</strong></td><td t-out="employee.job_title or employee.job_id.name or ''"/>
+                                <td><strong>Notice date</strong></td><td><span t-field="doc.notice_date"/></td>
+                            </tr>
+                            <tr>
+                                <td><strong>Joining date</strong></td>
+                                <td><span t-out="g['start_date']" t-options="{'widget': 'date'}"/></td>
+                                <td><strong>Last working day</strong></td><td><span t-field="doc.last_working_day"/></td>
+                            </tr>
+                            <tr>
+                                <td><strong>Basic salary</strong></td>
+                                <td><span t-out="g['basic']" t-options="{'widget': 'monetary', 'display_currency': currency}"/></td>
+                                <td><strong>Service</strong></td>
+                                <td><t t-out="'%.2f' % g['years']"/> years
+                                    <t t-if="g['unpaid_days']">(<t t-out="'%g' % g['unpaid_days']"/> unpaid days left out)</t></td>
+                            </tr>
+                        </table>
+
+                        <h5 class="mt-4">End of service gratuity</h5>
+                        <table class="table table-sm fs-table">
+                            <tbody>
+                                <tr t-if="not g['eligible']">
+                                    <td colspan="2">Less than the minimum service: no gratuity.</td>
+                                </tr>
+                                <t t-else="">
+                                    <tr>
+                                        <td><t t-out="'%.2f' % g['tier1_years']"/> years x <t t-out="'%g' % g['tier1_days']"/> days x
+                                            <t t-out="g['daily_salary']" t-options="{'widget': 'monetary', 'display_currency': currency}"/> a day</td>
+                                        <td class="text-end"><span t-out="g['tier1_amount']" t-options="{'widget': 'monetary', 'display_currency': currency}"/></td>
+                                    </tr>
+                                    <tr t-if="g['tier2_years']">
+                                        <td><t t-out="'%.2f' % g['tier2_years']"/> years x <t t-out="'%g' % g['tier2_days']"/> days x
+                                            <t t-out="g['daily_salary']" t-options="{'widget': 'monetary', 'display_currency': currency}"/> a day</td>
+                                        <td class="text-end"><span t-out="g['tier2_amount']" t-options="{'widget': 'monetary', 'display_currency': currency}"/></td>
+                                    </tr>
+                                    <tr t-if="g['capped']">
+                                        <td colspan="2" class="text-muted">Limited to the maximum of 2 years of basic salary.</td>
+                                    </tr>
+                                </t>
+                                <tr class="fw-bold">
+                                    <td>Gratuity</td>
+                                    <td class="text-end"><span t-out="g['amount']" t-options="{'widget': 'monetary', 'display_currency': currency}"/></td>
+                                </tr>
+                            </tbody>
+                        </table>
+
+                        <h5 class="mt-4">Annual leave</h5>
+                        <table class="table table-sm fs-table">
+                            <tr><td>Balance on the last working day</td><td class="text-end"><t t-out="'%.2f' % lv['remaining_days']"/> days</td></tr>
+                            <tr t-if="lv['not_earned_days']"><td>Days of the current contract not earned yet</td><td class="text-end">- <t t-out="'%.2f' % lv['not_earned_days']"/> days</td></tr>
+                            <tr class="fw-bold">
+                                <td><t t-if="lv['days'] &gt;= 0">Paid</t><t t-else="">Deducted</t>:
+                                    <t t-out="'%.2f' % abs(lv['days'])"/> days x
+                                    <t t-out="lv['daily_salary']" t-options="{'widget': 'monetary', 'display_currency': currency}"/></td>
+                                <td class="text-end"><span t-out="lv['amount']" t-options="{'widget': 'monetary', 'display_currency': currency}"/></td>
+                            </tr>
+                        </table>
+
+                        <h5 class="mt-4">Final settlement</h5>
+                        <table class="table table-sm fs-table">
+                            <t t-if="doc.payslip_id">
+                                <tr t-foreach="doc.payslip_id.line_ids.filtered(lambda l: l.appears_on_payslip and l.total and l.code not in ('GROSS', 'NET', 'NETCOST') and l.category_id != provision)" t-as="line">
+                                    <td t-out="line.name"/>
+                                    <td class="text-end"><span t-out="line.total" t-options="{'widget': 'monetary', 'display_currency': currency}"/></td>
+                                </tr>
+                                <tr class="fw-bold border-top">
+                                    <td>Net amount due to the employee</td>
+                                    <td class="text-end"><span t-out="doc.payslip_id.net_wage" t-options="{'widget': 'monetary', 'display_currency': currency}"/></td>
+                                </tr>
+                            </t>
+                            <t t-else="">
+                                <tr><td>Gratuity</td><td class="text-end"><span t-out="doc.gratuity_amount" t-options="{'widget': 'monetary', 'display_currency': currency}"/></td></tr>
+                                <tr><td>Annual leave</td><td class="text-end"><span t-out="doc.leave_amount" t-options="{'widget': 'monetary', 'display_currency': currency}"/></td></tr>
+                                <tr t-if="doc.notice_amount"><td>Notice in lieu</td><td class="text-end"><span t-out="doc.notice_amount" t-options="{'widget': 'monetary', 'display_currency': currency}"/></td></tr>
+                                <tr t-if="doc.loan_amount"><td>Outstanding loans</td><td class="text-end"><span t-out="-doc.loan_amount" t-options="{'widget': 'monetary', 'display_currency': currency}"/></td></tr>
+                                <tr><td colspan="2" class="text-muted">The salary of the last month, bonuses and deductions are added on the final settlement payslip.</td></tr>
+                            </t>
+                        </table>
+
+                        <table class="fs-sign">
+                            <tr>
+                                <td><div>Employee signature</div></td>
+                                <td><div>HR</div></td>
+                                <td><div>Accounts</div></td>
+                            </tr>
+                        </table>
+                    </div>
+                </t>
+            </t>
+        </t>
+    </template>
+</odoo>

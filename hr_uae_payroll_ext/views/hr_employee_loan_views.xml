@@ -1,0 +1,130 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="hr_employee_loan_view_list" model="ir.ui.view">
+        <field name="name">hr.employee.loan.list</field>
+        <field name="model">hr.employee.loan</field>
+        <field name="arch" type="xml">
+            <list string="Loans &amp; Advances">
+                <field name="name"/>
+                <field name="employee_id" widget="many2one_avatar_employee"/>
+                <field name="loan_type"/>
+                <field name="date"/>
+                <field name="currency_id" column_invisible="1"/>
+                <field name="amount" sum="Total"/>
+                <field name="installment_count" optional="show"/>
+                <field name="paid_amount" sum="Total" optional="show"/>
+                <field name="remaining_amount" sum="Total"/>
+                <field name="company_id" groups="base.group_multi_company" optional="hide"/>
+                <field name="state" widget="badge"
+                       decoration-info="state == 'to_approve'" decoration-warning="state == 'running'"
+                       decoration-success="state == 'closed'" decoration-danger="state == 'refused'"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="hr_employee_loan_view_form" model="ir.ui.view">
+        <field name="name">hr.employee.loan.form</field>
+        <field name="model">hr.employee.loan</field>
+        <field name="arch" type="xml">
+            <form string="Loan / Advance">
+                <header>
+                    <button name="action_submit" string="Submit" type="object" class="btn-primary" invisible="state != 'draft'"/>
+                    <button name="action_approve" string="Approve" type="object" class="btn-primary"
+                            invisible="state not in ('draft', 'to_approve')" groups="hr_payroll.group_hr_payroll_manager"/>
+                    <button name="action_compute_schedule" string="Compute Instalments" type="object"
+                            invisible="state not in ('draft', 'to_approve')"/>
+                    <button name="action_refuse" string="Refuse" type="object"
+                            invisible="state not in ('to_approve', 'running')" groups="hr_payroll.group_hr_payroll_manager"/>
+                    <button name="action_draft" string="Reset to Draft" type="object" invisible="state not in ('to_approve', 'running', 'refused')"/>
+                    <field name="state" widget="statusbar" statusbar_visible="draft,to_approve,running,closed"/>
+                </header>
+                <sheet>
+                    <div class="alert alert-warning" role="alert" invisible="not limit_warning or state not in ('draft', 'to_approve')">
+                        Above the company limits: <field name="limit_warning" class="d-inline"/>
+                    </div>
+                    <div class="oe_title">
+                        <h1><field name="name"/></h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="employee_id" widget="many2one_avatar_employee" readonly="state not in ('draft', 'to_approve')"/>
+                            <field name="loan_type" widget="radio" readonly="state not in ('draft', 'to_approve')"/>
+                            <field name="currency_id" invisible="1"/>
+                            <field name="amount" readonly="state not in ('draft', 'to_approve')"/>
+                            <field name="installment_count" readonly="state not in ('draft', 'to_approve') or loan_type == 'advance'"/>
+                            <field name="installment_amount"/>
+                        </group>
+                        <group>
+                            <field name="date" readonly="state not in ('draft', 'to_approve')"/>
+                            <field name="first_deduction_date" readonly="state not in ('draft', 'to_approve')"/>
+                            <field name="paid_amount"/>
+                            <field name="remaining_amount" class="fw-bold"/>
+                            <field name="company_id" groups="base.group_multi_company"/>
+                        </group>
+                    </group>
+                    <field name="reason" placeholder="Why does the employee need it?" readonly="state not in ('draft', 'to_approve')"/>
+                    <notebook>
+                        <page string="Instalments" name="installments">
+                            <field name="line_ids" readonly="state in ('closed', 'refused')">
+                                <list editable="bottom">
+                                    <field name="date" widget="date" options="{'format': 'MMMM y'}"/>
+                                    <field name="currency_id" column_invisible="1"/>
+                                    <field name="amount" sum="Total"/>
+                                    <field name="is_recovered" widget="boolean_toggle" readonly="1"/>
+                                </list>
+                            </field>
+                        </page>
+                        <page string="Payslip Deductions" name="deductions">
+                            <field name="input_line_ids">
+                                <list>
+                                    <field name="payslip_id"/>
+                                    <field name="name"/>
+                                    <field name="amount" sum="Total"/>
+                                </list>
+                            </field>
+                        </page>
+                    </notebook>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <record id="hr_employee_loan_view_search" model="ir.ui.view">
+        <field name="name">hr.employee.loan.search</field>
+        <field name="model">hr.employee.loan</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="employee_id"/>
+                <field name="name"/>
+                <filter name="to_approve" string="To Approve" domain="[('state', '=', 'to_approve')]"/>
+                <filter name="running" string="Running" domain="[('state', '=', 'running')]"/>
+                <filter name="closed" string="Paid Off" domain="[('state', '=', 'closed')]"/>
+                <separator/>
+                <filter name="loans" string="Loans" domain="[('loan_type', '=', 'loan')]"/>
+                <filter name="advances" string="Salary Advances" domain="[('loan_type', '=', 'advance')]"/>
+                <group>
+                    <filter name="group_employee" string="Employee" context="{'group_by': 'employee_id'}"/>
+                    <filter name="group_state" string="Status" context="{'group_by': 'state'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="hr_employee_loan_action" model="ir.actions.act_window">
+        <field name="name">Loans &amp; Advances</field>
+        <field name="res_model">hr.employee.loan</field>
+        <field name="view_mode">list,form</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">Record a loan or salary advance</p>
+            <p>Once approved, the monthly instalments are deducted from the payslips automatically.</p>
+        </field>
+    </record>
+
+    <menuitem id="menu_employee_loan"
+              name="Loans &amp; Advances"
+              action="hr_employee_loan_action"
+              parent="hr_payroll.menu_hr_payroll_employees"
+              groups="hr_payroll.group_hr_payroll_user"
+              sequence="32"/>
+</odoo>

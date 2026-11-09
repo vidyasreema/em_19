@@ -1,0 +1,169 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The company's payslip: employee details, then earnings
+     and deductions side by side, each line with its detail, and the net salary.
+     It is the report of the UAE Monthly Salary structure (Print button, email
+     and portal download). -->
+<odoo>
+    <record id="action_report_payslip_uae" model="ir.actions.report">
+        <field name="name">Payslip (Earnings &amp; Deductions)</field>
+        <field name="model">hr.payslip</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">hr_uae_payroll_ext.report_payslip_uae_lang</field>
+        <field name="report_file">hr_uae_payroll_ext.report_payslip_uae_lang</field>
+        <field name="print_report_name">'Payslip - %s - %s' % (object.employee_id.name, object.date_from.strftime('%B %Y'))</field>
+        <field name="binding_model_id" ref="hr_payroll.model_hr_payslip"/>
+        <field name="binding_type">report</field>
+        <field name="attachment"></field>
+        <field name="attachment_use" eval="False"/>
+    </record>
+
+    <template id="report_payslip_uae">
+        <t t-call="web.external_layout">
+            <t t-set="currency" t-value="o.currency_id"/>
+            <t t-set="version" t-value="o.version_id"/>
+            <t t-set="employee" t-value="o.employee_id"/>
+            <t t-set="values" t-value="o._uae_report_values()"/>
+            <t t-set="earnings" t-value="values['earnings']"/>
+            <t t-set="deductions" t-value="values['deductions']"/>
+            <t t-set="eos" t-value="o.uae_end_of_service_id"/>
+            <t t-set="money" t-value="{'widget': 'monetary', 'display_currency': o.currency_id}"/>
+            <div class="page uae-payslip">
+                <style>
+                    .uae-payslip { font-size: 13px; color: #221f20; }
+                    .uae-payslip table { width: 100%; border-collapse: collapse; }
+                    .uae-payslip .ps-title { text-align: center; margin: 4px 0 14px; }
+                    .uae-payslip .ps-title h2 { color: #221f20 !important; font-size: 20px; font-weight: bold; letter-spacing: 3px; margin: 0; }
+                    .uae-payslip .ps-title div { color: #555; }
+                    .uae-payslip .ps-grid td, .uae-payslip .ps-grid th { border: 1px solid #221f20 !important; padding: 4px 7px; vertical-align: top; }
+                    .uae-payslip .ps-grid th { background: #221f20; color: #fff; text-transform: uppercase; font-size: 12px; letter-spacing: 1px; font-weight: normal; }
+                    .uae-payslip .ps-grid { margin-bottom: 12px; }
+                    .uae-payslip .ps-label { background: #f0f0f0; width: 18%; }
+                    .uae-payslip .ps-value { width: 32%; font-weight: bold; }
+                    .uae-payslip .ps-amount { text-align: right; white-space: nowrap; width: 17%; }
+                    .uae-payslip .ps-detail { display: block; color: #666; font-size: 11px; }
+                    .uae-payslip tr.ps-total td { font-weight: bold; background: #f0f0f0; }
+                    .uae-payslip tr.ps-net td { background: #221f20; color: #fff; font-size: 16px; font-weight: bold; }
+                    .uae-payslip tr.ps-net .ps-words { font-size: 11px; font-weight: normal; font-style: italic; }
+                    .uae-payslip .ps-sign { margin-top: 55px; }
+                    .uae-payslip .ps-sign > div > div { border-top: 1px solid #221f20; padding-top: 4px; text-align: center; }
+                </style>
+
+                <div class="ps-title">
+                    <h2 t-if="eos">FINAL SETTLEMENT SLIP</h2>
+                    <h2 t-else="">PAYSLIP</h2>
+                    <div>For the month of <span t-out="o.date_from" t-options="{'widget': 'date', 'format': 'MMMM yyyy'}"/></div>
+                </div>
+                <t t-set="is_invalid" t-value="o._is_invalid()"/>
+                <p t-if="is_invalid" class="fw-bold text-danger text-center" t-out="is_invalid"/>
+
+                <table class="o_ignore_layout_styling ps-grid">
+                    <tr>
+                        <td class="ps-label">Employee name</td>
+                        <td class="ps-value" t-out="employee.legal_name or employee.name"/>
+                        <td class="ps-label">Pay period</td>
+                        <td class="ps-value"><span t-field="o.date_from"/> - <span t-field="o.date_to"/></td>
+                    </tr>
+                    <tr>
+                        <td class="ps-label">Employee ID</td>
+                        <td class="ps-value" t-out="version.identification_id or '-'"/>
+                        <td class="ps-label"><t t-if="not o.struct_id.hide_basic_on_pdf">Basic salary</t></td>
+                        <td class="ps-value"><span t-if="not o.struct_id.hide_basic_on_pdf" t-out="version.wage" t-options="money"/></td>
+                    </tr>
+                    <tr>
+                        <td class="ps-label">Work permit no.</td>
+                        <td class="ps-value" t-out="employee.permit_no or '-'"/>
+                        <td class="ps-label">Gross salary</td>
+                        <td class="ps-value"><span t-out="version.l10n_ae_total_salary" t-options="money"/></td>
+                    </tr>
+                    <tr>
+                        <td class="ps-label">Designation</td>
+                        <td class="ps-value" t-out="version.job_id.name or employee.job_title or '-'"/>
+                        <td class="ps-label">Joining date</td>
+                        <td class="ps-value"><span t-out="employee._ep_join_date()" t-options="{'widget': 'date'}"/></td>
+                    </tr>
+                    <tr>
+                        <td class="ps-label">Department</td>
+                        <td class="ps-value" t-out="version.department_id.name or '-'"/>
+                        <td class="ps-label">Contract end</td>
+                        <td class="ps-value"><span t-if="version.date_end" t-field="version.date_end"/><t t-else="">-</t></td>
+                    </tr>
+                    <tr>
+                        <td class="ps-label">Email</td>
+                        <td class="ps-value" t-out="employee.work_email or '-'"/>
+                        <td class="ps-label">Working schedule</td>
+                        <td class="ps-value"><t t-out="'%g' % version.hours_per_week"/> hours / week</td>
+                    </tr>
+                    <tr t-if="eos">
+                        <td class="ps-label">Last working day</td>
+                        <td class="ps-value"><span t-field="eos.last_working_day"/></td>
+                        <td class="ps-label">Years worked</td>
+                        <td class="ps-value" t-out="'%.2f' % eos.service_years"/>
+                    </tr>
+                </table>
+
+                <table class="o_ignore_layout_styling ps-grid">
+                    <tr>
+                        <th>Earnings</th>
+                        <th class="ps-amount">Amount</th>
+                        <th>Deductions</th>
+                        <th class="ps-amount">Amount</th>
+                    </tr>
+                    <tr t-foreach="range(max(len(earnings), len(deductions), 1))" t-as="i">
+                        <t t-set="earning" t-value="earnings[i] if i &lt; len(earnings) else None"/>
+                        <t t-set="deduction" t-value="deductions[i] if i &lt; len(deductions) else None"/>
+                        <td><t t-if="earning"><t t-out="earning['name']"/>
+                            <span t-if="earning['detail']" class="ps-detail" t-out="earning['detail']"/></t></td>
+                        <td class="ps-amount"><span t-if="earning" t-out="earning['amount']" t-options="money"/></td>
+                        <td><t t-if="deduction"><t t-out="deduction['name']"/>
+                            <span t-if="deduction['detail']" class="ps-detail" t-out="deduction['detail']"/></t>
+                            <span t-if="not deductions and not i" class="text-muted">No deductions this month</span></td>
+                        <td class="ps-amount"><span t-if="deduction" t-out="deduction['amount']" t-options="money"/></td>
+                    </tr>
+                    <tr class="ps-total">
+                        <td>Total earnings</td>
+                        <td class="ps-amount"><span t-out="values['total_earnings']" t-options="money"/></td>
+                        <td>Total deductions</td>
+                        <td class="ps-amount"><span t-out="values['total_deductions']" t-options="money"/></td>
+                    </tr>
+                    <tr class="ps-net">
+                        <td colspan="3">NET SALARY
+                            <span class="ps-words">(<t t-out="currency.amount_to_text(abs(o.net_wage))"/>)</span></td>
+                        <td class="ps-amount"><span t-out="o.net_wage" t-options="money"/></td>
+                    </tr>
+                </table>
+
+                <div>
+                    <t t-if="o.net_wage &gt;= 0">
+                        <t t-set="allocations" t-value="o.compute_salary_allocations()"/>
+                        <p t-foreach="allocations.items()" t-as="alloc" class="mb-1">
+                            <t t-set="bank" t-value="employee.bank_account_ids.filtered(lambda b: str(b.id) == alloc[0])[:1]"/>
+                            To pay on <strong t-out="bank.acc_number or 'N/A'"/>
+                            of <em t-out="bank.acc_holder_name or employee.name"/>:
+                            <strong t-out="alloc[1]" t-options="money"/>
+                        </p>
+                        <p t-if="not allocations" class="mb-1">
+                            Amount to be paid to <em t-out="employee.legal_name or employee.name"/>:
+                            <strong t-out="o.net_wage" t-options="money"/>
+                        </p>
+                    </t>
+                    <p t-else="">The net amount will be recovered from the first positive remuneration established after this.</p>
+                </div>
+
+                <div class="row ps-sign">
+                    <div class="col-4"><div>Prepared by</div></div>
+                    <div class="col-4"><div>Approved by</div></div>
+                    <div class="col-4"><div>Employee signature</div></div>
+                </div>
+            </div>
+        </t>
+    </template>
+
+    <template id="report_payslip_uae_lang">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="o">
+                <t t-set="o" t-value="o.with_context(lang=o.employee_id.lang or o.env.lang)"/>
+                <t t-call="hr_uae_payroll_ext.report_payslip_uae" t-lang="o.env.lang"/>
+            </t>
+        </t>
+    </template>
+</odoo>

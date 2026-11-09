@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Payslip lines of the two types added with the types list: arrear salary and commission -->
+    <record id="input_arrear" model="hr.payslip.input.type">
+        <field name="name">Arrear Salary</field>
+        <field name="code">UAEARREAR</field>
+        <field name="country_id" ref="base.ae"/>
+        <field name="struct_ids" eval="[Command.link(ref('structure_uae_monthly'))]"/>
+    </record>
+
+    <record id="input_commission" model="hr.payslip.input.type">
+        <field name="name">Commission</field>
+        <field name="code">UAECOMMISSION</field>
+        <field name="country_id" ref="base.ae"/>
+        <field name="struct_ids" eval="[Command.link(ref('structure_uae_monthly'))]"/>
+    </record>
+
+    <record id="monthly_rule_arrear" model="hr.salary.rule">
+        <field name="name">Arrear Salary</field>
+        <field name="category_id" ref="hr_payroll.ALW"/>
+        <field name="code">UAEARREAR</field>
+        <field name="sequence">38</field>
+        <field name="condition_select">input</field>
+        <field name="condition_other_input_id" ref="input_arrear"/>
+        <field name="amount_select">code</field>
+        <field name="amount_python_compute">result = inputs['UAEARREAR'].amount</field>
+        <field name="struct_id" ref="structure_uae_monthly"/>
+    </record>
+
+    <record id="monthly_rule_commission" model="hr.salary.rule">
+        <field name="name">Commission</field>
+        <field name="category_id" ref="hr_payroll.ALW"/>
+        <field name="code">UAECOMMISSION</field>
+        <field name="sequence">39</field>
+        <field name="condition_select">input</field>
+        <field name="condition_other_input_id" ref="input_commission"/>
+        <field name="amount_select">code</field>
+        <field name="amount_python_compute">result = inputs['UAECOMMISSION'].amount</field>
+        <field name="struct_id" ref="structure_uae_monthly"/>
+    </record>
+
+    <!-- Starter types; HR adds more in Payroll > Configuration > Bonus & Deduction Types -->
+    <data noupdate="1">
+        <record id="adjustment_type_bonus" model="hr.payroll.adjustment.type">
+            <field name="name">Bonus</field>
+            <field name="kind">addition</field>
+            <field name="sequence">10</field>
+            <field name="code">BONUS</field>
+            <field name="input_type_id" ref="l10n_ae_hr_payroll.input_bonus_earnings"/>
+            <field name="rule_id" ref="monthly_rule_bonus"/>
+        </record>
+        <record id="adjustment_type_arrear" model="hr.payroll.adjustment.type">
+            <field name="name">Arrear Salary</field>
+            <field name="kind">addition</field>
+            <field name="sequence">20</field>
+            <field name="code">UAEARREAR</field>
+            <field name="input_type_id" ref="input_arrear"/>
+            <field name="rule_id" ref="monthly_rule_arrear"/>
+        </record>
+        <record id="adjustment_type_commission" model="hr.payroll.adjustment.type">
+            <field name="name">Commission</field>
+            <field name="kind">addition</field>
+            <field name="sequence">30</field>
+            <field name="code">UAECOMMISSION</field>
+            <field name="input_type_id" ref="input_commission"/>
+            <field name="rule_id" ref="monthly_rule_commission"/>
+        </record>
+        <record id="adjustment_type_addition" model="hr.payroll.adjustment.type">
+            <field name="name">Other Addition</field>
+            <field name="kind">addition</field>
+            <field name="sequence">90</field>
+            <field name="code">OTHER_EARNINGS</field>
+            <field name="input_type_id" ref="l10n_ae_hr_payroll.input_other_earnings"/>
+            <field name="rule_id" ref="monthly_rule_other_earnings"/>
+        </record>
+        <record id="adjustment_type_fine" model="hr.payroll.adjustment.type">
+            <field name="name">Fine</field>
+            <field name="kind">deduction</field>
+            <field name="sequence">10</field>
+            <field name="code">UAEFINE</field>
+            <field name="is_fine" eval="True"/>
+            <field name="input_type_id" ref="input_fine"/>
+            <field name="rule_id" ref="salary_rule_fine"/>
+        </record>
+        <record id="adjustment_type_deduction" model="hr.payroll.adjustment.type">
+            <field name="name">Other Deduction</field>
+            <field name="kind">deduction</field>
+            <field name="sequence">90</field>
+            <field name="code">OTHER_DEDUCTIONS</field>
+            <field name="input_type_id" ref="l10n_ae_hr_payroll.input_other_deduction"/>
+            <field name="rule_id" ref="monthly_rule_other_deductions"/>
+        </record>
+    </data>
+</odoo>

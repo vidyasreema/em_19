@@ -1,0 +1,216 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The company's own monthly salary structure: only the rules it uses. It is the
+     default structure of the "UAE Employee" structure type, so every UAE contract
+     gets it. The standard "United Arab Emirates: Monthly Pay" structure stays as it is.
+     Leave deductions, additions/deductions, loans and final settlement rules are
+     in hr_salary_rule_data.xml. -->
+<odoo>
+    <record id="structure_uae_monthly" model="hr.payroll.structure">
+        <field name="name">UAE Monthly Salary</field>
+        <field name="code">UAEMONTHLY</field>
+        <field name="country_id" ref="base.ae"/>
+        <field name="type_id" ref="l10n_ae_hr_payroll.uae_employee_payroll_structure_type"/>
+        <field name="report_id" ref="action_report_payslip_uae"/>
+        <field name="rule_ids" eval="[]"/>
+        <field name="unpaid_work_entry_type_ids" eval="[
+            Command.link(ref('hr_work_entry.work_entry_type_unpaid_leave')),
+            Command.link(ref('hr_work_entry.hr_work_entry_type_out_of_contract')),
+            Command.link(ref('hr_work_entry.uae_sick_leave_0_entry_type')),
+        ]"/>
+    </record>
+
+    <!-- It becomes the default structure of the "UAE Employee" type in
+         hr.payroll.structure._uae_setup_monthly_structure (install and upgrade). -->
+
+    <!-- Inputs of the standard structure used here too -->
+    <record id="l10n_ae_hr_payroll.input_bonus_earnings" model="hr.payslip.input.type">
+        <field name="struct_ids" eval="[Command.link(ref('structure_uae_monthly'))]"/>
+    </record>
+    <record id="l10n_ae_hr_payroll.input_other_earnings" model="hr.payslip.input.type">
+        <field name="struct_ids" eval="[Command.link(ref('structure_uae_monthly'))]"/>
+    </record>
+    <record id="l10n_ae_hr_payroll.input_other_deduction" model="hr.payslip.input.type">
+        <field name="struct_ids" eval="[Command.link(ref('structure_uae_monthly'))]"/>
+    </record>
+
+    <!-- Salary of the contract -->
+    <record id="monthly_rule_basic" model="hr.salary.rule">
+        <field name="name">Basic Salary</field>
+        <field name="category_id" ref="hr_payroll.BASIC"/>
+        <field name="code">BASIC</field>
+        <field name="sequence">1</field>
+        <field name="condition_select">none</field>
+        <field name="amount_select">code</field>
+        <field name="amount_python_compute">result = payslip.l10n_ae_basic_salary</field>
+        <field name="struct_id" ref="structure_uae_monthly"/>
+    </record>
+
+    <record id="monthly_rule_housing" model="hr.salary.rule">
+        <field name="name">Housing Allowance</field>
+        <field name="category_id" ref="hr_payroll.ALW"/>
+        <field name="code">HOUALLOW</field>
+        <field name="sequence">5</field>
+        <field name="condition_select">python</field>
+        <field name="condition_python">result = version.l10n_ae_housing_allowance</field>
+        <field name="amount_select">code</field>
+        <field name="amount_python_compute">result = version.l10n_ae_housing_allowance</field>
+        <field name="struct_id" ref="structure_uae_monthly"/>
+    </record>
+
+    <record id="monthly_rule_transportation" model="hr.salary.rule">
+        <field name="name">Transportation Allowance</field>
+        <field name="category_id" ref="hr_payroll.ALW"/>
+        <field name="code">TRAALLOW</field>
+        <field name="sequence">10</field>
+        <field name="condition_select">python</field>
+        <field name="condition_python">result = version.l10n_ae_transportation_allowance</field>
+        <field name="amount_select">code</field>
+        <field name="amount_python_compute">result = version.l10n_ae_transportation_allowance</field>
+        <field name="struct_id" ref="structure_uae_monthly"/>
+    </record>
+
+    <record id="monthly_rule_other_allowances" model="hr.salary.rule">
+        <field name="name">Other Allowances</field>
+        <field name="category_id" ref="hr_payroll.ALW"/>
+        <field name="code">OTALLOW</field>
+        <field name="sequence">15</field>
+        <field name="condition_select">python</field>
+        <field name="condition_python">result = version.l10n_ae_other_allowances</field>
+        <field name="amount_select">code</field>
+        <field name="amount_python_compute">result = version.l10n_ae_other_allowances</field>
+        <field name="struct_id" ref="structure_uae_monthly"/>
+    </record>
+
+    <!-- Days before the contract start or after its end, in the month -->
+    <record id="monthly_rule_out_of_contract" model="hr.salary.rule">
+        <field name="name">Out of Contract</field>
+        <field name="category_id" ref="hr_payroll.DED"/>
+        <field name="code">OOC</field>
+        <field name="sequence">65</field>
+        <field name="condition_select">python</field>
+        <field name="condition_python">result = 'OUT' in worked_days</field>
+        <field name="amount_select">code</field>
+        <field name="amount_python_compute">
+gross_salary = version.l10n_ae_total_salary
+number_of_days_in_month = (payslip.date_to - payslip.date_from).days + 1
+out_of_contract_days = max(0, (version.date_start - payslip.date_from).days) + max(0, (payslip.date_to - (version.date_end or payslip.date_to)).days)
+result = - out_of_contract_days * gross_salary / number_of_days_in_month
+        </field>
+        <field name="struct_id" ref="structure_uae_monthly"/>
+    </record>
+
+    <!-- Bonus, other additions and other deductions (from approved records). Each line
+         is named after its type (amount in code: an "input" amount takes the input's name). -->
+    <record id="monthly_rule_bonus" model="hr.salary.rule">
+        <field name="name">Bonus</field>
+        <field name="category_id" ref="hr_payroll.ALW"/>
+        <field name="code">BONUS</field>
+        <field name="sequence">40</field>
+        <field name="condition_select">input</field>
+        <field name="condition_other_input_id" ref="l10n_ae_hr_payroll.input_bonus_earnings"/>
+        <field name="amount_select">code</field>
+        <field name="amount_python_compute">result = inputs['BONUS'].amount</field>
+        <field name="struct_id" ref="structure_uae_monthly"/>
+    </record>
+
+    <record id="monthly_rule_other_earnings" model="hr.salary.rule">
+        <field name="name">Other Addition</field>
+        <field name="category_id" ref="hr_payroll.ALW"/>
+        <field name="code">OTHER_EARNINGS</field>
+        <field name="sequence">41</field>
+        <field name="condition_select">input</field>
+        <field name="condition_other_input_id" ref="l10n_ae_hr_payroll.input_other_earnings"/>
+        <field name="amount_select">code</field>
+        <field name="amount_python_compute">result = inputs['OTHER_EARNINGS'].amount</field>
+        <field name="struct_id" ref="structure_uae_monthly"/>
+    </record>
+
+    <record id="monthly_rule_other_deductions" model="hr.salary.rule">
+        <field name="name">Other Deduction</field>
+        <field name="category_id" ref="hr_payroll.DED"/>
+        <field name="code">OTHER_DEDUCTIONS</field>
+        <field name="sequence">68</field>
+        <field name="condition_select">input</field>
+        <field name="condition_other_input_id" ref="l10n_ae_hr_payroll.input_other_deduction"/>
+        <field name="amount_select">code</field>
+        <field name="amount_python_compute">result = -inputs['OTHER_DEDUCTIONS'].amount</field>
+        <field name="struct_id" ref="structure_uae_monthly"/>
+    </record>
+
+    <!-- Expenses paid back with the salary (Expenses app) -->
+    <record id="monthly_rule_expenses" model="hr.salary.rule">
+        <field name="name">Expenses Reimbursement</field>
+        <field name="category_id" ref="hr_payroll.ALW"/>
+        <field name="code">EXPENSES</field>
+        <field name="sequence">199</field>
+        <field name="condition_select">python</field>
+        <field name="condition_python">result = 'EXPENSES' in inputs</field>
+        <field name="amount_select">code</field>
+        <field name="amount_python_compute">result = inputs['EXPENSES'].amount</field>
+        <field name="struct_id" ref="structure_uae_monthly"/>
+    </record>
+
+    <!-- Totals -->
+    <record id="monthly_rule_gross" model="hr.salary.rule">
+        <field name="name">Taxable Salary</field>
+        <field name="category_id" ref="hr_payroll.GROSS"/>
+        <field name="code">GROSS</field>
+        <field name="sequence">100</field>
+        <field name="condition_select">none</field>
+        <field name="amount_select">code</field>
+        <field name="amount_python_compute">result = categories['BASIC'] + categories['ALW']</field>
+        <field name="struct_id" ref="structure_uae_monthly"/>
+    </record>
+
+    <record id="monthly_rule_net" model="hr.salary.rule">
+        <field name="name">Net Salary</field>
+        <field name="category_id" ref="hr_payroll.NET"/>
+        <field name="code">NET</field>
+        <field name="sequence">200</field>
+        <field name="condition_select">none</field>
+        <field name="amount_select">code</field>
+        <field name="amount_python_compute">result = categories['BASIC'] + categories['ALW'] + categories['DED']</field>
+        <field name="struct_id" ref="structure_uae_monthly"/>
+    </record>
+
+    <!-- Company costs, not on the payslip: monthly provisions for the gratuity and
+         the annual leave (accounting), and the net cost (dashboard). -->
+    <record id="monthly_rule_eos_provision" model="hr.salary.rule">
+        <field name="name">End of Service Provision</field>
+        <field name="category_id" ref="l10n_ae_hr_payroll.l10n_ae_category_provision"/>
+        <field name="code">EOSP</field>
+        <field name="sequence">25</field>
+        <field name="appears_on_payslip" eval="False"/>
+        <field name="condition_select">python</field>
+        <field name="condition_python">result = employee.active and not payslip.uae_end_of_service_id</field>
+        <field name="amount_select">code</field>
+        <field name="amount_python_compute">result = payslip._uae_gratuity_provision()</field>
+        <field name="struct_id" ref="structure_uae_monthly"/>
+    </record>
+
+    <record id="monthly_rule_leave_provision" model="hr.salary.rule">
+        <field name="name">Annual Leave Provision</field>
+        <field name="category_id" ref="l10n_ae_hr_payroll.l10n_ae_category_provision"/>
+        <field name="code">ALP</field>
+        <field name="sequence">30</field>
+        <field name="appears_on_payslip" eval="False"/>
+        <field name="condition_select">python</field>
+        <field name="condition_python">result = employee.active and not payslip.uae_end_of_service_id</field>
+        <field name="amount_select">code</field>
+        <field name="amount_python_compute">result = payslip._uae_leave_provision()</field>
+        <field name="struct_id" ref="structure_uae_monthly"/>
+    </record>
+
+    <record id="monthly_rule_net_cost" model="hr.salary.rule">
+        <field name="name">Net Cost</field>
+        <field name="category_id" ref="l10n_ae_hr_payroll.l10n_ae_category_net_cost"/>
+        <field name="code">NETCOST</field>
+        <field name="sequence">300</field>
+        <field name="appears_on_payslip" eval="False"/>
+        <field name="appears_on_employee_cost_dashboard" eval="True"/>
+        <field name="condition_select">none</field>
+        <field name="amount_select">code</field>
+        <field name="amount_python_compute">result = result_rules['NET']['total']</field>
+        <field name="struct_id" ref="structure_uae_monthly"/>
+    </record>
+</odoo>

@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Annual leave for renewed contracts, sick leave for new employees. -->
+    <record id="ir_cron_create_leave_allocations" model="ir.cron">
+        <field name="name">UAE: Create Leave Allocations</field>
+        <field name="model_id" ref="hr.model_hr_employee"/>
+        <field name="state">code</field>
+        <field name="code">model._cron_uae_create_leave_allocations()</field>
+        <field name="interval_number">1</field>
+        <field name="interval_type">days</field>
+    </record>
+</odoo>

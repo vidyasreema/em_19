@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="rule_parameter_leave_day_divisor" model="hr.rule.parameter">
+        <field name="name">UAE Leave Deduction: Days per Month</field>
+        <field name="code">l10n_ae_ext_leave_day_divisor</field>
+        <field name="country_id" ref="base.ae"/>
+        <field name="description">Daily salary for unpaid and half-pay leave = gross salary / this number.</field>
+    </record>
+
+    <record id="rule_parameter_gratuity_min_years" model="hr.rule.parameter">
+        <field name="name">UAE Gratuity: Minimum Service (years)</field>
+        <field name="code">l10n_ae_ext_gratuity_min_years</field>
+        <field name="country_id" ref="base.ae"/>
+        <field name="description">No gratuity below this many years of service.</field>
+    </record>
+
+    <record id="rule_parameter_gratuity_tier1_years" model="hr.rule.parameter">
+        <field name="name">UAE Gratuity: First Period (years)</field>
+        <field name="code">l10n_ae_ext_gratuity_tier1_years</field>
+        <field name="country_id" ref="base.ae"/>
+        <field name="description">Years paid at the first rate.</field>
+    </record>
+
+    <record id="rule_parameter_gratuity_tier1_days" model="hr.rule.parameter">
+        <field name="name">UAE Gratuity: Days per Year, First Period</field>
+        <field name="code">l10n_ae_ext_gratuity_tier1_days</field>
+        <field name="country_id" ref="base.ae"/>
+        <field name="description">Days of basic salary per year in the first period.</field>
+    </record>
+
+    <record id="rule_parameter_gratuity_tier2_days" model="hr.rule.parameter">
+        <field name="name">UAE Gratuity: Days per Year, After</field>
+        <field name="code">l10n_ae_ext_gratuity_tier2_days</field>
+        <field name="country_id" ref="base.ae"/>
+        <field name="description">Days of basic salary per year after the first period.</field>
+    </record>
+
+    <record id="rule_parameter_gratuity_cap_months" model="hr.rule.parameter">
+        <field name="name">UAE Gratuity: Maximum (months of basic salary)</field>
+        <field name="code">l10n_ae_ext_gratuity_cap_months</field>
+        <field name="country_id" ref="base.ae"/>
+        <field name="description">The gratuity is at most this many months of basic salary (2 years).</field>
+    </record>
+
+    <record id="rule_parameter_gratuity_day_divisor" model="hr.rule.parameter">
+        <field name="name">UAE Gratuity: Days per Month</field>
+        <field name="code">l10n_ae_ext_gratuity_day_divisor</field>
+        <field name="country_id" ref="base.ae"/>
+        <field name="description">Daily salary for the gratuity = basic salary / this number.</field>
+    </record>
+
+    <record id="rule_parameter_leave_encash_divisor" model="hr.rule.parameter">
+        <field name="name">UAE Leave Encashment: Days per Month</field>
+        <field name="code">l10n_ae_ext_leave_encash_divisor</field>
+        <field name="country_id" ref="base.ae"/>
+        <field name="description">Daily salary for the annual leave paid or deducted at the end of service = basic salary / this number.</field>
+    </record>
+
+    <record id="rule_parameter_annual_leave_days_per_year" model="hr.rule.parameter">
+        <field name="name">UAE Annual Leave: Days Earned per Year</field>
+        <field name="code">l10n_ae_ext_annual_leave_days_per_year</field>
+        <field name="country_id" ref="base.ae"/>
+        <field name="description">At the end of service, annual leave days earned per year of the current contract; days given upfront and not earned yet are deducted.</field>
+    </record>
+
+    <!-- noupdate: a value changed by HR is kept on upgrade. -->
+    <data noupdate="1">
+        <record id="rule_parameter_leave_day_divisor_2020" model="hr.rule.parameter.value">
+            <field name="rule_parameter_id" ref="rule_parameter_leave_day_divisor"/>
+            <field name="parameter_value">30</field>
+            <field name="date_from" eval="datetime(2020, 1, 1).date()"/>
+        </record>
+        <record id="rule_parameter_gratuity_min_years_2020" model="hr.rule.parameter.value">
+            <field name="rule_parameter_id" ref="rule_parameter_gratuity_min_years"/>
+            <field name="parameter_value">1</field>
+            <field name="date_from" eval="datetime(2020, 1, 1).date()"/>
+        </record>
+        <record id="rule_parameter_gratuity_tier1_years_2020" model="hr.rule.parameter.value">
+            <field name="rule_parameter_id" ref="rule_parameter_gratuity_tier1_years"/>
+            <field name="parameter_value">5</field>
+            <field name="date_from" eval="datetime(2020, 1, 1).date()"/>
+        </record>
+        <record id="rule_parameter_gratuity_tier1_days_2020" model="hr.rule.parameter.value">
+            <field name="rule_parameter_id" ref="rule_parameter_gratuity_tier1_days"/>
+            <field name="parameter_value">21</field>
+            <field name="date_from" eval="datetime(2020, 1, 1).date()"/>
+        </record>
+        <record id="rule_parameter_gratuity_tier2_days_2020" model="hr.rule.parameter.value">
+            <field name="rule_parameter_id" ref="rule_parameter_gratuity_tier2_days"/>
+            <field name="parameter_value">30</field>
+            <field name="date_from" eval="datetime(2020, 1, 1).date()"/>
+        </record>
+        <record id="rule_parameter_gratuity_cap_months_2020" model="hr.rule.parameter.value">
+            <field name="rule_parameter_id" ref="rule_parameter_gratuity_cap_months"/>
+            <field name="parameter_value">24</field>
+            <field name="date_from" eval="datetime(2020, 1, 1).date()"/>
+        </record>
+        <record id="rule_parameter_gratuity_day_divisor_2020" model="hr.rule.parameter.value">
+            <field name="rule_parameter_id" ref="rule_parameter_gratuity_day_divisor"/>
+            <field name="parameter_value">30</field>
+            <field name="date_from" eval="datetime(2020, 1, 1).date()"/>
+        </record>
+        <record id="rule_parameter_leave_encash_divisor_2020" model="hr.rule.parameter.value">
+            <field name="rule_parameter_id" ref="rule_parameter_leave_encash_divisor"/>
+            <field name="parameter_value">30</field>
+            <field name="date_from" eval="datetime(2020, 1, 1).date()"/>
+        </record>
+        <record id="rule_parameter_annual_leave_days_per_year_2020" model="hr.rule.parameter.value">
+            <field name="rule_parameter_id" ref="rule_parameter_annual_leave_days_per_year"/>
+            <field name="parameter_value">30</field>
+            <field name="date_from" eval="datetime(2020, 1, 1).date()"/>
+        </record>
+    </data>
+</odoo>

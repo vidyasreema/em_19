@@ -1,0 +1,316 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Icons for the new pages -->
+    <template id="ep_icon" inherit_id="hr_employee_portal.ep_icon" name="Employee portal: UAE payroll icons">
+        <xpath expr="//t[@t-elif=&quot;icon == 'sparkle'&quot;]" position="after">
+            <t t-elif="icon == 'wallet'"><path d="M19 7V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-4"/><path d="M21 11h-5a2 2 0 0 0 0 4h5z"/></t>
+            <t t-elif="icon == 'clock'"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></t>
+            <t t-elif="icon == 'calcheck'"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 10h18M9 15l2 2 4-4"/></t>
+            <t t-elif="icon == 'chevron-left'"><path d="M15 6l-6 6 6 6"/></t>
+            <t t-elif="icon == 'chevron-right'"><path d="M9 6l6 6-6 6"/></t>
+        </xpath>
+    </template>
+
+    <!-- Navigation: My pay and Attendance in the sidebar, My pay in the phone tab bar -->
+    <template id="ep_shell" inherit_id="hr_employee_portal.ep_shell" name="Employee portal: UAE payroll navigation">
+        <xpath expr="//nav[hasclass('ep-nav')]/t[@t-if='ep_employee']" position="inside">
+            <t t-call="hr_employee_portal.ep_nav_link"><t t-set="href" t-value="'/my/employee/pay'"/><t t-set="label">My pay</t><t t-set="icon" t-value="'wallet'"/><t t-set="active" t-value="page_name == 'ep_pay'"/></t>
+            <t t-call="hr_employee_portal.ep_nav_link"><t t-set="href" t-value="'/my/employee/attendance'"/><t t-set="label">Attendance</t><t t-set="icon" t-value="'calcheck'"/><t t-set="active" t-value="page_name == 'ep_attendance'"/></t>
+        </xpath>
+        <xpath expr="//nav[hasclass('ep-tabbar')]/t[@t-if='ep_employee']" position="inside">
+            <t t-call="hr_employee_portal.ep_tab_link"><t t-set="href" t-value="'/my/employee/pay'"/><t t-set="label">My pay</t><t t-set="icon" t-value="'wallet'"/><t t-set="active" t-value="page_name in ('ep_pay', 'ep_attendance')"/></t>
+        </xpath>
+    </template>
+
+    <!-- Profile: salary and gratuity in "Salary & payslips", then loans and attendance -->
+    <template id="ep_profile" inherit_id="hr_employee_portal.ep_profile" name="Employee portal: UAE pay sections">
+        <xpath expr="//details[@id='ep-sec-pay']//div[hasclass('ep-sec-slips')]" position="before">
+            <div t-if="salary_rows or gratuity_amount" class="ep-sec-salary">
+                <p class="ep-sec-label">Monthly salary</p>
+                <t t-if="salary_rows" t-call="hr_employee_portal.ep_facts"><t t-set="rows" t-value="salary_rows"/></t>
+                <dl t-if="gratuity_amount" class="ep-facts">
+                    <div><dt>Gratuity if you left today</dt><dd t-out="gratuity_amount"/></div>
+                </dl>
+            </div>
+        </xpath>
+        <xpath expr="//details[@id='ep-sec-pay']" position="after">
+            <details id="ep-sec-loans" class="ep-sec ep-reveal">
+                <t t-call="hr_employee_portal.ep_sec_head"><t t-set="key" t-value="'loans'"/><t t-set="icon" t-value="'wallet'"/><t t-set="title">Loans &amp; advances</t></t>
+                <div class="ep-sec-body">
+                    <ul t-if="profile_loan_rows" class="ep-rows">
+                        <li t-foreach="profile_loan_rows" t-as="r" class="ep-row ep-row-tall">
+                            <span class="ep-row-text ep-grow">
+                                <span class="ep-row-title" t-out="r['title']"/>
+                                <span class="ep-row-sub" t-out="r['sub']"/>
+                            </span>
+                            <span class="ep-row-end">
+                                <strong t-if="r['show_outstanding']"><t t-out="r['outstanding']"/> left</strong>
+                                <t t-call="hr_employee_portal.ep_pill">
+                                    <t t-set="kind" t-value="r['kind']"/>
+                                    <t t-set="label" t-value="r['state_label']"/>
+                                </t>
+                            </span>
+                        </li>
+                    </ul>
+                    <p t-else="" class="ep-muted">No loans or salary advances to pay back.</p>
+                    <div t-if="not admin_view" class="ep-sec-actions">
+                        <a t-if="can_request_loan" href="/my/employee/pay#ep-loan-request" class="ep-btn ep-btn-soft ep-btn-sm">
+                            <t t-call="hr_employee_portal.ep_icon"><t t-set="icon" t-value="'plus'"/></t>
+                            Ask for a loan or advance
+                        </a>
+                        <a href="/my/employee/pay" class="ep-link">Bonuses, deductions and gratuity</a>
+                    </div>
+                </div>
+            </details>
+
+            <details id="ep-sec-attendance" class="ep-sec ep-reveal">
+                <t t-call="hr_employee_portal.ep_sec_head"><t t-set="key" t-value="'attendance'"/><t t-set="icon" t-value="'calcheck'"/><t t-set="title">Attendance</t></t>
+                <div class="ep-sec-body">
+                    <t t-call="hr_employee_portal.ep_facts"><t t-set="rows" t-value="attendance_rows"/></t>
+                    <div t-if="not admin_view" class="ep-sec-actions">
+                        <a href="/my/employee/attendance" class="ep-link">Open the calendar</a>
+                    </div>
+                </div>
+            </details>
+        </xpath>
+    </template>
+
+    <!-- Annual, sick and unpaid leave count calendar days -->
+    <template id="ep_leaves" inherit_id="hr_employee_portal.ep_leaves" name="Employee portal: UAE leave hint">
+        <xpath expr="//p[hasclass('ep-hint')][contains(., 'Days off in your work schedule')]" position="replace">
+            <p class="ep-hint">Annual, sick and unpaid leave count every calendar day, weekends included, and can also be taken as a half day. Past dates are allowed, for example for sick leave.</p>
+        </xpath>
+    </template>
+
+    <!-- My pay: loans, bonuses and deductions, gratuity and end of service -->
+    <template id="ep_pay" name="Employee portal: my pay">
+        <t t-call="hr_employee_portal.ep_shell">
+            <div class="ep-page-head ep-reveal">
+                <div>
+                    <p class="ep-eyebrow">Loans, bonuses and end of service</p>
+                    <h1 class="ep-title">My pay</h1>
+                </div>
+                <a href="/my/employee/attendance" class="ep-btn ep-btn-soft">
+                    <t t-call="hr_employee_portal.ep_icon"><t t-set="icon" t-value="'calcheck'"/></t>
+                    Attendance
+                </a>
+            </div>
+
+            <section class="ep-stats" aria-label="Summary">
+                <div t-foreach="stats" t-as="s" class="ep-stat ep-reveal">
+                    <span t-if="s.get('icon')" class="ep-card-icon" aria-hidden="true"><t t-call="hr_employee_portal.ep_icon"><t t-set="icon" t-value="s['icon']"/></t></span>
+                    <span class="ep-stat-label" t-out="s['label']"/>
+                    <span class="ep-stat-value" t-out="s['value']"/>
+                    <span class="ep-stat-note" t-out="s['note']"/>
+                </div>
+            </section>
+
+            <t t-call="hr_employee_portal.ep_flash"/>
+
+            <!-- End of service in progress -->
+            <section t-if="eos" class="ep-surface ep-surface-lg ep-reveal">
+                <div class="ep-surface-head">
+                    <h2 class="ep-h2 ep-h2-lg">End of service</h2>
+                    <t t-call="hr_employee_portal.ep_pill">
+                        <t t-set="kind" t-value="eos['kind']"/>
+                        <t t-set="label" t-value="eos['state_label']"/>
+                    </t>
+                </div>
+                <ul class="ep-rows">
+                    <li class="ep-row"><div class="ep-row-text ep-grow"><p class="ep-row-title">Reason</p></div><div class="ep-row-end" t-out="eos['reason']"/></li>
+                    <li class="ep-row"><div class="ep-row-text ep-grow"><p class="ep-row-title">Notice given</p></div><div class="ep-row-end" t-out="eos['notice_date']"/></li>
+                    <li class="ep-row"><div class="ep-row-text ep-grow"><p class="ep-row-title">Last working day</p></div><div class="ep-row-end" t-out="eos['last_working_day']"/></li>
+                    <li class="ep-row"><div class="ep-row-text ep-grow"><p class="ep-row-title">Gratuity</p></div><div class="ep-row-end" t-out="eos['gratuity']"/></li>
+                    <li t-if="eos['net']" class="ep-row"><div class="ep-row-text ep-grow"><p class="ep-row-title">Final settlement (net)</p></div><div class="ep-row-end"><strong t-out="eos['net']"/></div></li>
+                </ul>
+                <a t-if="eos['can_download']" t-attf-href="/my/employee/end-of-service/#{eos['id']}/pdf" target="_blank" class="ep-btn ep-btn-primary">
+                    <t t-call="hr_employee_portal.ep_icon"><t t-set="icon" t-value="'download'"/></t>
+                    Download final settlement
+                </a>
+            </section>
+
+            <div class="ep-split ep-split-even">
+                <section class="ep-surface ep-surface-lg ep-reveal">
+                    <h2 class="ep-h2 ep-h2-lg">Loans and advances</h2>
+                    <ul t-if="loan_rows" class="ep-rows">
+                        <li t-foreach="loan_rows" t-as="r" class="ep-row ep-row-tall">
+                            <span t-attf-class="ep-row-dot ep-row-dot-#{r['kind']}" aria-hidden="true"/>
+                            <div class="ep-row-text ep-grow">
+                                <p class="ep-row-title" t-out="r['title']"/>
+                                <p class="ep-row-sub" t-out="r['sub']"/>
+                                <t t-if="r['show_outstanding']">
+                                    <span class="ep-loan-bar" role="progressbar" t-att-aria-valuenow="r['percent']"
+                                          aria-valuemin="0" aria-valuemax="100" t-attf-aria-label="#{r['percent']}% repaid">
+                                        <span t-attf-style="width: #{r['percent']}%"/>
+                                    </span>
+                                    <p class="ep-row-sub">Outstanding <strong t-out="r['outstanding']"/></p>
+                                </t>
+                            </div>
+                            <div class="ep-row-end">
+                                <t t-call="hr_employee_portal.ep_pill">
+                                    <t t-set="kind" t-value="r['kind']"/>
+                                    <t t-set="label" t-value="r['state_label']"/>
+                                </t>
+                            </div>
+                        </li>
+                    </ul>
+                    <p t-else="" class="ep-muted">You have no loans or salary advances.</p>
+
+                    <t t-if="can_request">
+                        <h3 id="ep-loan-request" class="ep-h2 mt-4">Request a loan or advance</h3>
+                        <form action="/my/employee/pay/loan" method="post" class="ep-form">
+                            <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                            <fieldset class="ep-fieldset">
+                                <legend class="ep-label">Type</legend>
+                                <div class="ep-pill-options">
+                                    <input type="radio" name="loan_type" value="advance" id="ep_loan_advance" class="ep-pill-radio" checked="checked"/>
+                                    <label for="ep_loan_advance" class="ep-pill-option">Salary advance</label>
+                                    <input type="radio" name="loan_type" value="loan" id="ep_loan_loan" class="ep-pill-radio"/>
+                                    <label for="ep_loan_loan" class="ep-pill-option">Loan</label>
+                                </div>
+                            </fieldset>
+                            <div class="ep-form-row">
+                                <div class="ep-form-field">
+                                    <label for="ep_loan_amount" class="ep-label">Amount (<t t-out="currency_symbol"/>)</label>
+                                    <input id="ep_loan_amount" type="number" name="amount" min="1" step="0.01" class="ep-input" required="required"/>
+                                </div>
+                                <div class="ep-form-field">
+                                    <label for="ep_loan_months" class="ep-label">Months to repay <span class="ep-muted">(loans)</span></label>
+                                    <input id="ep_loan_months" type="number" name="installment_count" min="1"
+                                           t-att-max="loan_max_months or None" value="1" step="1" class="ep-input"/>
+                                </div>
+                            </div>
+                            <p class="ep-hint">
+                                A salary advance is deducted from your next payslip; a loan in equal monthly instalments.
+                                <t t-if="loan_max_amount">Up to <t t-out="loan_max_amount"/></t><t t-if="loan_max_amount and loan_max_months">, </t>
+                                <t t-if="loan_max_months">repaid within <t t-out="loan_max_months"/> months</t>.
+                            </p>
+                            <div class="ep-form-field">
+                                <label for="ep_loan_reason" class="ep-label">Reason</label>
+                                <textarea id="ep_loan_reason" name="reason" rows="3" class="ep-input ep-textarea" required="required"/>
+                            </div>
+                            <button type="submit" class="ep-btn ep-btn-primary">
+                                Send request
+                                <t t-call="hr_employee_portal.ep_icon"><t t-set="icon" t-value="'arrow'"/></t>
+                            </button>
+                        </form>
+                    </t>
+                </section>
+
+                <section class="ep-surface ep-surface-lg ep-reveal">
+                    <h2 class="ep-h2 ep-h2-lg">Bonuses and deductions</h2>
+                    <ul t-if="adjustment_rows" class="ep-rows">
+                        <li t-foreach="adjustment_rows" t-as="r" class="ep-row ep-row-tall">
+                            <span t-attf-class="ep-row-dot ep-row-dot-#{'bad' if r['is_deduction'] else 'ok'}" aria-hidden="true"/>
+                            <div class="ep-row-text ep-grow">
+                                <p class="ep-row-title"><t t-out="r['title']"/> <strong t-out="r['amount']"/></p>
+                                <p class="ep-row-sub" t-out="r['sub']"/>
+                            </div>
+                            <div class="ep-row-end">
+                                <t t-call="hr_employee_portal.ep_pill">
+                                    <t t-set="kind" t-value="r['kind']"/>
+                                    <t t-set="label" t-value="r['state_label']"/>
+                                </t>
+                            </div>
+                        </li>
+                    </ul>
+                    <p t-else="" class="ep-muted">No bonuses or deductions yet.</p>
+
+                    <h2 class="ep-h2 ep-h2-lg mt-4">Gratuity estimate</h2>
+                    <t t-if="gratuity['eligible']">
+                        <p class="ep-tile-figure" t-out="gratuity['amount']"/>
+                        <p class="ep-muted">
+                            For <t t-out="gratuity['years']"/> years of service since <t t-out="gratuity['start']"/>,
+                            on your basic salary of <t t-out="gratuity['basic']"/>: 21 days a year for the first 5 years,
+                            30 days a year after<t t-if="gratuity['capped']">, up to 2 years of basic salary</t>.
+                            <t t-if="gratuity['unpaid_days'] != '0'"><t t-out="gratuity['unpaid_days']"/> days of unpaid leave are not counted.</t>
+                        </p>
+                    </t>
+                    <p t-else="" class="ep-muted">
+                        Gratuity starts after one year of service (<t t-out="gratuity['years']"/> years so far, since <t t-out="gratuity['start']"/>).
+                    </p>
+                    <p class="ep-hint ep-hint-flush">An estimate if you left today. The final amount is calculated on your last working day.</p>
+                </section>
+            </div>
+        </t>
+    </template>
+
+    <!-- Attendance: worked out from the work schedule and approved leave, as payroll -->
+    <template id="ep_attendance" name="Employee portal: attendance">
+        <t t-call="hr_employee_portal.ep_shell">
+            <div class="ep-page-head ep-reveal">
+                <div>
+                    <p class="ep-eyebrow">From your work schedule and leave</p>
+                    <h1 class="ep-title">Attendance</h1>
+                </div>
+                <nav class="ep-month-nav" aria-label="Month">
+                    <a t-attf-href="/my/employee/attendance?month=#{prev_month}" class="ep-icon-btn" aria-label="Previous month">
+                        <t t-call="hr_employee_portal.ep_icon"><t t-set="icon" t-value="'chevron-left'"/></t>
+                    </a>
+                    <span class="ep-month-label" t-out="month_label"/>
+                    <a t-attf-href="/my/employee/attendance?month=#{next_month}" class="ep-icon-btn" aria-label="Next month">
+                        <t t-call="hr_employee_portal.ep_icon"><t t-set="icon" t-value="'chevron-right'"/></t>
+                    </a>
+                </nav>
+            </div>
+
+            <section class="ep-stats ep-stats-4" aria-label="Summary">
+                <div t-foreach="stats" t-as="s" class="ep-stat ep-reveal">
+                    <span class="ep-card-icon" aria-hidden="true"><t t-call="hr_employee_portal.ep_icon"><t t-set="icon" t-value="s['icon']"/></t></span>
+                    <span class="ep-stat-label" t-out="s['label']"/>
+                    <span class="ep-stat-value" t-out="s['value']"/>
+                    <span class="ep-stat-note" t-out="s['note']"/>
+                </div>
+            </section>
+
+            <div class="ep-split">
+                <section class="ep-surface ep-surface-lg ep-reveal">
+                    <h2 class="ep-h2 ep-h2-lg" t-out="month_label"/>
+                    <div class="ep-cal" role="table" t-att-aria-label="month_label">
+                        <div class="ep-cal-row ep-cal-head" role="row">
+                            <span t-foreach="weekdays" t-as="w" role="columnheader" t-out="w"/>
+                        </div>
+                        <div t-foreach="weeks" t-as="week" class="ep-cal-row" role="row">
+                            <t t-foreach="week" t-as="d">
+                                <span t-if="not d" class="ep-cal-day is-blank" role="cell"/>
+                                <span t-else="" role="cell"
+                                      t-attf-class="ep-cal-day is-#{d['kind']} #{'is-today' if d['is_today'] else ''}"
+                                      t-att-title="'%s%s' % (day_labels[d['kind']], (': ' + d['label']) if d['label'] else '')">
+                                    <span class="ep-cal-num" t-out="d['number']"/>
+                                    <span class="ep-cal-tag" t-out="d['label'] or (day_labels[d['kind']] if d['kind'] in ('holiday', 'out') else '')"/>
+                                    <span class="visually-hidden" t-out="day_labels[d['kind']]"/>
+                                </span>
+                            </t>
+                        </div>
+                    </div>
+                    <ul class="ep-cal-legend">
+                        <li t-foreach="['present', 'leave', 'half', 'unpaid', 'holiday', 'off', 'future']" t-as="k">
+                            <span t-attf-class="ep-cal-swatch is-#{k}"/><t t-out="day_labels[k]"/>
+                        </li>
+                    </ul>
+                </section>
+
+                <section class="ep-surface ep-surface-lg ep-reveal">
+                    <h2 class="ep-h2 ep-h2-lg">Leave this month</h2>
+                    <ul t-if="leave_rows" class="ep-rows">
+                        <li t-foreach="leave_rows" t-as="r" class="ep-row ep-row-tall">
+                            <span t-attf-class="ep-row-dot #{'ep-row-dot-bad' if r['unpaid'] else 'ep-row-dot-wait'}" aria-hidden="true"/>
+                            <div class="ep-row-text ep-grow">
+                                <p class="ep-row-title" t-out="r['type']"/>
+                                <p class="ep-row-sub" t-out="r['dates']"/>
+                            </div>
+                            <div class="ep-row-end"><strong t-out="r['in_month']"/></div>
+                        </li>
+                    </ul>
+                    <t t-else="" t-call="hr_employee_portal.ep_empty_state">
+                        <t t-set="message">No leave this month.</t>
+                    </t>
+                    <p class="ep-hint ep-hint-flush">
+                        Nothing to clock in: every working day of your schedule counts as present unless you are on approved leave
+                        or it is a public holiday. This is how your salary is worked out too.
+                    </p>
+                </section>
+            </div>
+        </t>
+    </template>
+</odoo>

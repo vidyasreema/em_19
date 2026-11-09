@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="res_config_settings_view_form" model="ir.ui.view">
+        <field name="name">res.config.settings.form.uae.payroll.ext</field>
+        <field name="model">res.config.settings</field>
+        <field name="inherit_id" ref="hr_payroll.res_config_settings_view_form"/>
+        <field name="arch" type="xml">
+            <block id="hr_payroll_settings" position="after">
+                <block title="End of Service" id="uae_end_of_service">
+                    <setting string="Notice Period" help="Default notice period of a resignation or termination.">
+                        <field name="uae_notice_days" class="w-25"/> <span>days</span>
+                    </setting>
+                    <setting string="Gratuity Rules" help="Gratuity, leave encashment and leave deduction rates are rule parameters: they can change from a given date.">
+                        <button name="%(hr_payroll.hr_rule_parameter_action)d" icon="oi-arrow-right" type="action"
+                                string="Rule Parameters" class="btn-link" context="{'search_default_name': 'UAE'}"/>
+                    </setting>
+                </block>
+                <block title="Loans and Fines" id="uae_loans_fines">
+                    <setting string="Maximum Loan" help="Largest loan an employee can request, in months of gross salary (0: no limit).">
+                        <field name="uae_loan_max_salary_months" class="w-25"/> <span>months of salary</span>
+                    </setting>
+                    <setting string="Maximum Instalments" help="Longest repayment, in monthly instalments (0: no limit).">
+                        <field name="uae_loan_max_installments" class="w-25"/> <span>months</span>
+                    </setting>
+                    <setting string="Loan Deduction Cap" help="Most that loan instalments can take from one payslip; the rest moves to the next months (0: no cap).">
+                        <field name="uae_loan_deduction_cap" class="w-25"/> <span>% of gross salary</span>
+                    </setting>
+                    <setting string="Fine Limit" help="Warn when an employee's fines in one month are above this many days of gross salary (UAE law: 5).">
+                        <field name="uae_fine_max_days" class="w-25"/> <span>days of salary per month</span>
+                    </setting>
+                </block>
+            </block>
+        </field>
+    </record>
+</odoo>

@@ -1,0 +1,13 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_payroll_adjustment_user,hr.payroll.adjustment.user,model_hr_payroll_adjustment,hr_payroll.group_hr_payroll_user,1,1,1,1
+access_employee_loan_user,hr.employee.loan.user,model_hr_employee_loan,hr_payroll.group_hr_payroll_user,1,1,1,1
+access_employee_loan_line_user,hr.employee.loan.line.user,model_hr_employee_loan_line,hr_payroll.group_hr_payroll_user,1,1,1,1
+access_end_of_service_user,hr.end.of.service.user,model_hr_end_of_service,hr_payroll.group_hr_payroll_user,1,1,1,1
+access_payroll_adjustment_portal,hr.payroll.adjustment.portal,model_hr_payroll_adjustment,base.group_portal,1,0,0,0
+access_employee_loan_portal,hr.employee.loan.portal,model_hr_employee_loan,base.group_portal,1,0,0,0
+access_employee_loan_line_portal,hr.employee.loan.line.portal,model_hr_employee_loan_line,base.group_portal,1,0,0,0
+access_end_of_service_portal,hr.end.of.service.portal,model_hr_end_of_service,base.group_portal,1,0,0,0
+access_payroll_adjustment_type_user,hr.payroll.adjustment.type.user,model_hr_payroll_adjustment_type,hr_payroll.group_hr_payroll_user,1,0,0,0
+access_payroll_adjustment_type_manager,hr.payroll.adjustment.type.manager,model_hr_payroll_adjustment_type,hr_payroll.group_hr_payroll_manager,1,1,1,1
+access_payroll_adjustment_type_portal,hr.payroll.adjustment.type.portal,model_hr_payroll_adjustment_type,base.group_portal,1,0,0,0
+access_payroll_salary_sheet_user,hr.payroll.salary.sheet.user,model_hr_payroll_salary_sheet,hr_payroll.group_hr_payroll_user,1,1,1,0

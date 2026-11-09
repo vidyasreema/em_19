@@ -1,0 +1,58 @@
+// Loan repayment progress on the employee portal "My pay" page.
+.ep-loan-bar {
+    display: block;
+    height: 6px;
+    margin: .5rem 0 .25rem;
+    border-radius: 999px;
+    background: #EFE6E2;
+    overflow: hidden;
+
+    > span {
+        display: block;
+        height: 100%;
+        border-radius: inherit;
+        background: linear-gradient(90deg, #7E1416, #B8383B);
+    }
+}
+
+// Attendance page: month switcher, four number cards in a row, the month calendar.
+.ep-month-nav { display: flex; align-items: center; gap: 6px; }
+.ep-month-label { min-width: 150px; text-align: center; color: #1B1414;
+    font-family: Anton, Impact, 'Arial Narrow', sans-serif; font-size: 20px; letter-spacing: .03em; text-transform: uppercase; }
+.ep-stats-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+@media (max-width: 1100px) { .ep-stats-4 { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+
+.ep-cal { display: flex; flex-direction: column; gap: 6px; }
+.ep-cal-row { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 6px; }
+.ep-cal-head span { padding: 2px 0 6px; text-align: center; color: #5A0E10;
+    font-family: Anton, Impact, 'Arial Narrow', sans-serif; font-size: 13px; letter-spacing: .06em; text-transform: uppercase; }
+.ep-cal-day { position: relative; display: flex; flex-direction: column; justify-content: space-between; gap: 2px; min-width: 0;
+    min-height: 64px; padding: 7px 8px; box-sizing: border-box; border-radius: 12px; border: 1px solid transparent;
+    background: #FFFFFF; color: #1B1414; }
+.ep-cal-num { font-weight: 700; font-size: 15px; line-height: 1; }
+.ep-cal-tag { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 11px; font-weight: 600; line-height: 1.2; }
+// Kinds of day (hr.employee._ep_attendance)
+.ep-cal-day.is-present, .ep-cal-swatch.is-present { background: #E7F3EA; color: #1F6B36; }
+.ep-cal-day.is-leave, .ep-cal-swatch.is-leave { background: #F5A524; color: #1B1414; }
+.ep-cal-day.is-half, .ep-cal-swatch.is-half { background: linear-gradient(135deg, #F5A524 50%, #E7F3EA 50%); color: #1B1414; }
+.ep-cal-day.is-unpaid, .ep-cal-swatch.is-unpaid { background: #7E1416; color: #FFFFFF; }
+.ep-cal-day.is-holiday, .ep-cal-swatch.is-holiday { background: #1B1414; color: #FFFFFF; }
+.ep-cal-day.is-off, .ep-cal-swatch.is-off { background: #F1ECE8; color: #8A7B74; }
+.ep-cal-day.is-future, .ep-cal-swatch.is-future { background: #FFFFFF; border: 1px dashed #D8C9C2; color: #736565; }
+.ep-cal-day.is-out { background: repeating-linear-gradient(135deg, #F1ECE8 0 6px, #E9E1DC 6px 12px); color: #A8998F; }
+.ep-cal-day.is-blank { background: none; }
+.ep-cal-day.is-today { box-shadow: 0 0 0 2px #7E1416; }
+
+.ep-cal-legend { display: flex; flex-wrap: wrap; gap: 8px 18px; margin-top: 18px !important; padding-top: 14px !important;
+    border-top: 1px solid rgba(27, 20, 20, .09); color: #5E5252; font-size: 13px;
+    li { display: inline-flex; align-items: center; gap: 8px; } }
+.ep-cal-swatch { display: inline-block; width: 14px; height: 14px; border-radius: 4px; box-sizing: border-box; }
+.ep-row-end strong { white-space: nowrap; }
+
+@media (max-width: 767.98px) {
+    .ep-month-nav { width: 100%; justify-content: space-between; }
+    .ep-cal, .ep-cal-row { gap: 4px; }
+    .ep-cal-day { min-height: 44px; padding: 5px; border-radius: 9px; }
+    .ep-cal-num { font-size: 13px; }
+    .ep-cal-tag { display: none; }
+}

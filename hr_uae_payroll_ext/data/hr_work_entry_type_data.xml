@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Paid at 50%, e.g. the last 15 days of maternity leave. -->
+    <record id="work_entry_type_half_pay" model="hr.work.entry.type">
+        <field name="name">Half-Pay Leave</field>
+        <field name="code">AEHALFPAY</field>
+        <field name="is_leave" eval="True"/>
+        <field name="country_id" ref="base.ae"/>
+    </record>
+</odoo>

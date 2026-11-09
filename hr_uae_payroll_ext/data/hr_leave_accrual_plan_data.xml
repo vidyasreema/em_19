@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Accrual plans for sick leave. Annual leave is given per contract instead
+     (Days per Contract on the time off type). noupdate: HR can adjust them. -->
+<odoo noupdate="1">
+    <!-- Sick leave: a fresh balance every 1 January, unused days are not carried over. -->
+    <record id="accrual_plan_sick_full" model="hr.leave.accrual.plan">
+        <field name="name">UAE Sick Leave (Full Pay)</field>
+        <field name="time_off_type_id" ref="leave_type_sick_full"/>
+        <field name="accrued_gain_time">start</field>
+        <field name="carryover_date">year_start</field>
+    </record>
+    <record id="accrual_level_sick_full" model="hr.leave.accrual.level">
+        <field name="accrual_plan_id" ref="accrual_plan_sick_full"/>
+        <field name="milestone_date">creation</field>
+        <field name="start_count">0</field>
+        <field name="added_value">15</field>
+        <field name="added_value_type">day</field>
+        <field name="frequency">yearly</field>
+        <field name="yearly_month">1</field>
+        <field name="yearly_day">1</field>
+    </record>
+
+    <record id="accrual_plan_sick_half" model="hr.leave.accrual.plan">
+        <field name="name">UAE Sick Leave (Half Pay)</field>
+        <field name="time_off_type_id" ref="leave_type_sick_half"/>
+        <field name="accrued_gain_time">start</field>
+        <field name="carryover_date">year_start</field>
+    </record>
+    <record id="accrual_level_sick_half" model="hr.leave.accrual.level">
+        <field name="accrual_plan_id" ref="accrual_plan_sick_half"/>
+        <field name="milestone_date">creation</field>
+        <field name="start_count">0</field>
+        <field name="added_value">30</field>
+        <field name="added_value_type">day</field>
+        <field name="frequency">yearly</field>
+        <field name="yearly_month">1</field>
+        <field name="yearly_day">1</field>
+    </record>
+
+    <record id="accrual_plan_sick_unpaid" model="hr.leave.accrual.plan">
+        <field name="name">UAE Sick Leave (Unpaid)</field>
+        <field name="time_off_type_id" ref="leave_type_sick_unpaid"/>
+        <field name="accrued_gain_time">start</field>
+        <field name="carryover_date">year_start</field>
+    </record>
+    <record id="accrual_level_sick_unpaid" model="hr.leave.accrual.level">
+        <field name="accrual_plan_id" ref="accrual_plan_sick_unpaid"/>
+        <field name="milestone_date">creation</field>
+        <field name="start_count">0</field>
+        <field name="added_value">45</field>
+        <field name="added_value_type">day</field>
+        <field name="frequency">yearly</field>
+        <field name="yearly_month">1</field>
+        <field name="yearly_day">1</field>
+    </record>
+</odoo>

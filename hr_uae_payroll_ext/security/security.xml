@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="rule_payroll_adjustment_company" model="ir.rule">
+        <field name="name">Payroll additions/deductions: multi-company</field>
+        <field name="model_id" ref="model_hr_payroll_adjustment"/>
+        <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+    </record>
+
+    <record id="rule_employee_loan_company" model="ir.rule">
+        <field name="name">Employee loans: multi-company</field>
+        <field name="model_id" ref="model_hr_employee_loan"/>
+        <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+    </record>
+
+    <record id="rule_end_of_service_company" model="ir.rule">
+        <field name="name">End of service: multi-company</field>
+        <field name="model_id" ref="model_hr_end_of_service"/>
+        <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+    </record>
+
+    <!-- Portal: an employee reads only their own records. The portal pages read
+         through the employee in sudo, scoped to the logged-in user; these rules
+         also hold for any other access. -->
+    <record id="rule_payroll_adjustment_portal" model="ir.rule">
+        <field name="name">Payroll additions/deductions: own records (portal)</field>
+        <field name="model_id" ref="model_hr_payroll_adjustment"/>
+        <field name="domain_force">[('employee_id.user_id', '=', user.id)]</field>
+        <field name="groups" eval="[Command.link(ref('base.group_portal'))]"/>
+        <field name="perm_write" eval="False"/>
+        <field name="perm_create" eval="False"/>
+        <field name="perm_unlink" eval="False"/>
+    </record>
+
+    <record id="rule_employee_loan_portal" model="ir.rule">
+        <field name="name">Employee loans: own records (portal)</field>
+        <field name="model_id" ref="model_hr_employee_loan"/>
+        <field name="domain_force">[('employee_id.user_id', '=', user.id)]</field>
+        <field name="groups" eval="[Command.link(ref('base.group_portal'))]"/>
+        <field name="perm_write" eval="False"/>
+        <field name="perm_create" eval="False"/>
+        <field name="perm_unlink" eval="False"/>
+    </record>
+
+    <record id="rule_employee_loan_line_portal" model="ir.rule">
+        <field name="name">Loan instalments: own records (portal)</field>
+        <field name="model_id" ref="model_hr_employee_loan_line"/>
+        <field name="domain_force">[('loan_id.employee_id.user_id', '=', user.id)]</field>
+        <field name="groups" eval="[Command.link(ref('base.group_portal'))]"/>
+        <field name="perm_write" eval="False"/>
+        <field name="perm_create" eval="False"/>
+        <field name="perm_unlink" eval="False"/>
+    </record>
+
+    <record id="rule_end_of_service_portal" model="ir.rule">
+        <field name="name">End of service: own records (portal)</field>
+        <field name="model_id" ref="model_hr_end_of_service"/>
+        <field name="domain_force">[('employee_id.user_id', '=', user.id)]</field>
+        <field name="groups" eval="[Command.link(ref('base.group_portal'))]"/>
+        <field name="perm_write" eval="False"/>
+        <field name="perm_create" eval="False"/>
+        <field name="perm_unlink" eval="False"/>
+    </record>
+</odoo>

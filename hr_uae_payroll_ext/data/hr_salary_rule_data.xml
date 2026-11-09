@@ -1,0 +1,149 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Rules of the UAE Monthly Salary structure (hr_payroll_structure_data.xml).
+         The standard structure is not used any more; the standard rules below stay
+         archived there so that it never pays leave or gratuity twice if used again
+         (an upgrade of l10n_ae_hr_payroll does not reactivate them: its data does
+         not set `active`). -->
+    <record id="l10n_ae_hr_payroll.uae_unpaid_leave_salary_rule" model="hr.salary.rule">
+        <field name="active" eval="False"/>
+    </record>
+    <record id="l10n_ae_hr_payroll.uae_sick_leave_50_salary_rule" model="hr.salary.rule">
+        <field name="active" eval="False"/>
+    </record>
+    <record id="l10n_ae_hr_payroll.uae_sick_leave_0_salary_rule" model="hr.salary.rule">
+        <field name="active" eval="False"/>
+    </record>
+
+    <!-- End of service: the standard rules (hard-coded gratuity, leave balance on gross salary)
+         are replaced by the final settlement rules below. -->
+    <record id="l10n_ae_hr_payroll.uae_end_of_service_salary_rule" model="hr.salary.rule">
+        <field name="active" eval="False"/>
+    </record>
+    <record id="l10n_ae_hr_payroll.uae_annual_leaves_eos_allowance_salary_rule" model="hr.salary.rule">
+        <field name="active" eval="False"/>
+    </record>
+    <record id="l10n_ae_hr_payroll.uae_annual_leaves_eos_deduction_salary_rule" model="hr.salary.rule">
+        <field name="active" eval="False"/>
+    </record>
+
+    <record id="salary_rule_unpaid_leave" model="hr.salary.rule">
+        <field name="name">Unpaid Leave</field>
+        <field name="category_id" ref="hr_payroll.DED"/>
+        <field name="code">UAEUNPAID</field>
+        <field name="sequence">60</field>
+        <field name="condition_select">python</field>
+        <field name="condition_python">result = version.work_entry_source == 'calendar' and payslip._uae_leave_days('0')</field>
+        <field name="amount_select">code</field>
+        <field name="amount_python_compute">result = payslip._uae_leave_deduction('0')</field>
+        <field name="struct_id" ref="structure_uae_monthly"/>
+    </record>
+
+    <record id="salary_rule_half_pay_leave" model="hr.salary.rule">
+        <field name="name">Half-Pay Leave</field>
+        <field name="category_id" ref="hr_payroll.DED"/>
+        <field name="code">UAEHALFPAY</field>
+        <field name="sequence">61</field>
+        <field name="condition_select">python</field>
+        <field name="condition_python">result = version.work_entry_source == 'calendar' and payslip._uae_leave_days('50')</field>
+        <field name="amount_select">code</field>
+        <field name="amount_python_compute">result = payslip._uae_leave_deduction('50')</field>
+        <field name="struct_id" ref="structure_uae_monthly"/>
+    </record>
+
+    <record id="salary_rule_fine" model="hr.salary.rule">
+        <field name="name">Fine</field>
+        <field name="category_id" ref="hr_payroll.DED"/>
+        <field name="code">UAEFINE</field>
+        <field name="sequence">66</field>
+        <field name="condition_select">input</field>
+        <field name="condition_other_input_id" ref="input_fine"/>
+        <field name="amount_select">code</field>
+        <field name="amount_python_compute">result = -inputs['UAEFINE'].amount</field>
+        <field name="struct_id" ref="structure_uae_monthly"/>
+    </record>
+
+    <record id="salary_rule_loan_recovery" model="hr.salary.rule">
+        <field name="name">Loan Recovery</field>
+        <field name="category_id" ref="hr_payroll.DED"/>
+        <field name="code">UAELOAN</field>
+        <field name="sequence">67</field>
+        <field name="condition_select">input</field>
+        <field name="condition_other_input_id" ref="input_loan_recovery"/>
+        <field name="amount_select">code</field>
+        <field name="amount_python_compute">result = -inputs['UAELOAN'].amount</field>
+        <field name="struct_id" ref="structure_uae_monthly"/>
+    </record>
+
+    <record id="salary_rule_advance_recovery" model="hr.salary.rule">
+        <field name="name">Salary Advance Recovery</field>
+        <field name="category_id" ref="hr_payroll.DED"/>
+        <field name="code">UAEADVANCE</field>
+        <field name="sequence">68</field>
+        <field name="condition_select">input</field>
+        <field name="condition_other_input_id" ref="input_advance_recovery"/>
+        <field name="amount_select">code</field>
+        <field name="amount_python_compute">result = -inputs['UAEADVANCE'].amount</field>
+        <field name="struct_id" ref="structure_uae_monthly"/>
+    </record>
+    <!-- Final settlement (payslip linked to an end of service). -->
+    <record id="salary_rule_gratuity" model="hr.salary.rule">
+        <field name="name">End of Service Gratuity</field>
+        <field name="category_id" ref="hr_payroll.ALW"/>
+        <field name="code">UAEGRAT</field>
+        <field name="sequence">20</field>
+        <field name="condition_select">python</field>
+        <field name="condition_python">result = payslip._uae_settlement_amount('gratuity') &gt; 0</field>
+        <field name="amount_select">code</field>
+        <field name="amount_python_compute">result = payslip._uae_settlement_amount('gratuity')</field>
+        <field name="struct_id" ref="structure_uae_monthly"/>
+    </record>
+
+    <record id="salary_rule_leave_pay" model="hr.salary.rule">
+        <field name="name">Annual Leave Balance Paid</field>
+        <field name="category_id" ref="hr_payroll.ALW"/>
+        <field name="code">UAELEAVEPAY</field>
+        <field name="sequence">70</field>
+        <field name="condition_select">python</field>
+        <field name="condition_python">result = payslip._uae_settlement_amount('leave') &gt; 0</field>
+        <field name="amount_select">code</field>
+        <field name="amount_python_compute">result = payslip._uae_settlement_amount('leave')</field>
+        <field name="struct_id" ref="structure_uae_monthly"/>
+    </record>
+
+    <record id="salary_rule_leave_deduction" model="hr.salary.rule">
+        <field name="name">Annual Leave Taken Not Earned</field>
+        <field name="category_id" ref="hr_payroll.DED"/>
+        <field name="code">UAELEAVEDED</field>
+        <field name="sequence">71</field>
+        <field name="condition_select">python</field>
+        <field name="condition_python">result = payslip._uae_settlement_amount('leave') &lt; 0</field>
+        <field name="amount_select">code</field>
+        <field name="amount_python_compute">result = payslip._uae_settlement_amount('leave')</field>
+        <field name="struct_id" ref="structure_uae_monthly"/>
+    </record>
+
+    <record id="salary_rule_notice_pay" model="hr.salary.rule">
+        <field name="name">Notice Pay in Lieu</field>
+        <field name="category_id" ref="hr_payroll.ALW"/>
+        <field name="code">UAENOTICEPAY</field>
+        <field name="sequence">72</field>
+        <field name="condition_select">python</field>
+        <field name="condition_python">result = payslip._uae_settlement_amount('notice') &gt; 0</field>
+        <field name="amount_select">code</field>
+        <field name="amount_python_compute">result = payslip._uae_settlement_amount('notice')</field>
+        <field name="struct_id" ref="structure_uae_monthly"/>
+    </record>
+
+    <record id="salary_rule_notice_deduction" model="hr.salary.rule">
+        <field name="name">Notice in Lieu Deduction</field>
+        <field name="category_id" ref="hr_payroll.DED"/>
+        <field name="code">UAENOTICEDED</field>
+        <field name="sequence">73</field>
+        <field name="condition_select">python</field>
+        <field name="condition_python">result = payslip._uae_settlement_amount('notice') &lt; 0</field>
+        <field name="amount_select">code</field>
+        <field name="amount_python_compute">result = payslip._uae_settlement_amount('notice')</field>
+        <field name="struct_id" ref="structure_uae_monthly"/>
+    </record>
+</odoo>

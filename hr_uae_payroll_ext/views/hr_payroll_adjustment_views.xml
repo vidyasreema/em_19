@@ -1,0 +1,191 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="hr_payroll_adjustment_view_list" model="ir.ui.view">
+        <field name="name">hr.payroll.adjustment.list</field>
+        <field name="model">hr.payroll.adjustment</field>
+        <field name="arch" type="xml">
+            <list string="Bonuses &amp; Deductions">
+                <field name="name"/>
+                <field name="employee_id" widget="many2one_avatar_employee"/>
+                <field name="type_id"/>
+                <field name="date"/>
+                <field name="reason" optional="hide"/>
+                <field name="currency_id" column_invisible="1"/>
+                <field name="amount" sum="Total"/>
+                <field name="payslip_id" optional="hide"/>
+                <field name="company_id" groups="base.group_multi_company" optional="hide"/>
+                <field name="state" widget="badge"
+                       decoration-info="state == 'to_approve'" decoration-success="state in ('approved', 'paid')"
+                       decoration-danger="state == 'refused'"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="hr_payroll_adjustment_view_form" model="ir.ui.view">
+        <field name="name">hr.payroll.adjustment.form</field>
+        <field name="model">hr.payroll.adjustment</field>
+        <field name="arch" type="xml">
+            <form string="Bonus / Deduction">
+                <header>
+                    <button name="action_submit" string="Submit" type="object" class="btn-primary" invisible="state != 'draft'"/>
+                    <button name="action_approve" string="Approve" type="object" class="btn-primary"
+                            invisible="state not in ('draft', 'to_approve')" groups="hr_payroll.group_hr_payroll_manager"/>
+                    <button name="action_refuse" string="Refuse" type="object"
+                            invisible="state not in ('to_approve', 'approved')" groups="hr_payroll.group_hr_payroll_manager"/>
+                    <button name="action_draft" string="Reset to Draft" type="object" invisible="state not in ('to_approve', 'approved', 'refused')"/>
+                    <field name="state" widget="statusbar" statusbar_visible="draft,to_approve,approved,paid"/>
+                </header>
+                <sheet>
+                    <div class="alert alert-warning" role="alert" invisible="not fine_warning">
+                        <field name="fine_warning"/>
+                    </div>
+                    <div class="oe_title">
+                        <h1><field name="name"/></h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="employee_id" widget="many2one_avatar_employee" readonly="state not in ('draft', 'to_approve')"/>
+                            <field name="type_id" options="{'no_quick_create': True}"
+                                   readonly="state not in ('draft', 'to_approve')"/>
+                            <field name="currency_id" invisible="1"/>
+                            <field name="amount" readonly="state not in ('draft', 'to_approve')"/>
+                        </group>
+                        <group>
+                            <field name="date" readonly="state not in ('draft', 'to_approve')"/>
+                            <field name="payslip_id" invisible="not payslip_id"/>
+                            <field name="company_id" groups="base.group_multi_company"/>
+                        </group>
+                    </group>
+                    <field name="reason" placeholder="Why? e.g. late 3 times in October" readonly="state not in ('draft', 'to_approve')"/>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <record id="hr_payroll_adjustment_view_search" model="ir.ui.view">
+        <field name="name">hr.payroll.adjustment.search</field>
+        <field name="model">hr.payroll.adjustment</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="employee_id"/>
+                <field name="type_id"/>
+                <field name="name"/>
+                <field name="reason"/>
+                <filter name="to_approve" string="To Approve" domain="[('state', '=', 'to_approve')]"/>
+                <filter name="approved" string="Approved, Not in a Payslip" domain="[('state', '=', 'approved')]"/>
+                <filter name="paid" string="In Payslip" domain="[('state', '=', 'paid')]"/>
+                <separator/>
+                <filter name="additions" string="Additions" domain="[('type_id.kind', '=', 'addition')]"/>
+                <filter name="deductions" string="Deductions" domain="[('type_id.kind', '=', 'deduction')]"/>
+                <separator/>
+                <filter name="filter_date" date="date"/>
+                <group>
+                    <filter name="group_employee" string="Employee" context="{'group_by': 'employee_id'}"/>
+                    <filter name="group_type" string="Type" context="{'group_by': 'type_id'}"/>
+                    <filter name="group_month" string="Month" context="{'group_by': 'date:month'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="hr_payroll_adjustment_action" model="ir.actions.act_window">
+        <field name="name">Bonuses &amp; Deductions</field>
+        <field name="res_model">hr.payroll.adjustment</field>
+        <field name="view_mode">list,form</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">Record a bonus, fine or other deduction</p>
+            <p>Once approved, it is added to the employee's next payslip.</p>
+        </field>
+    </record>
+
+    <!-- Types: each one is its own payslip line, accounting line and salary sheet column -->
+    <record id="hr_payroll_adjustment_type_view_list" model="ir.ui.view">
+        <field name="name">hr.payroll.adjustment.type.list</field>
+        <field name="model">hr.payroll.adjustment.type</field>
+        <field name="arch" type="xml">
+            <list string="Bonus &amp; Deduction Types">
+                <field name="sequence" widget="handle"/>
+                <field name="name"/>
+                <field name="kind" widget="badge" decoration-success="kind == 'addition'" decoration-danger="kind == 'deduction'"/>
+                <field name="code" optional="show"/>
+                <field name="is_fine" optional="hide"/>
+                <field name="rule_id" optional="hide"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="hr_payroll_adjustment_type_view_form" model="ir.ui.view">
+        <field name="name">hr.payroll.adjustment.type.form</field>
+        <field name="model">hr.payroll.adjustment.type</field>
+        <field name="arch" type="xml">
+            <form string="Bonus / Deduction Type">
+                <sheet>
+                    <div class="oe_button_box" name="button_box">
+                        <button name="action_open_rule" type="object" class="oe_stat_button" icon="fa-file-text-o"
+                                invisible="not rule_id" string="Payslip Line"
+                                help="Its salary rule: set the accounting accounts here."/>
+                    </div>
+                    <widget name="web_ribbon" title="Archived" bg_color="text-bg-danger" invisible="active"/>
+                    <div class="oe_title">
+                        <label for="name"/>
+                        <h1><field name="name" placeholder="e.g. Commission"/></h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="kind" widget="radio"/>
+                            <field name="is_fine" invisible="kind != 'deduction'"/>
+                        </group>
+                        <group>
+                            <field name="code" readonly="id" placeholder="Made from the name"/>
+                            <field name="rule_id" invisible="not rule_id"/>
+                            <field name="active" invisible="1"/>
+                        </group>
+                    </group>
+                    <p class="text-muted">
+                        Each type is its own line on the payslip, in the payroll accounting entry and in the salary sheet.
+                        Its line starts with the accounts of the Bonus line (additions) or of the Other Deduction line
+                        (deductions); open <i>Payslip Line</i> to book it to another account.
+                    </p>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="hr_payroll_adjustment_type_view_search" model="ir.ui.view">
+        <field name="name">hr.payroll.adjustment.type.search</field>
+        <field name="model">hr.payroll.adjustment.type</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="name"/>
+                <filter name="additions" string="Additions" domain="[('kind', '=', 'addition')]"/>
+                <filter name="deductions" string="Deductions" domain="[('kind', '=', 'deduction')]"/>
+                <separator/>
+                <filter name="archived" string="Archived" domain="[('active', '=', False)]"/>
+            </search>
+        </field>
+    </record>
+
+    <record id="hr_payroll_adjustment_type_action" model="ir.actions.act_window">
+        <field name="name">Bonus &amp; Deduction Types</field>
+        <field name="res_model">hr.payroll.adjustment.type</field>
+        <field name="view_mode">list,form</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">Add a kind of bonus or deduction</p>
+            <p>For example Commission, Arrear salary or Overtime: each gets its own payslip line.</p>
+        </field>
+    </record>
+
+    <menuitem id="menu_payroll_adjustment_type"
+              action="hr_payroll_adjustment_type_action"
+              parent="hr_payroll.menu_hr_salary_configuration"
+              groups="hr_payroll.group_hr_payroll_manager"
+              sequence="40"/>
+
+    <menuitem id="menu_payroll_adjustment"
+              name="Bonuses &amp; Deductions"
+              action="hr_payroll_adjustment_action"
+              parent="hr_payroll.menu_hr_payroll_employees"
+              groups="hr_payroll.group_hr_payroll_user"
+              sequence="31"/>
+</odoo>

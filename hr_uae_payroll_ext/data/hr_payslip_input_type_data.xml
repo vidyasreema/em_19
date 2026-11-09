@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Filled from approved fines and running loans when the payslip is computed. -->
+    <record id="input_fine" model="hr.payslip.input.type">
+        <field name="name">Fine</field>
+        <field name="code">UAEFINE</field>
+        <field name="country_id" ref="base.ae"/>
+        <field name="struct_ids" eval="[Command.link(ref('structure_uae_monthly'))]"/>
+    </record>
+
+    <record id="input_loan_recovery" model="hr.payslip.input.type">
+        <field name="name">Loan Recovery</field>
+        <field name="code">UAELOAN</field>
+        <field name="country_id" ref="base.ae"/>
+        <field name="struct_ids" eval="[Command.link(ref('structure_uae_monthly'))]"/>
+    </record>
+
+    <record id="input_advance_recovery" model="hr.payslip.input.type">
+        <field name="name">Salary Advance Recovery</field>
+        <field name="code">UAEADVANCE</field>
+        <field name="country_id" ref="base.ae"/>
+        <field name="struct_ids" eval="[Command.link(ref('structure_uae_monthly'))]"/>
+    </record>
+</odoo>

@@ -1,0 +1,147 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- UAE time off types (Federal Decree-Law 33/2021). noupdate: HR can adjust them.
+     Annual, sick and unpaid leave can be taken in half days (morning or afternoon). -->
+<odoo noupdate="1">
+    <record id="leave_type_annual" model="hr.leave.type">
+        <field name="name">Annual Leave</field>
+        <field name="sequence">1</field>
+        <field name="requires_allocation" eval="True"/>
+        <field name="leave_validation_type">hr</field>
+        <field name="allocation_validation_type">hr</field>
+        <field name="request_unit">half_day</field>
+        <field name="work_entry_type_id" ref="hr_work_entry.work_entry_type_legal_leave"/>
+        <field name="uae_count_calendar_days" eval="True"/>
+        <field name="uae_days_per_contract">60</field>
+        <field name="l10n_ae_is_annual_leave" eval="True"/>
+        <field name="ep_portal_available" eval="True"/>
+        <field name="company_id" eval="False"/>
+        <field name="country_id" ref="base.ae"/>
+        <field name="color">4</field>
+    </record>
+
+    <!-- Sick leave: 90 days a year, 15 at full pay, 30 at half pay, 45 unpaid. -->
+    <record id="leave_type_sick_full" model="hr.leave.type">
+        <field name="name">Sick Leave (Full Pay)</field>
+        <field name="sequence">2</field>
+        <field name="requires_allocation" eval="True"/>
+        <field name="leave_validation_type">hr</field>
+        <field name="allocation_validation_type">hr</field>
+        <field name="request_unit">half_day</field>
+        <field name="support_document" eval="True"/>
+        <field name="work_entry_type_id" ref="hr_work_entry.work_entry_type_sick_leave"/>
+        <field name="uae_count_calendar_days" eval="True"/>
+        <field name="ep_portal_available" eval="True"/>
+        <field name="company_id" eval="False"/>
+        <field name="country_id" ref="base.ae"/>
+        <field name="color">2</field>
+    </record>
+
+    <record id="leave_type_sick_half" model="hr.leave.type">
+        <field name="name">Sick Leave (Half Pay)</field>
+        <field name="sequence">3</field>
+        <field name="requires_allocation" eval="True"/>
+        <field name="leave_validation_type">hr</field>
+        <field name="allocation_validation_type">hr</field>
+        <field name="request_unit">half_day</field>
+        <field name="support_document" eval="True"/>
+        <field name="work_entry_type_id" ref="hr_work_entry.uae_sick_leave_50_entry_type"/>
+        <field name="uae_count_calendar_days" eval="True"/>
+        <field name="ep_portal_available" eval="True"/>
+        <field name="company_id" eval="False"/>
+        <field name="country_id" ref="base.ae"/>
+        <field name="color">2</field>
+    </record>
+
+    <record id="leave_type_sick_unpaid" model="hr.leave.type">
+        <field name="name">Sick Leave (Unpaid)</field>
+        <field name="sequence">4</field>
+        <field name="requires_allocation" eval="True"/>
+        <field name="leave_validation_type">hr</field>
+        <field name="allocation_validation_type">hr</field>
+        <field name="request_unit">half_day</field>
+        <field name="support_document" eval="True"/>
+        <field name="unpaid" eval="True"/>
+        <field name="work_entry_type_id" ref="hr_work_entry.uae_sick_leave_0_entry_type"/>
+        <field name="uae_count_calendar_days" eval="True"/>
+        <field name="ep_portal_available" eval="True"/>
+        <field name="company_id" eval="False"/>
+        <field name="country_id" ref="base.ae"/>
+        <field name="color">2</field>
+    </record>
+
+    <record id="leave_type_unpaid" model="hr.leave.type">
+        <field name="name">Unpaid Leave</field>
+        <field name="sequence">5</field>
+        <field name="requires_allocation" eval="False"/>
+        <field name="leave_validation_type">hr</field>
+        <field name="request_unit">half_day</field>
+        <field name="unpaid" eval="True"/>
+        <field name="work_entry_type_id" ref="hr_work_entry.work_entry_type_unpaid_leave"/>
+        <field name="uae_count_calendar_days" eval="True"/>
+        <field name="ep_portal_available" eval="True"/>
+        <field name="company_id" eval="False"/>
+        <field name="country_id" ref="base.ae"/>
+        <field name="color">1</field>
+    </record>
+
+    <!-- Maternity: 60 days, 45 at full pay and 15 at half pay. -->
+    <record id="leave_type_maternity_full" model="hr.leave.type">
+        <field name="name">Maternity Leave (Full Pay)</field>
+        <field name="sequence">6</field>
+        <field name="requires_allocation" eval="False"/>
+        <field name="leave_validation_type">hr</field>
+        <field name="request_unit">day</field>
+        <field name="support_document" eval="True"/>
+        <field name="work_entry_type_id" ref="hr_work_entry.work_entry_type_leave"/>
+        <field name="uae_count_calendar_days" eval="True"/>
+        <field name="ep_portal_available" eval="True"/>
+        <field name="company_id" eval="False"/>
+        <field name="country_id" ref="base.ae"/>
+        <field name="color">9</field>
+    </record>
+
+    <record id="leave_type_maternity_half" model="hr.leave.type">
+        <field name="name">Maternity Leave (Half Pay)</field>
+        <field name="sequence">7</field>
+        <field name="requires_allocation" eval="False"/>
+        <field name="leave_validation_type">hr</field>
+        <field name="request_unit">day</field>
+        <field name="support_document" eval="True"/>
+        <field name="work_entry_type_id" ref="work_entry_type_half_pay"/>
+        <field name="uae_count_calendar_days" eval="True"/>
+        <field name="ep_portal_available" eval="True"/>
+        <field name="company_id" eval="False"/>
+        <field name="country_id" ref="base.ae"/>
+        <field name="color">9</field>
+    </record>
+
+    <!-- Parental: 5 working days within 6 months of the birth. -->
+    <record id="leave_type_parental" model="hr.leave.type">
+        <field name="name">Parental Leave</field>
+        <field name="sequence">8</field>
+        <field name="requires_allocation" eval="False"/>
+        <field name="leave_validation_type">hr</field>
+        <field name="request_unit">day</field>
+        <field name="support_document" eval="True"/>
+        <field name="work_entry_type_id" ref="hr_work_entry.work_entry_type_leave"/>
+        <field name="ep_portal_available" eval="True"/>
+        <field name="company_id" eval="False"/>
+        <field name="country_id" ref="base.ae"/>
+        <field name="color">9</field>
+    </record>
+
+    <!-- Bereavement: 5 days for a spouse, 3 days for a parent, child, sibling or grandparent. -->
+    <record id="leave_type_bereavement" model="hr.leave.type">
+        <field name="name">Bereavement Leave</field>
+        <field name="sequence">9</field>
+        <field name="requires_allocation" eval="False"/>
+        <field name="leave_validation_type">hr</field>
+        <field name="request_unit">day</field>
+        <field name="work_entry_type_id" ref="hr_work_entry.work_entry_type_leave"/>
+        <field name="uae_count_calendar_days" eval="True"/>
+        <field name="ep_portal_available" eval="True"/>
+        <field name="company_id" eval="False"/>
+        <field name="country_id" ref="base.ae"/>
+        <field name="color">10</field>
+    </record>
+</odoo>

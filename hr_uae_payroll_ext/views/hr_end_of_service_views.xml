@@ -1,0 +1,159 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="hr_end_of_service_view_list" model="ir.ui.view">
+        <field name="name">hr.end.of.service.list</field>
+        <field name="model">hr.end.of.service</field>
+        <field name="arch" type="xml">
+            <list string="End of Service">
+                <field name="name"/>
+                <field name="employee_id" widget="many2one_avatar_employee"/>
+                <field name="reason"/>
+                <field name="notice_date" optional="show"/>
+                <field name="last_working_day"/>
+                <field name="currency_id" column_invisible="1"/>
+                <field name="gratuity_amount" optional="show"/>
+                <field name="company_id" groups="base.group_multi_company" optional="hide"/>
+                <field name="state" widget="badge"
+                       decoration-info="state == 'to_approve'" decoration-warning="state in ('approved', 'settlement')"
+                       decoration-success="state == 'done'" decoration-muted="state == 'cancel'"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="hr_end_of_service_view_form" model="ir.ui.view">
+        <field name="name">hr.end.of.service.form</field>
+        <field name="model">hr.end.of.service</field>
+        <field name="arch" type="xml">
+            <form string="End of Service">
+                <header>
+                    <button name="action_submit" string="Submit" type="object" class="btn-primary" invisible="state != 'draft'"/>
+                    <button name="action_approve" string="Approve" type="object" class="btn-primary"
+                            invisible="state not in ('draft', 'to_approve')" groups="hr_payroll.group_hr_payroll_manager"/>
+                    <button name="action_create_settlement" string="Create Final Settlement" type="object" class="btn-primary"
+                            invisible="state != 'approved'"/>
+                    <button name="action_done" string="Mark as Done" type="object" class="btn-primary"
+                            invisible="state != 'settlement' or payslip_state not in ('validated', 'paid')"
+                            groups="hr_payroll.group_hr_payroll_manager"/>
+                    <button name="action_print" string="Print Settlement" type="object" invisible="state == 'cancel'"/>
+                    <button name="action_cancel" string="Cancel" type="object" invisible="state in ('done', 'cancel')"/>
+                    <button name="action_draft" string="Reset to Draft" type="object" invisible="state != 'cancel'"/>
+                    <field name="state" widget="statusbar" statusbar_visible="draft,to_approve,approved,settlement,done"/>
+                </header>
+                <sheet>
+                    <div class="oe_button_box" name="button_box">
+                        <button name="action_open_payslip" type="object" class="oe_stat_button" icon="fa-money"
+                                invisible="not payslip_id">
+                            <div class="o_stat_info">
+                                <span class="o_stat_text">Final Settlement</span>
+                                <span class="o_stat_value"><field name="payslip_state"/></span>
+                            </div>
+                        </button>
+                    </div>
+                    <div class="alert alert-info" role="alert" invisible="state != 'approved'">
+                        The contract now ends on the last working day. Click <b>Create Final Settlement</b>
+                        to prepare the payslip of the last month.
+                    </div>
+                    <div class="alert alert-info" role="alert" invisible="state != 'settlement'">
+                        Check and validate the final settlement payslip, then click <b>Mark as Done</b>
+                        to archive the employee.
+                    </div>
+                    <div class="oe_title">
+                        <h1><field name="name"/></h1>
+                    </div>
+                    <group>
+                        <group string="Employee">
+                            <field name="employee_id" widget="many2one_avatar_employee" readonly="state not in ('draft', 'to_approve')"/>
+                            <field name="reason" readonly="state not in ('draft', 'to_approve')"/>
+                            <field name="company_id" groups="base.group_multi_company"/>
+                            <field name="payslip_id" invisible="1"/>
+                        </group>
+                        <group string="Notice">
+                            <field name="notice_date" readonly="state not in ('draft', 'to_approve')"/>
+                            <label for="notice_days"/>
+                            <div class="o_row">
+                                <field name="notice_days" readonly="state not in ('draft', 'to_approve')"/> <span>days</span>
+                            </div>
+                            <field name="last_working_day" readonly="state not in ('draft', 'to_approve')"/>
+                            <field name="notice_pay" readonly="state not in ('draft', 'to_approve', 'approved')"/>
+                            <field name="notice_pay_days" invisible="notice_pay == 'none'"
+                                   readonly="state not in ('draft', 'to_approve', 'approved')"/>
+                        </group>
+                    </group>
+                    <group string="Estimate on the Last Working Day">
+                        <group>
+                            <field name="currency_id" invisible="1"/>
+                            <field name="service_years"/>
+                            <field name="unpaid_days"/>
+                            <field name="gratuity_amount"/>
+                        </group>
+                        <group>
+                            <field name="leave_days"/>
+                            <field name="leave_amount"/>
+                            <field name="notice_amount" invisible="notice_pay == 'none'"/>
+                            <field name="loan_amount"/>
+                            <field name="net_amount" class="fw-bold" invisible="not payslip_id"/>
+                        </group>
+                    </group>
+                    <field name="description" placeholder="Details, e.g. resignation letter received on..."/>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <record id="hr_end_of_service_view_search" model="ir.ui.view">
+        <field name="name">hr.end.of.service.search</field>
+        <field name="model">hr.end.of.service</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="employee_id"/>
+                <field name="name"/>
+                <filter name="to_approve" string="To Approve" domain="[('state', '=', 'to_approve')]"/>
+                <filter name="in_progress" string="In Progress" domain="[('state', 'in', ('approved', 'settlement'))]"/>
+                <filter name="done" string="Done" domain="[('state', '=', 'done')]"/>
+                <separator/>
+                <filter name="filter_last_working_day" date="last_working_day"/>
+                <group>
+                    <filter name="group_reason" string="Reason" context="{'group_by': 'reason'}"/>
+                    <filter name="group_state" string="Status" context="{'group_by': 'state'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="hr_end_of_service_action" model="ir.actions.act_window">
+        <field name="name">End of Service</field>
+        <field name="res_model">hr.end.of.service</field>
+        <field name="view_mode">list,form</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">Record a resignation or termination</p>
+            <p>After approval, Odoo prepares the final settlement: last salary, gratuity,
+               annual leave balance, notice pay, minus loans and deductions.</p>
+        </field>
+    </record>
+
+    <menuitem id="menu_end_of_service"
+              name="End of Service"
+              action="hr_end_of_service_action"
+              parent="hr_payroll.menu_hr_payroll_employees"
+              groups="hr_payroll.group_hr_payroll_user"
+              sequence="33"/>
+
+    <!-- Employee form, Payroll tab: unpaid days taken before Odoo (gratuity). -->
+    <record id="hr_employee_view_form" model="ir.ui.view">
+        <field name="name">hr.employee.form.uae.payroll.ext</field>
+        <field name="model">hr.employee</field>
+        <field name="inherit_id" ref="hr_payroll.payroll_hr_employee_view_form"/>
+        <field name="arch" type="xml">
+            <group name="payroll_group" position="inside">
+                <group string="End of Service" invisible="country_code != 'AE'">
+                    <label for="uae_unpaid_days_before_odoo"/>
+                    <div class="o_row">
+                        <field name="uae_unpaid_days_before_odoo" class="o_hr_narrow_field"/>
+                        <span>days</span>
+                    </div>
+                </group>
+            </group>
+        </field>
+    </record>
+</odoo>
