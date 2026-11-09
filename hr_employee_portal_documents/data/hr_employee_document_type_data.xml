@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="1">
+    <!-- Starter list of documents. The employee fields they fill are linked on install
+         (see DEFAULT_FIELDS); HR can change everything in Employees > Configuration. -->
+    <record id="doc_type_passport" model="hr.employee.document.type">
+        <field name="name">Passport</field>
+        <field name="sequence">10</field>
+        <field name="description">The photo page, in colour</field>
+        <field name="required" eval="True"/>
+        <field name="number_mode">required</field>
+        <field name="expiry_mode">required</field>
+    </record>
+    <record id="doc_type_visa" model="hr.employee.document.type">
+        <field name="name">Visa / residence</field>
+        <field name="sequence">20</field>
+        <field name="description">Residence visa page or e-visa</field>
+        <field name="required" eval="True"/>
+        <field name="number_mode">required</field>
+        <field name="expiry_mode">required</field>
+    </record>
+    <record id="doc_type_emirates_id" model="hr.employee.document.type">
+        <field name="name">Emirates ID</field>
+        <field name="sequence">30</field>
+        <field name="description">Front and back</field>
+        <field name="required" eval="True"/>
+        <field name="number_mode">required</field>
+        <field name="expiry_mode">required</field>
+    </record>
+    <record id="doc_type_work_permit" model="hr.employee.document.type">
+        <field name="name">Work permit / labour card</field>
+        <field name="sequence">40</field>
+        <field name="required" eval="True"/>
+        <field name="number_mode">required</field>
+        <field name="expiry_mode">required</field>
+    </record>
+    <record id="doc_type_health_insurance" model="hr.employee.document.type">
+        <field name="name">Health insurance card</field>
+        <field name="sequence">50</field>
+        <field name="number_mode">optional</field>
+        <field name="expiry_mode">optional</field>
+    </record>
+    <record id="doc_type_photo" model="hr.employee.document.type">
+        <field name="name">Personal photo</field>
+        <field name="sequence">60</field>
+        <field name="description">A recent passport-size photo on a white background</field>
+        <field name="required" eval="True"/>
+    </record>
+    <record id="doc_type_education" model="hr.employee.document.type">
+        <field name="name">Educational certificates</field>
+        <field name="sequence">70</field>
+        <field name="description">Your highest degree or diploma</field>
+    </record>
+    <record id="doc_type_other" model="hr.employee.document.type">
+        <field name="name">Other document</field>
+        <field name="sequence">80</field>
+        <field name="description">Anything else HR asked you for</field>
+    </record>
+</odoo>

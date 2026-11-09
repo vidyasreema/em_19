@@ -1,0 +1,203 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Icons -->
+    <template id="ep_icon" inherit_id="hr_employee_portal.ep_icon" name="Employee portal: document icons">
+        <xpath expr="//t[@t-elif=&quot;icon == 'sparkle'&quot;]" position="after">
+            <t t-elif="icon == 'upload'"><path d="M12 16V4M7 9l5-5 5 5"/><path d="M4 16v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3"/></t>
+        </xpath>
+    </template>
+
+    <!-- Navigation -->
+    <template id="ep_shell" inherit_id="hr_employee_portal.ep_shell" name="Employee portal: documents navigation">
+        <xpath expr="//nav[hasclass('ep-nav')]/t[@t-if='ep_employee']" position="inside">
+            <t t-call="hr_employee_portal.ep_nav_link"><t t-set="href" t-value="'/my/employee/documents'"/><t t-set="label">Documents</t><t t-set="icon" t-value="'idcard'"/><t t-set="active" t-value="page_name == 'ep_documents'"/></t>
+        </xpath>
+    </template>
+
+    <!-- Profile: what is still to upload, and renewals through the portal -->
+    <template id="ep_profile" inherit_id="hr_employee_portal.ep_profile" name="Employee portal: documents to upload">
+        <xpath expr="//div[hasclass('ep-banner-bad')]//t[@t-if='not admin_view']" position="replace">
+            <t t-if="not admin_view">Please <a href="/my/employee/documents" class="ep-link">upload the renewed one</a>.</t>
+        </xpath>
+        <xpath expr="//div[hasclass('ep-banner-wait')]/span" position="inside">
+            <t t-if="not admin_view"> <a href="/my/employee/documents" class="ep-link">Upload the renewed one</a>.</t>
+        </xpath>
+        <xpath expr="//div[hasclass('ep-details')]" position="before">
+            <div t-if="documents_to_upload and not admin_view" class="ep-banner ep-banner-wait ep-pd-todo ep-reveal" role="status">
+                <t t-call="hr_employee_portal.ep_icon"><t t-set="icon" t-value="'upload'"/></t>
+                <span class="ep-grow">HR still needs: <strong t-out="', '.join(documents_to_upload)"/>.</span>
+                <a href="/my/employee/documents" class="ep-btn ep-btn-primary ep-btn-sm">Upload documents</a>
+            </div>
+        </xpath>
+        <xpath expr="//div[hasclass('ep-sec-docs')]" position="replace">
+            <div t-if="document_rows" class="ep-sec-docs">
+                <ul class="ep-wallet">
+                    <t t-foreach="document_rows" t-as="r" t-call="hr_employee_portal.ep_wallet_card">
+                        <t t-set="name" t-value="r['type'].name"/>
+                        <t t-set="tone" t-value="{'ok': 'valid', 'wait': 'soon'}.get(r['kind'], 'expired')"/>
+                        <t t-set="label" t-value="r['label']"/>
+                        <t t-set="body" t-value="('HR: %s' % r['note']) if r['note'] else r['sub']"/>
+                    </t>
+                </ul>
+                <div t-if="not admin_view" class="ep-sec-actions">
+                    <a href="/my/employee/documents" class="ep-btn ep-btn-soft ep-btn-sm">
+                        <t t-call="hr_employee_portal.ep_icon"><t t-set="icon" t-value="'upload'"/></t>
+                        Upload or renew
+                    </a>
+                </div>
+            </div>
+            <t t-else="">$0</t>
+        </xpath>
+    </template>
+
+    <!-- Documents page -->
+    <template id="ep_documents" name="Employee portal: documents">
+        <t t-call="hr_employee_portal.ep_shell">
+            <div class="ep-page-head ep-reveal">
+                <div>
+                    <p class="ep-eyebrow">Your papers for HR</p>
+                    <h1 class="ep-title">Documents</h1>
+                </div>
+            </div>
+
+            <t t-call="hr_employee_portal.ep_flash"/>
+
+            <section class="ep-surface ep-surface-lg ep-reveal">
+                <div class="ep-pd-progress">
+                    <h2 class="ep-h2 ep-h2-lg">Checklist</h2>
+                    <p t-if="required_total" class="ep-muted">
+                        <strong t-out="required_done"/> of <t t-out="required_total"/> required documents sent.
+                        HR checks each one before it goes into your profile.
+                    </p>
+                    <span t-if="required_total" class="ep-pd-bar" aria-hidden="true">
+                        <span t-attf-style="width: #{int(100 * required_done / required_total)}%"/>
+                    </span>
+                </div>
+                <ul class="ep-rows ep-pd-list">
+                    <li t-foreach="document_rows" t-as="r" class="ep-row ep-row-tall ep-pd-row">
+                        <span t-attf-class="ep-pd-icon ep-pd-icon-#{r['kind']}" aria-hidden="true">
+                            <t t-call="hr_employee_portal.ep_icon"><t t-set="icon" t-value="'check' if r['kind'] == 'ok' else 'idcard'"/></t>
+                        </span>
+                        <div class="ep-row-text ep-grow">
+                            <p class="ep-row-title">
+                                <t t-out="r['type'].name"/>
+                                <span t-if="r['type'].required" class="ep-pd-required">Required</span>
+                            </p>
+                            <p t-if="r['sub']" class="ep-row-sub" t-out="r['sub']"/>
+                            <p t-if="r['note']" class="ep-pd-note"><strong>HR:</strong> <t t-out="r['note']"/></p>
+                            <ul t-if="r['files']" class="ep-pd-files">
+                                <li t-foreach="r['files']" t-as="f">
+                                    <a t-attf-href="/my/employee/documents/file/#{f['id']}" class="ep-pd-file">
+                                        <t t-call="hr_employee_portal.ep_icon"><t t-set="icon" t-value="'clip'"/></t>
+                                        <span t-out="f['name']"/>
+                                    </a>
+                                </li>
+                            </ul>
+                            <details class="ep-pd-upload" t-att-open="r['open'] or None">
+                                <summary class="ep-btn ep-btn-soft ep-btn-sm">
+                                    <t t-call="hr_employee_portal.ep_icon"><t t-set="icon" t-value="'upload'"/></t>
+                                    <t t-out="r['action']"/>
+                                </summary>
+                                <form t-attf-action="/my/employee/documents/#{r['type'].id}/upload" method="post"
+                                      enctype="multipart/form-data" class="ep-form ep-pd-form">
+                                    <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                                    <div t-if="r['type'].number_mode != 'no' or r['type'].expiry_mode != 'no'"
+                                         t-att-class="'ep-form-row' if r['type'].number_mode != 'no' and r['type'].expiry_mode != 'no' else None">
+                                        <div t-if="r['type'].number_mode != 'no'" class="ep-form-field">
+                                            <label t-attf-for="ep_pd_number_#{r['type'].id}" class="ep-label">Document number <span t-if="r['type'].number_mode == 'optional'" class="ep-muted">(optional)</span></label>
+                                            <input t-attf-id="ep_pd_number_#{r['type'].id}" type="text" name="number" class="ep-input"
+                                                   maxlength="64" autocomplete="off"
+                                                   t-att-required="r['type'].number_mode == 'required' or None"/>
+                                        </div>
+                                        <div t-if="r['type'].expiry_mode != 'no'" class="ep-form-field">
+                                            <label t-attf-for="ep_pd_expiry_#{r['type'].id}" class="ep-label">Expiry date <span t-if="r['type'].expiry_mode == 'optional'" class="ep-muted">(optional)</span></label>
+                                            <input t-attf-id="ep_pd_expiry_#{r['type'].id}" type="date" name="expiry" class="ep-input"
+                                                   t-att-min="today" t-att-required="r['type'].expiry_mode == 'required' or None"/>
+                                        </div>
+                                    </div>
+                                    <div class="ep-form-field">
+                                        <label t-attf-for="ep_pd_files_#{r['type'].id}" class="ep-label">File</label>
+                                        <label class="ep-drop" t-attf-for="ep_pd_files_#{r['type'].id}">
+                                            <span class="ep-drop-icon"><t t-call="hr_employee_portal.ep_icon"><t t-set="icon" t-value="'clip'"/></t></span>
+                                            <span class="ep-drop-text" data-ep-files="">Choose files</span>
+                                        </label>
+                                        <input t-attf-id="ep_pd_files_#{r['type'].id}" type="file" name="attachments" class="ep-file"
+                                               multiple="multiple" required="required"
+                                               accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png"
+                                               t-attf-aria-describedby="ep_pd_hint_#{r['type'].id}"/>
+                                        <p t-attf-id="ep_pd_hint_#{r['type'].id}" class="ep-hint ep-hint-flush">
+                                            PDF, JPG or PNG, up to <t t-out="attachment_max_count"/> files of <t t-out="attachment_max_mb"/> MB each.
+                                            A phone photo is fine if it is sharp and complete.
+                                        </p>
+                                    </div>
+                                    <div class="ep-form-field">
+                                        <label t-attf-for="ep_pd_note_#{r['type'].id}" class="ep-label">Note for HR <span class="ep-muted">(optional)</span></label>
+                                        <input t-attf-id="ep_pd_note_#{r['type'].id}" type="text" name="note" class="ep-input" maxlength="200"/>
+                                    </div>
+                                    <button type="submit" class="ep-btn ep-btn-primary">
+                                        Send to HR
+                                        <t t-call="hr_employee_portal.ep_icon"><t t-set="icon" t-value="'arrow'"/></t>
+                                    </button>
+                                </form>
+                            </details>
+                        </div>
+                        <div class="ep-row-end">
+                            <t t-call="hr_employee_portal.ep_pill">
+                                <t t-set="kind" t-value="r['kind']"/>
+                                <t t-set="label" t-value="r['label']"/>
+                            </t>
+                        </div>
+                    </li>
+                </ul>
+            </section>
+        </t>
+    </template>
+
+    <!-- HR dashboard: documents to check -->
+    <template id="ep_admin_dashboard" inherit_id="hr_employee_portal.ep_admin_dashboard" name="Employee portal: documents to check">
+        <xpath expr="//div[hasclass('ep-dash-main')]" position="after">
+            <section t-if="document_reviews is not None" class="ep-surface ep-surface-lg ep-panel ep-reveal">
+                <div class="ep-panel-head">
+                    <h2 class="ep-h2 ep-h2-lg">Documents to check</h2>
+                    <span t-if="document_reviews" class="ep-count" t-out="len(document_reviews)"/>
+                </div>
+                <ul t-if="document_reviews" class="ep-rows">
+                    <li t-foreach="document_reviews" t-as="d" class="ep-row ep-row-tall ep-pd-review">
+                        <span class="ep-avatar-round" aria-hidden="true" t-out="d['initials']"/>
+                        <div class="ep-row-text ep-grow">
+                            <a class="ep-row-title ep-plain-link" t-attf-href="/my/hr/employee/#{d['employee'].id}" t-out="d['employee'].name"/>
+                            <p class="ep-pd-review-title" t-out="d['title']"/>
+                            <p class="ep-row-sub" t-out="d['sub']"/>
+                            <p t-if="d['note']" class="ep-pd-review-note" t-out="d['note']"/>
+                            <ul t-if="d['files']" class="ep-pd-files">
+                                <li t-foreach="d['files']" t-as="f">
+                                    <a t-attf-href="/my/employee/documents/file/#{f['id']}" class="ep-pd-file">
+                                        <t t-call="hr_employee_portal.ep_icon"><t t-set="icon" t-value="'clip'"/></t>
+                                        <span t-out="f['name']"/>
+                                    </a>
+                                </li>
+                            </ul>
+                            <form t-if="d['can_decide']" method="post" t-attf-action="/my/hr/document/#{d['id']}/verify"
+                                  class="ep-pd-review-form">
+                                <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                                <label t-attf-for="ep_pd_review_note_#{d['id']}" class="visually-hidden">Note to the employee</label>
+                                <textarea t-attf-id="ep_pd_review_note_#{d['id']}" name="note" rows="2" class="ep-input ep-textarea"
+                                          placeholder="Note to the employee (needed to send it back)"/>
+                                <div class="ep-decide">
+                                    <button type="submit" class="ep-btn ep-btn-soft ep-btn-sm"
+                                            t-attf-formaction="/my/hr/document/#{d['id']}/reject"
+                                            onclick="return confirm('Send this document back to the employee?')">Send back</button>
+                                    <button type="submit" class="ep-btn ep-btn-primary ep-btn-sm">Verify</button>
+                                </div>
+                            </form>
+                            <p t-else="" class="ep-row-sub">Your own document</p>
+                        </div>
+                    </li>
+                </ul>
+                <t t-else="">
+                    <t t-call="hr_employee_portal.ep_empty_state"><t t-set="message">No documents are waiting.</t></t>
+                </t>
+            </section>
+        </xpath>
+    </template>
+</odoo>

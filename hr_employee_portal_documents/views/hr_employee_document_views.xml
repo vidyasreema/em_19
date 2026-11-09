@@ -1,0 +1,166 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Uploads -->
+    <record id="hr_employee_document_view_list" model="ir.ui.view">
+        <field name="name">hr.employee.document.list</field>
+        <field name="model">hr.employee.document</field>
+        <field name="arch" type="xml">
+            <list decoration-info="state == 'pending'" decoration-muted="state == 'cancel'" decoration-danger="state == 'rejected'">
+                <field name="create_date" string="Uploaded on" widget="date"/>
+                <field name="employee_id" widget="many2one_avatar_employee"/>
+                <field name="type_id"/>
+                <field name="document_number" optional="show"/>
+                <field name="expiry_date" optional="show"/>
+                <field name="checked_by_id" optional="hide"/>
+                <field name="company_id" groups="base.group_multi_company" optional="hide"/>
+                <field name="state" widget="badge" decoration-info="state == 'pending'"
+                       decoration-success="state == 'verified'" decoration-danger="state == 'rejected'"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="hr_employee_document_view_form" model="ir.ui.view">
+        <field name="name">hr.employee.document.form</field>
+        <field name="model">hr.employee.document</field>
+        <field name="arch" type="xml">
+            <form>
+                <header>
+                    <button name="action_verify" type="object" string="Verify" class="btn-primary" invisible="state != 'pending'"
+                            help="Copy the file, number and expiry date into the employee's profile"/>
+                    <button name="action_reject" type="object" string="Reject" invisible="state != 'pending'"
+                            help="Send the note back to the employee, who uploads it again"/>
+                    <field name="state" widget="statusbar" statusbar_visible="pending,verified"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <h1><field name="type_id" readonly="state != 'pending'" options="{'no_create': True}"/></h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="employee_id" readonly="state != 'pending'"/>
+                            <field name="document_number" readonly="state != 'pending'"/>
+                            <field name="expiry_date" readonly="state != 'pending'"/>
+                            <field name="employee_note" readonly="1" invisible="not employee_note"/>
+                        </group>
+                        <group>
+                            <field name="create_date" string="Uploaded on" invisible="not id"/>
+                            <field name="checked_by_id" invisible="not checked_by_id"/>
+                            <field name="checked_date" invisible="not checked_date"/>
+                            <field name="company_id" groups="base.group_multi_company"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Files" name="files">
+                            <field name="attachment_ids" widget="many2many_binary" readonly="state != 'pending'"/>
+                        </page>
+                        <page string="Note to the employee" name="hr_note">
+                            <field name="hr_note" placeholder="Shown to the employee on their portal, e.g. 'The copy is blurred, please scan it again'"/>
+                        </page>
+                    </notebook>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <record id="hr_employee_document_view_search" model="ir.ui.view">
+        <field name="name">hr.employee.document.search</field>
+        <field name="model">hr.employee.document</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="employee_id"/>
+                <field name="type_id"/>
+                <field name="document_number"/>
+                <filter name="to_check" string="To check" domain="[('state', '=', 'pending')]"/>
+                <filter name="verified" string="Verified" domain="[('state', '=', 'verified')]"/>
+                <filter name="rejected" string="Rejected" domain="[('state', '=', 'rejected')]"/>
+                <separator/>
+                <filter name="group_employee" string="Employee" context="{'group_by': 'employee_id'}"/>
+                <filter name="group_type" string="Document" context="{'group_by': 'type_id'}"/>
+            </search>
+        </field>
+    </record>
+
+    <record id="hr_employee_document_action" model="ir.actions.act_window">
+        <field name="name">Portal Documents</field>
+        <field name="res_model">hr.employee.document</field>
+        <field name="view_mode">list,form</field>
+        <field name="context">{'search_default_to_check': 1}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">No documents to check</p>
+            <p>Employees upload their passport, visa, Emirates ID and other documents from the employee portal.
+                Verify an upload to copy its file, number and expiry date into the employee's profile.</p>
+        </field>
+    </record>
+
+    <!-- Document types -->
+    <record id="hr_employee_document_type_view_list" model="ir.ui.view">
+        <field name="name">hr.employee.document.type.list</field>
+        <field name="model">hr.employee.document.type</field>
+        <field name="arch" type="xml">
+            <list>
+                <field name="sequence" widget="handle"/>
+                <field name="name"/>
+                <field name="required"/>
+                <field name="number_mode"/>
+                <field name="expiry_mode"/>
+                <field name="file_field_id" optional="show"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="hr_employee_document_type_view_form" model="ir.ui.view">
+        <field name="name">hr.employee.document.type.form</field>
+        <field name="model">hr.employee.document.type</field>
+        <field name="arch" type="xml">
+            <form>
+                <sheet>
+                    <widget name="web_ribbon" title="Archived" bg_color="text-bg-danger" invisible="active"/>
+                    <div class="oe_title">
+                        <h1><field name="name" placeholder="e.g. Passport"/></h1>
+                    </div>
+                    <group>
+                        <group string="Asked on the portal">
+                            <field name="description"/>
+                            <field name="required"/>
+                            <field name="number_mode" widget="radio"/>
+                            <field name="expiry_mode" widget="radio"/>
+                            <field name="active" invisible="1"/>
+                        </group>
+                        <group string="Copied to the profile when verified">
+                            <field name="number_field_id" invisible="number_mode == 'no'" options="{'no_create': True}"/>
+                            <field name="expiry_field_id" invisible="expiry_mode == 'no'" options="{'no_create': True}"/>
+                            <field name="file_field_id" options="{'no_create': True}"/>
+                        </group>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="hr_employee_document_type_action" model="ir.actions.act_window">
+        <field name="name">Portal Document Types</field>
+        <field name="res_model">hr.employee.document.type</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+    <!-- Employee form: uploads waiting -->
+    <record id="hr_employee_view_form_ep_documents" model="ir.ui.view">
+        <field name="name">hr.employee.form.portal.documents</field>
+        <field name="model">hr.employee</field>
+        <field name="inherit_id" ref="hr.view_employee_form"/>
+        <field name="arch" type="xml">
+            <div name="button_box" position="inside">
+                <button name="action_ep_open_documents" type="object" class="oe_stat_button" icon="fa-id-card-o"
+                        groups="hr.group_hr_user">
+                    <field name="ep_document_to_check_count" widget="statinfo" string="Uploads to check"/>
+                </button>
+            </div>
+        </field>
+    </record>
+
+    <menuitem id="menu_hr_employee_document" action="hr_employee_document_action"
+              parent="hr.menu_hr_root" groups="hr.group_hr_user" sequence="5"/>
+    <menuitem id="menu_hr_employee_document_type" action="hr_employee_document_type_action"
+              parent="hr.menu_config_employee" groups="hr.group_hr_manager" sequence="20"/>
+</odoo>
