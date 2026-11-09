@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Starter kinds of request for the employee portal. HR renames, removes or
+         adds kinds in Approvals > Configuration > Approval Types; the approver
+         is the administrator until HR sets its own. -->
+    <data noupdate="1">
+        <record id="category_salary_certificate" model="approval.category">
+            <field name="name">Salary certificate</field>
+            <field name="description">For a bank, embassy or other organisation. Tell us who it should be addressed to.</field>
+            <field name="image" type="base64" file="approvals/static/src/img/Award.png"/>
+            <field name="sequence">101</field>
+            <field name="requirer_document">optional</field>
+            <field name="approval_minimum">1</field>
+            <field name="ep_portal_available" eval="True"/>
+            <field name="approver_ids" eval="[(0, 0, {'user_id': ref('base.user_admin')})]"/>
+        </record>
+        <record id="category_experience_letter" model="approval.category">
+            <field name="name">Experience letter</field>
+            <field name="description">A letter confirming your job and how long you have worked here.</field>
+            <field name="image" type="base64" file="approvals/static/src/img/Contract.png"/>
+            <field name="sequence">102</field>
+            <field name="requirer_document">optional</field>
+            <field name="approval_minimum">1</field>
+            <field name="ep_portal_available" eval="True"/>
+            <field name="approver_ids" eval="[(0, 0, {'user_id': ref('base.user_admin')})]"/>
+        </record>
+        <record id="category_noc" model="approval.category">
+            <field name="name">NOC letter</field>
+            <field name="description">No objection certificate, for example for a visa, a driving licence or a loan. Tell us the purpose and who it is for.</field>
+            <field name="image" type="base64" file="approvals/static/src/img/Contract.png"/>
+            <field name="sequence">103</field>
+            <field name="requirer_document">optional</field>
+            <field name="approval_minimum">1</field>
+            <field name="ep_portal_available" eval="True"/>
+            <field name="approver_ids" eval="[(0, 0, {'user_id': ref('base.user_admin')})]"/>
+        </record>
+        <record id="category_salary_transfer" model="approval.category">
+            <field name="name">Salary transfer letter</field>
+            <field name="description">For your bank, to have your salary paid into a new account. Tell us the bank name.</field>
+            <field name="image" type="base64" file="approvals/static/src/img/Credit-card.png"/>
+            <field name="sequence">104</field>
+            <field name="requirer_document">optional</field>
+            <field name="approval_minimum">1</field>
+            <field name="ep_portal_available" eval="True"/>
+            <field name="approver_ids" eval="[(0, 0, {'user_id': ref('base.user_admin')})]"/>
+        </record>
+        <record id="category_expense_claim" model="approval.category">
+            <field name="name">Expense claim</field>
+            <field name="description">Money you spent for work, to be paid back. Attach the receipt.</field>
+            <field name="image" type="base64" file="approvals/static/src/img/Bag.png"/>
+            <field name="sequence">105</field>
+            <field name="has_date">required</field>
+            <field name="has_amount">required</field>
+            <field name="requirer_document">required</field>
+            <field name="approval_minimum">1</field>
+            <field name="ep_portal_available" eval="True"/>
+            <field name="approver_ids" eval="[(0, 0, {'user_id': ref('base.user_admin')})]"/>
+        </record>
+        <record id="category_personal_details" model="approval.category">
+            <field name="name">Change of personal details</field>
+            <field name="description">New address, phone number, bank account or emergency contact. HR updates your record.</field>
+            <field name="image" type="base64" file="approvals/static/src/img/Folder.png"/>
+            <field name="sequence">106</field>
+            <field name="requirer_document">optional</field>
+            <field name="approval_minimum">1</field>
+            <field name="ep_portal_available" eval="True"/>
+            <field name="approver_ids" eval="[(0, 0, {'user_id': ref('base.user_admin')})]"/>
+        </record>
+        <record id="category_other" model="approval.category">
+            <field name="name">Other request</field>
+            <field name="description">Anything else for HR.</field>
+            <field name="image" type="base64" file="approvals/static/src/img/Books.png"/>
+            <field name="sequence">107</field>
+            <field name="requirer_document">optional</field>
+            <field name="approval_minimum">1</field>
+            <field name="ep_portal_available" eval="True"/>
+            <field name="approver_ids" eval="[(0, 0, {'user_id': ref('base.user_admin')})]"/>
+        </record>
+    </data>
+</odoo>

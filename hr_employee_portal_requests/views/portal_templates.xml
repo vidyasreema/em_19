@@ -1,0 +1,266 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Icons -->
+    <template id="ep_icon" inherit_id="hr_employee_portal.ep_icon" name="Employee portal: request icons">
+        <xpath expr="//t[@t-elif=&quot;icon == 'sparkle'&quot;]" position="after">
+            <t t-elif="icon == 'requests'"><path d="M4 13h4l2 3h4l2-3h4"/><path d="M5.5 5h13L20 13v6a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1v-6z"/></t>
+            <t t-elif="icon == 'letter'"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></t>
+            <t t-elif="icon == 'receipt'"><path d="M6 3h12v18l-3-2-3 2-3-2-3 2z"/><path d="M9 8h6M9 12h6M9 16h3"/></t>
+            <t t-elif="icon == 'loan'"><circle cx="12" cy="12" r="9"/><path d="M14.5 9.5c-.4-1-1.4-1.5-2.5-1.5-1.4 0-2.5.8-2.5 2s1.1 1.7 2.5 2 2.5.8 2.5 2-1.1 2-2.5 2c-1.1 0-2.1-.5-2.5-1.5M12 6.5V8M12 16v1.5"/></t>
+        </xpath>
+    </template>
+
+    <!-- Navigation -->
+    <template id="ep_shell" inherit_id="hr_employee_portal.ep_shell" name="Employee portal: requests navigation">
+        <xpath expr="//nav[hasclass('ep-nav')]/t[@t-if='ep_employee']" position="inside">
+            <t t-call="hr_employee_portal.ep_nav_link"><t t-set="href" t-value="'/my/employee/requests'"/><t t-set="label">Requests</t><t t-set="icon" t-value="'requests'"/><t t-set="active" t-value="page_name == 'ep_requests'"/></t>
+        </xpath>
+    </template>
+
+    <!-- The kinds of request, as tiles -->
+    <template id="ep_request_tiles" name="Employee portal: request tiles">
+        <ul class="ep-req-tiles">
+            <li t-foreach="request_tiles" t-as="tile">
+                <a t-att-href="tile['href']" class="ep-req-tile">
+                    <span class="ep-req-tile-icon" aria-hidden="true"><t t-call="hr_employee_portal.ep_icon"><t t-set="icon" t-value="tile['icon']"/></t></span>
+                    <span class="ep-req-tile-text">
+                        <span class="ep-req-tile-label" t-out="tile['label']"/>
+                        <span t-if="tile['sub']" class="ep-req-tile-sub" t-out="tile['sub']"/>
+                    </span>
+                </a>
+            </li>
+        </ul>
+    </template>
+
+    <!-- Profile: the latest requests, as the last section -->
+    <template id="ep_profile" inherit_id="hr_employee_portal.ep_profile" name="Employee portal: latest requests">
+        <xpath expr="//div[hasclass('ep-details')]" position="inside">
+            <details id="ep-sec-requests" class="ep-sec ep-reveal">
+                <t t-call="hr_employee_portal.ep_sec_head"><t t-set="key" t-value="'requests'"/><t t-set="icon" t-value="'requests'"/><t t-set="title">Requests</t></t>
+                <div class="ep-sec-body">
+                    <ul t-if="request_rows" class="ep-rows">
+                        <li t-foreach="request_rows" t-as="r" class="ep-row">
+                            <span class="ep-row-text ep-grow">
+                                <span class="ep-row-title" t-out="r['title']"/>
+                                <span class="ep-row-sub" t-out="r['sent']"/>
+                            </span>
+                            <t t-call="hr_employee_portal.ep_pill">
+                                <t t-set="kind" t-value="r['kind']"/>
+                                <t t-set="label" t-value="r['state_label']"/>
+                            </t>
+                        </li>
+                    </ul>
+                    <p t-else="" class="ep-muted">No requests yet. Ask HR for a letter, a claim or a change.</p>
+                    <div t-if="not admin_view" class="ep-sec-actions">
+                        <a href="/my/employee/requests" class="ep-btn ep-btn-soft ep-btn-sm">
+                            <t t-call="hr_employee_portal.ep_icon"><t t-set="icon" t-value="'plus'"/></t>
+                            New request
+                        </a>
+                        <a t-if="request_rows" href="/my/employee/requests" class="ep-link">All my requests</a>
+                    </div>
+                </div>
+            </details>
+        </xpath>
+    </template>
+
+    <!-- Requests page -->
+    <template id="ep_requests" name="Employee portal: requests">
+        <t t-call="hr_employee_portal.ep_shell">
+            <div class="ep-page-head ep-reveal">
+                <div>
+                    <p class="ep-eyebrow">Letters, claims and changes</p>
+                    <h1 class="ep-title">Requests</h1>
+                </div>
+            </div>
+
+            <t t-call="hr_employee_portal.ep_flash"/>
+
+            <section class="ep-surface ep-surface-lg ep-reveal">
+                <h2 class="ep-h2 ep-h2-lg">New request</h2>
+                <t t-call="hr_employee_portal_requests.ep_request_tiles"/>
+            </section>
+
+            <section class="ep-surface ep-surface-lg ep-reveal">
+                <h2 class="ep-h2 ep-h2-lg">Your requests</h2>
+                <ul t-if="request_rows" class="ep-rows">
+                    <li t-foreach="request_rows" t-as="r" class="ep-row ep-row-tall">
+                        <span t-attf-class="ep-row-dot ep-row-dot-#{r['kind']}" aria-hidden="true"/>
+                        <div class="ep-row-text ep-grow">
+                            <p class="ep-row-title" t-out="r['title']"/>
+                            <p class="ep-row-sub" t-out="r['sub']"/>
+                            <p t-if="r['note']" class="ep-req-note"><strong>HR:</strong> <t t-out="r['note']"/></p>
+                            <ul t-if="r['files']" class="ep-req-files">
+                                <li t-foreach="r['files']" t-as="f">
+                                    <a t-attf-href="/my/employee/requests/file/#{f['id']}" class="ep-req-file">
+                                        <t t-call="hr_employee_portal.ep_icon"><t t-set="icon" t-value="'download'"/></t>
+                                        <span t-out="f['name']"/>
+                                    </a>
+                                </li>
+                            </ul>
+                        </div>
+                        <div class="ep-row-end">
+                            <t t-call="hr_employee_portal.ep_pill">
+                                <t t-set="kind" t-value="r['kind']"/>
+                                <t t-set="label" t-value="r['state_label']"/>
+                            </t>
+                            <form t-if="r['can_cancel']" method="post" t-attf-action="/my/employee/requests/#{r['id']}/cancel"
+                                  class="ep-inline-form" onsubmit="return confirm('Cancel this request?')">
+                                <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                                <button type="submit" class="ep-link-btn" t-attf-aria-label="Cancel request: #{r['title']}">Cancel</button>
+                            </form>
+                        </div>
+                    </li>
+                </ul>
+                <p t-else="" class="ep-muted">You haven't raised any requests yet.</p>
+            </section>
+        </t>
+    </template>
+
+    <!-- New request form, for one kind of request -->
+    <template id="ep_request_form" name="Employee portal: new request">
+        <t t-call="hr_employee_portal.ep_shell">
+            <div class="ep-page-head ep-reveal">
+                <div>
+                    <a href="/my/employee/requests" class="ep-back">Back to requests</a>
+                    <p class="ep-eyebrow">New request</p>
+                    <h1 class="ep-title" t-out="category.name"/>
+                </div>
+            </div>
+
+            <t t-call="hr_employee_portal.ep_flash"/>
+
+            <section class="ep-surface ep-surface-lg ep-narrow ep-reveal">
+                <p t-if="category.description" class="ep-muted" t-out="category.description"/>
+                <form t-attf-action="/my/employee/requests/new/#{category.id}/submit" method="post" class="ep-form"
+                      enctype="multipart/form-data">
+                    <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                    <div class="ep-form-field">
+                        <label for="ep_req_subject" class="ep-label">Subject <span class="ep-muted">(optional)</span></label>
+                        <input id="ep_req_subject" type="text" name="subject" class="ep-input" maxlength="120"
+                               t-att-placeholder="category.name"/>
+                    </div>
+                    <div t-if="category.has_date != 'no'" class="ep-form-field">
+                        <label for="ep_req_date" class="ep-label">Date <span t-if="category.has_date == 'optional'" class="ep-muted">(optional)</span></label>
+                        <input id="ep_req_date" type="date" name="date" class="ep-input"
+                               t-att-required="category.has_date == 'required' or None"/>
+                    </div>
+                    <div t-if="category.has_period != 'no'" class="ep-form-row">
+                        <div class="ep-form-field">
+                            <label for="ep_req_start" class="ep-label">First day <span t-if="category.has_period == 'optional'" class="ep-muted">(optional)</span></label>
+                            <input id="ep_req_start" type="date" name="date_start" class="ep-input"
+                                   t-att-required="category.has_period == 'required' or None"/>
+                        </div>
+                        <div class="ep-form-field">
+                            <label for="ep_req_end" class="ep-label">Last day</label>
+                            <input id="ep_req_end" type="date" name="date_end" class="ep-input"
+                                   t-att-required="category.has_period == 'required' or None"/>
+                        </div>
+                    </div>
+                    <div t-if="category.has_amount != 'no' or category.has_quantity != 'no'"
+                         t-att-class="'ep-form-row' if category.has_amount != 'no' and category.has_quantity != 'no' else None">
+                        <div t-if="category.has_amount != 'no'" class="ep-form-field">
+                            <label for="ep_req_amount" class="ep-label">Amount (<t t-out="currency_symbol"/>) <span t-if="category.has_amount == 'optional'" class="ep-muted">(optional)</span></label>
+                            <input id="ep_req_amount" type="number" name="amount" class="ep-input" min="0" step="0.01"
+                                   inputmode="decimal" t-att-required="category.has_amount == 'required' or None"/>
+                        </div>
+                        <div t-if="category.has_quantity != 'no'" class="ep-form-field">
+                            <label for="ep_req_quantity" class="ep-label">Quantity <span t-if="category.has_quantity == 'optional'" class="ep-muted">(optional)</span></label>
+                            <input id="ep_req_quantity" type="number" name="quantity" class="ep-input" min="0" step="any"
+                                   t-att-required="category.has_quantity == 'required' or None"/>
+                        </div>
+                    </div>
+                    <div t-if="category.has_reference != 'no'" class="ep-form-field">
+                        <label for="ep_req_reference" class="ep-label">Reference <span t-if="category.has_reference == 'optional'" class="ep-muted">(optional)</span></label>
+                        <input id="ep_req_reference" type="text" name="reference" class="ep-input"
+                               t-att-required="category.has_reference == 'required' or None"/>
+                    </div>
+                    <div t-if="category.has_location != 'no'" class="ep-form-field">
+                        <label for="ep_req_location" class="ep-label">Location <span t-if="category.has_location == 'optional'" class="ep-muted">(optional)</span></label>
+                        <input id="ep_req_location" type="text" name="location" class="ep-input"
+                               t-att-required="category.has_location == 'required' or None"/>
+                    </div>
+                    <div class="ep-form-field">
+                        <label for="ep_req_reason" class="ep-label">Details for HR</label>
+                        <textarea id="ep_req_reason" name="reason" rows="4" class="ep-input ep-textarea"/>
+                    </div>
+                    <div class="ep-form-field">
+                        <label for="ep_attachments" class="ep-label">Supporting documents <span t-if="category.requirer_document != 'required'" class="ep-muted">(optional)</span></label>
+                        <label class="ep-drop" for="ep_attachments">
+                            <span class="ep-drop-icon"><t t-call="hr_employee_portal.ep_icon"><t t-set="icon" t-value="'clip'"/></t></span>
+                            <span class="ep-drop-text" data-ep-files="">Choose files</span>
+                        </label>
+                        <input id="ep_attachments" type="file" name="attachments" class="ep-file" multiple="multiple"
+                               accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png"
+                               aria-describedby="ep_attachments_hint"
+                               t-att-required="category.requirer_document == 'required' or None"/>
+                        <p id="ep_attachments_hint" class="ep-hint ep-hint-flush">
+                            PDF, JPG or PNG, up to <t t-out="attachment_max_count"/> files of <t t-out="attachment_max_mb"/> MB each.
+                        </p>
+                    </div>
+                    <button type="submit" class="ep-btn ep-btn-primary">
+                        Send request
+                        <t t-call="hr_employee_portal.ep_icon"><t t-set="icon" t-value="'arrow'"/></t>
+                    </button>
+                </form>
+            </section>
+        </t>
+    </template>
+
+    <!-- HR dashboard: requests to review -->
+    <template id="ep_admin_dashboard" inherit_id="hr_employee_portal.ep_admin_dashboard" name="Employee portal: requests to review">
+        <xpath expr="//div[hasclass('ep-dash-main')]" position="after">
+            <section t-if="request_reviews is not None" class="ep-surface ep-surface-lg ep-panel ep-reveal">
+                <div class="ep-panel-head">
+                    <h2 class="ep-h2 ep-h2-lg">Requests to review</h2>
+                    <span t-if="request_reviews" class="ep-count" t-out="len(request_reviews)"/>
+                </div>
+                <ul t-if="request_reviews" class="ep-rows">
+                    <li t-foreach="request_reviews" t-as="a" class="ep-row ep-row-tall ep-review">
+                        <span class="ep-avatar-round" aria-hidden="true" t-out="a['initials']"/>
+                        <div class="ep-row-text ep-grow">
+                            <a class="ep-row-title ep-plain-link" t-attf-href="/my/hr/employee/#{a['employee'].id}" t-out="a['employee'].name"/>
+                            <p class="ep-review-title" t-out="a['title']"/>
+                            <p class="ep-row-sub" t-out="a['sub']"/>
+                            <p t-if="a['reason']" class="ep-review-reason" t-out="a['reason']"/>
+                            <ul t-if="a['files']" class="ep-req-files">
+                                <li t-foreach="a['files']" t-as="f">
+                                    <a t-attf-href="/my/employee/requests/file/#{f['id']}" class="ep-req-file">
+                                        <t t-call="hr_employee_portal.ep_icon"><t t-set="icon" t-value="'clip'"/></t>
+                                        <span t-out="f['name']"/>
+                                    </a>
+                                </li>
+                            </ul>
+                            <form t-if="a['can_decide']" method="post" t-attf-action="/my/hr/request/#{a['id']}/approve"
+                                  enctype="multipart/form-data" class="ep-review-form">
+                                <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                                <label t-attf-for="ep_review_note_#{a['id']}" class="visually-hidden">Note to the employee</label>
+                                <textarea t-attf-id="ep_review_note_#{a['id']}" name="note" rows="2" class="ep-input ep-textarea"
+                                          placeholder="Note to the employee (optional)"/>
+                                <div class="ep-review-actions">
+                                    <div class="ep-form-field">
+                                        <label class="ep-req-attach">
+                                            <t t-call="hr_employee_portal.ep_icon"><t t-set="icon" t-value="'clip'"/></t>
+                                            <span data-ep-files="">Attach reply document</span>
+                                            <input type="file" name="attachments" class="ep-file" multiple="multiple"
+                                                   accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png"/>
+                                        </label>
+                                    </div>
+                                    <div class="ep-decide">
+                                        <button type="submit" class="ep-btn ep-btn-soft ep-btn-sm"
+                                                t-attf-formaction="/my/hr/request/#{a['id']}/refuse"
+                                                onclick="return confirm('Refuse this request?')">Refuse</button>
+                                        <button type="submit" class="ep-btn ep-btn-primary ep-btn-sm">Approve</button>
+                                    </div>
+                                </div>
+                            </form>
+                            <p t-else="" class="ep-row-sub">Your own request</p>
+                        </div>
+                    </li>
+                </ul>
+                <t t-else="">
+                    <t t-call="hr_employee_portal.ep_empty_state"><t t-set="message">No requests are waiting.</t></t>
+                </t>
+            </section>
+        </xpath>
+    </template>
+</odoo>

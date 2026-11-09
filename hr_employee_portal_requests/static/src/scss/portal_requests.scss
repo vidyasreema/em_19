@@ -1,0 +1,47 @@
+// Employee portal requests: the kinds of request as tiles, HR notes and reply
+// documents, and the review form on the HR dashboard. Colours of the portal.
+
+.ep-req-tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 14px;
+    margin: 0; padding: 0; list-style: none; }
+.ep-req-tile { display: flex; align-items: flex-start; gap: 14px; height: 100%; box-sizing: border-box; padding: 16px 18px;
+    border-radius: 16px; border: 1px solid rgba(126, 20, 22, .10); background: #FFFFFF; color: #1B1414; text-decoration: none;
+    transition: translate .25s cubic-bezier(.22, .7, .2, 1), box-shadow .25s, border-color .25s;
+    &:hover, &:focus-visible { translate: 0 -3px; border-color: rgba(126, 20, 22, .28); color: #1B1414;
+        box-shadow: 0 10px 26px rgba(90, 14, 16, .10); }
+}
+.ep-req-tile-icon { width: 44px; height: 44px; flex: 0 0 44px; border-radius: 50%; display: inline-flex;
+    align-items: center; justify-content: center; background: #F5A524; color: #7E1416;
+    svg { width: 22px; height: 22px; } }
+.ep-req-tile-text { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.ep-req-tile-label { font-family: Anton, Impact, 'Arial Narrow', sans-serif; font-size: 17px; letter-spacing: .04em;
+    text-transform: uppercase; line-height: 1.15; }
+.ep-req-tile-sub { color: #5E5252; font-size: 13px; line-height: 1.4; }
+
+.ep-req-note { margin: 8px 0 0; padding: 8px 12px; border-left: 3px solid #F5A524; border-radius: 8px;
+    background: #FFF8E8; color: #2E2626; font-size: 14px; white-space: pre-line; }
+.ep-req-files { display: flex; flex-wrap: wrap; gap: 8px; margin: 8px 0 0; padding: 0; list-style: none; }
+.ep-req-file { display: inline-flex; align-items: center; gap: 6px; min-height: 36px; padding: 0 12px; border-radius: 999px;
+    background: #FFF4DC; color: #7E1416; font-size: 13px; font-weight: 600; text-decoration: none; overflow-wrap: anywhere;
+    svg { width: 16px; height: 16px; flex: none; }
+    &:hover { background: #F5A524; color: #1B1414; } }
+
+// Rows with a note, documents or a form keep the dot and status at the top
+.ep-row:has(.ep-req-note, .ep-req-files, .ep-review-form) { align-items: flex-start;
+    > .ep-row-dot { margin-top: 8px; } }
+
+// HR dashboard
+.ep-review-title { margin: 2px 0 0; color: #1B1414; font-weight: 600; }
+.ep-review-reason { margin: 8px 0 0; color: #2E2626; font-size: 14px; white-space: pre-line; }
+.ep-review-form { display: flex; flex-direction: column; gap: 10px; margin-top: 12px;
+    .ep-textarea { min-height: 64px; } }
+.ep-review-actions { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; }
+.ep-req-attach { position: relative; display: inline-flex; align-items: center; gap: 8px; min-height: 40px; margin: 0;
+    color: #7E1416; font-size: 14px; font-weight: 600; cursor: pointer;
+    svg { width: 18px; height: 18px; }
+    input { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; }
+    &:has(input:focus-visible) { outline: 2px solid #7E1416; outline-offset: 3px; border-radius: 8px; } }
+
+@media (max-width: 767.98px) {
+    .ep-req-tiles { grid-template-columns: minmax(0, 1fr); gap: 10px; }
+    .ep-req-tile { padding: 14px; }
+}

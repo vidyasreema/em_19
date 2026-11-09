@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="approval_category_view_form_ep" model="ir.ui.view">
+        <field name="name">approval.category.form.employee.portal</field>
+        <field name="model">approval.category</field>
+        <field name="inherit_id" ref="approvals.approval_category_view_form"/>
+        <field name="arch" type="xml">
+            <field name="description" position="after">
+                <field name="ep_portal_available"/>
+            </field>
+        </field>
+    </record>
+
+    <record id="approval_category_view_tree_ep" model="ir.ui.view">
+        <field name="name">approval.category.list.employee.portal</field>
+        <field name="model">approval.category</field>
+        <field name="inherit_id" ref="approvals.approval_category_view_tree"/>
+        <field name="arch" type="xml">
+            <xpath expr="//list" position="inside">
+                <field name="ep_portal_available" optional="show"/>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="approval_request_view_form_ep" model="ir.ui.view">
+        <field name="name">approval.request.form.employee.portal</field>
+        <field name="model">approval.request</field>
+        <field name="inherit_id" ref="approvals.approval_request_view_form"/>
+        <field name="arch" type="xml">
+            <field name="request_owner_id" position="after">
+                <field name="ep_employee_id"/>
+            </field>
+            <page name="description" position="after">
+                <page string="Note to the employee" name="ep_hr_note">
+                    <field name="ep_hr_note" placeholder="Shown to the employee on their portal, e.g. when to collect the original letter"/>
+                </page>
+            </page>
+        </field>
+    </record>
+</odoo>
