@@ -1,0 +1,112 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="collection_package_wizard_view_form" model="ir.ui.view">
+        <field name="name">collection.package.wizard.form</field>
+        <field name="model">collection.package.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Statement package">
+                <p>
+                    A zip with the coloured Excel and one PDF statement per customer.
+                    Customers with an unreconciled payment are left out and listed.
+                    It is built in the background; you get it in your Inbox.
+                </p>
+                <group>
+                    <field name="snapshot_id" options="{'no_create': True}"/>
+                    <field name="salesman_id" options="{'no_create': True}" placeholder="All customers"/>
+                </group>
+                <footer>
+                    <button name="action_build" type="object" string="Build" class="btn-primary"/>
+                    <button string="Cancel" special="cancel" class="btn-secondary"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+    <record id="action_collection_package_wizard" model="ir.actions.act_window">
+        <field name="name">Statement package</field>
+        <field name="res_model">collection.package.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+
+    <record id="collection_statement_package_view_list" model="ir.ui.view">
+        <field name="name">collection.statement.package.list</field>
+        <field name="model">collection.statement.package</field>
+        <field name="arch" type="xml">
+            <list create="false">
+                <field name="create_date" string="Requested on"/>
+                <field name="name"/>
+                <field name="requested_by" widget="many2one_avatar_user"/>
+                <field name="state" widget="badge" decoration-success="state == 'done'"
+                       decoration-danger="state == 'failed'" decoration-info="state == 'queued'"/>
+                <field name="attachment_id" widget="many2one_binary" invisible="not attachment_id"/>
+            </list>
+        </field>
+    </record>
+    <record id="collection_statement_package_view_form" model="ir.ui.view">
+        <field name="name">collection.statement.package.form</field>
+        <field name="model">collection.statement.package</field>
+        <field name="arch" type="xml">
+            <form create="false" edit="false">
+                <header>
+                    <button name="action_build_now" type="object" string="Build now" class="btn-primary"
+                            invisible="state == 'done'"
+                            confirm="Building one PDF per customer can take a few minutes. Keep this page open. Continue?"/>
+                </header>
+                <sheet>
+                    <h1><field name="name"/></h1>
+                    <group>
+                        <field name="state"/>
+                        <field name="requested_by"/>
+                        <field name="attachment_id"/>
+                        <field name="excluded" invisible="not excluded"/>
+                    </group>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+    <record id="action_collection_statement_package" model="ir.actions.act_window">
+        <field name="name">Statement packages</field>
+        <field name="res_model">collection.statement.package</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+    <record id="collection_report_mail_wizard_view_form" model="ir.ui.view">
+        <field name="name">collection.report.mail.wizard.form</field>
+        <field name="model">collection.report.mail.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Email the monthly report">
+                <group>
+                    <field name="snapshot_id" readonly="1"/>
+                    <field name="user_ids" widget="many2many_tags_email" options="{'no_create': True}"/>
+                    <field name="message"/>
+                </group>
+                <footer>
+                    <button name="action_send" type="object" string="Send" class="btn-primary"/>
+                    <button string="Cancel" special="cancel" class="btn-secondary"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <!-- Event templates (FR-41): thanks, remaining balance, statement, custom, stage emails -->
+    <record id="action_collection_mail_templates" model="ir.actions.act_window">
+        <field name="name">Collection email templates</field>
+        <field name="res_model">mail.template</field>
+        <field name="view_mode">list,form</field>
+        <field name="domain">[('name', '=like', 'Collections:%')]</field>
+        <field name="context">{'default_model': 'res.partner'}</field>
+    </record>
+
+    <!-- Dashboard (FR-38) -->
+    <record id="action_collection_dashboard" model="ir.actions.client">
+        <field name="name">Dashboard</field>
+        <field name="tag">collection_dashboard</field>
+    </record>
+
+    <!-- On-screen monthly report (FR-39) -->
+    <record id="action_collection_report" model="ir.actions.client">
+        <field name="name">Report</field>
+        <field name="tag">collection_report</field>
+    </record>
+</odoo>

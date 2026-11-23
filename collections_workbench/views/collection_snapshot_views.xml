@@ -1,0 +1,328 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- ===================== Snapshot ===================== -->
+    <record id="collection_snapshot_view_list" model="ir.ui.view">
+        <field name="name">collection.snapshot.list</field>
+        <field name="model">collection.snapshot</field>
+        <field name="arch" type="xml">
+            <list create="false" delete="false" decoration-muted="state == 'archived'"
+                  decoration-info="state == 'generating'">
+                <field name="name"/>
+                <field name="pull_date"/>
+                <field name="generated_by" widget="many2one_avatar_user"/>
+                <field name="customer_count" string="Customers"/>
+                <field name="invoice_count" string="Invoices"/>
+                <field name="total_due" sum="Total"/>
+                <field name="unreconciled_total" optional="show"/>
+                <field name="currency_id" column_invisible="1"/>
+                <field name="state" widget="badge"
+                       decoration-success="state == 'active'" decoration-info="state == 'generating'"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="collection_snapshot_view_form" model="ir.ui.view">
+        <field name="name">collection.snapshot.form</field>
+        <field name="model">collection.snapshot</field>
+        <field name="arch" type="xml">
+            <form create="false" delete="false" edit="false">
+                <header>
+                    <button name="action_archive_snapshot" type="object" string="Archive"
+                            invisible="state != 'active'"
+                            groups="collections_workbench.group_collection_manager"
+                            confirm="Archiving only hides this snapshot from the list. Notes, emails and cycles stay on the customer cards. Continue?"/>
+                    <button name="action_unarchive_snapshot" type="object" string="Restore"
+                            invisible="state != 'archived'"
+                            groups="collections_workbench.group_collection_manager"/>
+                    <button name="action_generate_now" type="object" string="Generate now" class="btn-primary"
+                            invisible="state != 'generating'"
+                            groups="collections_workbench.group_collection_accountant"/>
+                    <button name="action_delete_unfinished" type="object" string="Delete"
+                            invisible="state != 'generating'"
+                            groups="collections_workbench.group_collection_manager"
+                            confirm="Delete this unfinished snapshot? It has no customers yet."/>
+                    <button name="%(action_report_monthly)d" type="action" string="Monthly report (PDF)"
+                            invisible="state == 'generating'"/>
+                    <button name="action_email_report" type="object" string="Email report"
+                            invisible="state == 'generating'"
+                            groups="collections_workbench.group_collection_accountant"/>
+                    <button name="action_statement_package" type="object" string="Statement package"
+                            invisible="state == 'generating'"/>
+                    <field name="state" widget="statusbar" statusbar_visible="generating,active"/>
+                </header>
+                <div class="alert alert-info" role="alert" invisible="state != 'generating'">
+                    This snapshot is still being generated. It is normally ready within a few minutes.
+                    If it stays like this, click <b>Generate now</b>.
+                </div>
+                <div class="alert alert-warning text-center" role="alert" invisible="state != 'archived'">
+                    Archived snapshot: figures as frozen on the pull date.
+                </div>
+                <div class="alert alert-warning" role="alert" invisible="not unreconciled_customer_count">
+                    <strong><field name="unreconciled_customer_count" class="oe_inline"/> customers</strong>
+                    had unreconciled payments at pull
+                    (<field name="unreconciled_total" class="oe_inline"/>).
+                    Emails to them stay blocked until reconciled.
+                </div>
+                <sheet>
+                    <div class="oe_title">
+                        <h1><field name="name"/></h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="period_type"/>
+                            <field name="month_date" invisible="period_type != 'before_month'"/>
+                            <field name="date_from" invisible="period_type != 'range'"/>
+                            <field name="date_to" invisible="period_type != 'range'"/>
+                            <field name="first_invoice_date"/>
+                            <field name="last_invoice_date"/>
+                        </group>
+                        <group>
+                            <field name="pull_date"/>
+                            <field name="generated_by"/>
+                            <field name="customer_count"/>
+                            <field name="invoice_count"/>
+                            <field name="total_due"/>
+                            <field name="currency_id" invisible="1"/>
+                            <field name="company_id" groups="base.group_multi_company"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Customers" name="lines">
+                            <field name="line_ids" readonly="1">
+                                <list>
+                                    <field name="section"/>
+                                    <field name="partner_id"/>
+                                    <field name="salesman_id" optional="show"/>
+                                    <field name="assignee_id" optional="show"/>
+                                    <field name="total_due" sum="Total"/>
+                                    <field name="unreconciled_now" optional="show"/>
+                                    <field name="soa_balance" optional="show"/>
+                                    <field name="live_collected" sum="Collected" optional="show"/>
+                                    <field name="stage_id" optional="show"/>
+                                    <field name="currency_id" column_invisible="1"/>
+                                </list>
+                            </field>
+                        </page>
+                    </notebook>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <record id="collection_snapshot_view_search" model="ir.ui.view">
+        <field name="name">collection.snapshot.search</field>
+        <field name="model">collection.snapshot</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="name"/>
+                <filter name="not_archived" string="Active" domain="[('state', '!=', 'archived')]"/>
+                <filter name="archived" string="Archived" domain="[('state', '=', 'archived')]"/>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_collection_snapshot" model="ir.actions.act_window">
+        <field name="name">Snapshots</field>
+        <field name="res_model">collection.snapshot</field>
+        <field name="view_mode">list,form</field>
+        <field name="context">{'search_default_not_archived': 1}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">No snapshot yet</p>
+            <p>Once the month's reconciliation is ready, click "New snapshot" to freeze the open invoices.</p>
+        </field>
+    </record>
+
+    <!-- ===================== Snapshot line ===================== -->
+    <record id="collection_snapshot_line_view_list" model="ir.ui.view">
+        <field name="name">collection.snapshot.line.list</field>
+        <field name="model">collection.snapshot.line</field>
+        <field name="arch" type="xml">
+            <list create="false" delete="false">
+                <field name="snapshot_id" optional="hide"/>
+                <field name="section"/>
+                <field name="partner_id"/>
+                <field name="salesman_id"/>
+                <field name="assignee_id"/>
+                <field name="total_due" sum="Total"/>
+                <field name="unreconciled_now"/>
+                <field name="soa_balance"/>
+                <field name="latest_note_id"/>
+                <field name="stage_id"/>
+                <field name="next_action" optional="show"/>
+                <field name="due_to_send" optional="hide" widget="boolean"/>
+                <field name="pay_check" optional="show" widget="badge"
+                       decoration-success="pay_check == 'ok'" decoration-danger="pay_check in ('unrec', 'missing', 'nonote')"/>
+                <field name="customer_replied" optional="show" widget="boolean"/>
+                <field name="currency_id" column_invisible="1"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="collection_snapshot_line_view_form" model="ir.ui.view">
+        <field name="name">collection.snapshot.line.form</field>
+        <field name="model">collection.snapshot.line</field>
+        <field name="arch" type="xml">
+            <form create="false" delete="false">
+                <header>
+                    <button name="action_collection_followup" type="object" string="Follow up"
+                            class="btn-primary"/>
+                    <field name="customer_replied" widget="boolean_toggle" invisible="not customer_replied"/>
+                </header>
+                <div class="alert alert-info" role="alert" invisible="not customer_replied">
+                    The customer replied by email. See the Contacts card for the email journey;
+                    switch the toggle off once handled.
+                </div>
+                <div class="alert alert-warning" role="alert" invisible="not awaiting_approval">
+                    Awaiting approval in the Approvals queue.
+                </div>
+                <div class="alert alert-warning" role="alert" invisible="pay_check not in ('unrec', 'missing', 'nonote')">
+                    Payment check: <field name="pay_check" class="oe_inline" readonly="1"/>
+                </div>
+                <div class="alert alert-danger" role="alert" invisible="unreconciled_now &lt;= 0">
+                    Unreconciled payment: <field name="unreconciled_now" class="oe_inline"/>.
+                    Emails and statements are blocked until it is reconciled.
+                </div>
+                <sheet>
+                    <div class="oe_title">
+                        <h1><field name="partner_id" readonly="1"/></h1>
+                    </div>
+                    <group>
+                        <group string="At pull">
+                            <field name="snapshot_id"/>
+                            <field name="section"/>
+                            <field name="salesman_id"/>
+                            <field name="tag_ids" widget="many2many_tags" options="{'color_field': 'color'}"/>
+                            <field name="total_due"/>
+                            <field name="unreconciled_at_pull"/>
+                            <field name="currency_id" invisible="1"/>
+                        </group>
+                        <group string="Now">
+                            <field name="assignee_id"/>
+                            <field name="pipeline_id"/>
+                            <field name="stage_id"/>
+                            <field name="next_action"/>
+                            <field name="awaiting_approval" invisible="1"/>
+                            <field name="soa_balance"/>
+                            <field name="live_collected"/>
+                            <field name="live_balance"/>
+                            <field name="credit_limit"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Invoices" name="invoices">
+                            <field name="invoice_line_ids" readonly="1">
+                                <list decoration-muted="changed_after_snapshot">
+                                    <field name="move_id"/>
+                                    <field name="invoice_date"/>
+                                    <field name="period_key"/>
+                                    <field name="amount_due_at_pull" sum="Total"/>
+                                    <field name="live_residual" sum="Now"/>
+                                    <field name="collected" sum="Collected"/>
+                                    <field name="changed_after_snapshot" widget="boolean"/>
+                                    <field name="currency_id" column_invisible="1"/>
+                                </list>
+                            </field>
+                        </page>
+                    </notebook>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <record id="collection_snapshot_line_view_search" model="ir.ui.view">
+        <field name="name">collection.snapshot.line.search</field>
+        <field name="model">collection.snapshot.line</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="partner_id"/>
+                <field name="snapshot_id"/>
+                <field name="assignee_id"/>
+                <field name="salesman_id"/>
+                <filter name="my_customers" string="My customers"
+                        domain="[('assignee_user_id', '=', uid)]"/>
+                <separator/>
+                <filter name="active_section" string="Active list" domain="[('live_section', '=', 'active')]"/>
+                <filter name="court" string="Court case" domain="[('live_section', '=', 'court')]"/>
+                <filter name="blacklist" string="Blacklist" domain="[('live_section', '=', 'blacklist')]"/>
+                <separator/>
+                <filter name="replied" string="Customer replied" domain="[('customer_replied', '=', True)]"/>
+                <filter name="due_to_send" string="Due to send" domain="[('due_to_send', '=', True)]"/>
+                <filter name="mismatches" string="Mismatches only"
+                        domain="[('pay_check', 'in', ['unrec', 'missing', 'nonote'])]"/>
+                <separator/>
+                <filter name="agreements" string="Agreements" domain="[('is_agreement', '=', True)]"/>
+                <filter name="credit_limit_set" string="Credit limit set" domain="[('credit_limit', '>', 0)]"/>
+                <filter name="awaiting" string="Awaiting approval" domain="[('awaiting_approval', '=', True)]"/>
+                <filter name="unreconciled" string="Unreconciled" domain="[('unreconciled_now', '>', 0)]"/>
+                <filter name="deadline_late" string="Promise overdue" domain="[('deadline_state', '=', 'late')]"/>
+                <filter name="deadline_today" string="Due today" domain="[('deadline_state', '=', 'today')]"/>
+                <filter name="no_stage" string="Not followed up yet" domain="[('stage_id', '=', False)]"/>
+                <filter name="stale" string="No follow-up for 14+ days" domain="[('stale', '=', True)]"/>
+                <filter name="my_activities" string="My activities" domain="[('activity_user_id', '=', uid)]"/>
+                <filter name="open_activities" string="Open activities" domain="[('activity_ids', '!=', False)]"/>
+                <separator/>
+                <filter name="thanks_due" string="Thanks due"
+                        domain="[('thanks_due', '=', True), ('unreconciled_now', '&lt;=', 0)]"/>
+                <filter name="suggest_blacklist" string="Final notice expired: blacklist suggested"
+                        domain="[('suggest_blacklist', '=', True)]"/>
+                <filter name="suggest_close" string="Lane fully paid: needs closing"
+                        domain="[('suggest_close', '=', True)]"/>
+                <separator/>
+                <filter name="deadline_late_us" string="Overdue: on us" domain="[('deadline_state', '=', 'late_us')]"/>
+                <filter name="deadline_soon" string="Deadline within 7 days" domain="[('deadline_state', '=', 'soon')]"/>
+                <separator/>
+                <filter name="pattern_chronic" string="Chronic defaulter" domain="[('pattern', '=', 'chronic')]"/>
+                <filter name="pattern_repeat" string="Repeat defaulter" domain="[('pattern', '=', 'repeat')]"/>
+                <filter name="pattern_unreach" string="Unreachable" domain="[('pattern', '=', 'unreach')]"/>
+                <filter name="pattern_reliable" string="Reliable" domain="[('pattern', '=', 'reliable')]"/>
+                <separator/>
+                <filter name="status_paid" string="Paid in full since snapshot" domain="[('live_status', '=', 'paid')]"/>
+                <filter name="status_partly" string="Partly paid since snapshot" domain="[('live_status', '=', 'partly')]"/>
+                <filter name="status_none" string="Not paid since snapshot" domain="[('live_status', '=', 'none')]"/>
+                <separator/>
+                <filter name="no_blacklist" string="Excluding blacklist" domain="[('live_section', 'in', ['active', 'court'])]"/>
+                <separator/>
+                <filter name="credit_hold" string="Credit on hold (limit reached)" domain="[('credit_state', '=', 'hold')]"/>
+                <filter name="credit_available" string="Credit available" domain="[('credit_state', '=', 'available')]"/>
+                <filter name="credit_none" string="No credit limit" domain="[('credit_state', '=', 'none')]"/>
+                <group>
+                    <filter name="group_section" string="Section" context="{'group_by': 'section'}"/>
+                    <filter name="group_snapshot" string="Snapshot" context="{'group_by': 'snapshot_id'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <!-- The Collections table: custom component on this list view (js_class, Appendix E) -->
+    <record id="collection_snapshot_line_view_workbench" model="ir.ui.view">
+        <field name="name">collection.snapshot.line.workbench</field>
+        <field name="model">collection.snapshot.line</field>
+        <field name="priority">5</field>
+        <field name="arch" type="xml">
+            <list js_class="collection_workbench" create="false" delete="false">
+                <field name="partner_id"/>
+                <field name="total_due"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="action_collection_snapshot_line" model="ir.actions.act_window">
+        <field name="name">Collections</field>
+        <field name="res_model">collection.snapshot.line</field>
+        <field name="view_mode">list,form</field>
+        <field name="view_id" ref="collection_snapshot_line_view_workbench"/>
+        <!-- no default filter: the accountant and the manager work on all customers -->
+        <field name="context">{}</field>
+    </record>
+
+    <!-- Plain list of lines (all snapshots), for search and grouping -->
+    <record id="action_collection_snapshot_line_list" model="ir.actions.act_window">
+        <field name="name">Snapshot lines</field>
+        <field name="res_model">collection.snapshot.line</field>
+        <field name="view_mode">list,form</field>
+        <field name="view_id" ref="collection_snapshot_line_view_list"/>
+        <field name="domain">[('snapshot_id.state', '=', 'active')]</field>
+    </record>
+</odoo>

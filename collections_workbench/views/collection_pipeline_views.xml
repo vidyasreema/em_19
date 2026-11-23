@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- "Pipelines & stages" settings page (FR-40) -->
+    <record id="collection_pipeline_view_list" model="ir.ui.view">
+        <field name="name">collection.pipeline.list</field>
+        <field name="model">collection.pipeline</field>
+        <field name="arch" type="xml">
+            <list>
+                <field name="sequence" widget="handle"/>
+                <field name="name"/>
+                <field name="pipeline_type"/>
+                <field name="description"/>
+                <field name="tag_id"/>
+                <field name="partner_count"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="collection_pipeline_view_form" model="ir.ui.view">
+        <field name="name">collection.pipeline.form</field>
+        <field name="model">collection.pipeline</field>
+        <field name="arch" type="xml">
+            <form>
+                <sheet>
+                    <widget name="web_ribbon" title="Archived" bg_color="text-bg-danger" invisible="active"/>
+                    <div class="oe_title">
+                        <h1><field name="name" placeholder="Pipeline name"/></h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="pipeline_type" readonly="id and pipeline_type != 'custom'"/>
+                            <field name="description"/>
+                        </group>
+                        <group>
+                            <field name="tag_id" options="{'no_create': True}"/>
+                            <field name="partner_count"/>
+                            <field name="active" invisible="1"/>
+                        </group>
+                    </group>
+                    <field name="stage_ids" context="{'default_pipeline_id': id}">
+                        <list editable="bottom">
+                            <field name="sequence" widget="handle"/>
+                            <field name="name"/>
+                            <field name="wait_days"/>
+                            <field name="has_email"/>
+                            <field name="template_id" invisible="not has_email"
+                                   options="{'no_create': True}"/>
+                            <field name="requires_approval"/>
+                            <field name="sets_credit_limit" column_invisible="parent.pipeline_type != 'collection'"/>
+                            <field name="suggests_blacklist" column_invisible="parent.pipeline_type != 'collection'"/>
+                            <field name="is_partial" column_invisible="parent.pipeline_type != 'collection'"/>
+                            <field name="fold" optional="hide"/>
+                            <field name="partner_count"/>
+                        </list>
+                    </field>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_collection_pipeline" model="ir.actions.act_window">
+        <field name="name">Pipelines &amp; stages</field>
+        <field name="res_model">collection.pipeline</field>
+        <field name="view_mode">list,form</field>
+    </record>
+</odoo>

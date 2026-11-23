@@ -1,0 +1,424 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+    <!-- ===================== The table ===================== -->
+    <t t-name="collections_workbench.Workbench">
+        <div class="o_action o_cw_workbench h-100 d-flex flex-column">
+        <Layout display="props.display" className="'o_cw_layout'">
+            <t t-set-slot="layout-buttons">
+                <div class="d-flex flex-wrap align-items-center gap-1">
+                    <select class="form-select form-select-sm w-auto" t-on-change="selectSnapshot"
+                            title="Snapshot" t-if="state.snapshots.length">
+                        <t t-foreach="state.snapshots" t-as="snap" t-key="snap.id">
+                            <option t-att-value="snap.id" t-att-selected="snap.id === state.snapshotId">
+                                <t t-esc="snap.name"/><t t-if="snap.state === 'archived'"> (archived)</t>
+                            </option>
+                        </t>
+                    </select>
+                    <button class="btn btn-sm btn-secondary" t-on-click="refresh" title="Fetch the current balances">
+                        <i class="fa fa-refresh me-1"/>Refresh
+                    </button>
+                    <button class="btn btn-sm btn-primary" t-if="selectedRows.length" t-on-click="followUpSelected">
+                        Follow up (<t t-esc="selectedRows.length"/>)
+                    </button>
+                    <button class="btn btn-sm btn-secondary" t-if="selectedRows.length" t-on-click="assignSelected"
+                            title="Change the collections assignee of the selected customers">
+                        <i class="fa fa-user me-1"/>Change assignee
+                    </button>
+                    <button class="btn btn-sm btn-secondary" t-on-click="exportExcel" t-if="state.data">
+                        <i class="fa fa-file-excel-o me-1"/>Excel
+                    </button>
+                    <button class="btn btn-sm btn-secondary" t-on-click="statementPackage" t-if="state.data">
+                        <i class="fa fa-file-archive-o me-1"/>Statement package
+                    </button>
+                </div>
+            </t>
+            <t t-set-slot="layout-actions">
+                <SearchBar toggler="searchBarToggler"/>
+            </t>
+            <t t-set-slot="control-panel-navigation-additional">
+                <t t-component="searchBarToggler.component" t-props="searchBarToggler.props"/>
+                <button class="btn btn-sm ms-2" t-att-class="state.panelOpen ? 'btn-primary' : 'btn-secondary'"
+                        t-on-click="togglePanel" title="Customer panel">
+                    <i class="fa fa-columns me-1"/>Panel
+                </button>
+            </t>
+
+            <div class="o_cw_root d-flex h-100 overflow-hidden">
+                <div class="o_cw_scroll flex-grow-1 overflow-auto position-relative">
+                    <!-- Banners -->
+                    <div t-if="state.generating" class="alert alert-info m-2 mb-0">
+                        A snapshot is being generated in the background. You will get a notification;
+                        then click <b>Refresh</b>. If it does not finish within a few minutes, open it in
+                        <b>Snapshots</b> and click <b>Generate now</b>.
+                    </div>
+                    <div t-if="!state.loading and !state.data" class="o_cw_empty text-center text-muted p-5">
+                        <h4>No snapshot yet</h4>
+                        <p>The accountant creates one with <b>New snapshot</b> (before the current month).</p>
+                    </div>
+                    <t t-if="state.data">
+                        <div t-if="isArchivedView" class="alert alert-warning m-2 mb-0 d-flex align-items-center">
+                            <span class="flex-grow-1">
+                                <b>Archived snapshot</b>: <t t-esc="currentSnapshot.name"/>, as frozen on
+                                <t t-esc="currentSnapshot.pull_date"/>.
+                            </span>
+                            <button class="btn btn-sm btn-warning" t-if="state.latestId" t-on-click="backToLatest">Back to latest</button>
+                        </div>
+                        <div t-if="unreconciledRows.length" class="alert alert-danger m-2 mb-0 d-flex align-items-center">
+                            <span class="flex-grow-1">
+                                <b><t t-esc="unreconciledRows.length"/> customers</b> have unreconciled payments
+                                (<t t-esc="unreconciledTotal"/>). Emails and statements are blocked until the accountant reconciles them.
+                            </span>
+                            <button class="btn btn-sm btn-outline-danger" t-on-click="() => this.activatePredefinedFilter('unreconciled')">Show them</button>
+                        </div>
+                        <div t-if="mismatchRows.length" class="alert alert-warning m-2 mb-0 d-flex align-items-center">
+                            <span class="flex-grow-1">
+                                <b><t t-esc="mismatchRows.length"/> payment mismatches</b>: the latest note and the payments do not agree.
+                            </span>
+                            <button class="btn btn-sm btn-outline-warning" t-on-click="() => this.activatePredefinedFilter('mismatches')">Mismatches only</button>
+                        </div>
+                        <!-- Live comparison (FR-30) -->
+                        <t t-set="sum" t-value="state.data.summary"/>
+                        <div class="o_cw_summary d-flex flex-wrap gap-3 px-3 py-2 small">
+                            <span>Due at snapshot <b t-esc="formatMoney(sum.open)"/></span>
+                            <span>Collected <b class="text-success" t-esc="formatMoney(sum.collected)"/></span>
+                            <span>Updated balance <b t-esc="formatMoney(sum.balance)"/></span>
+                            <span>Rate <b t-esc="(sum.rate * 100).toFixed(1) + ' %'"/></span>
+                            <span>Rate excl. agreements <b t-esc="(sum.rate_ex_agreements * 100).toFixed(1) + ' %'"/></span>
+                            <span>Paid <b t-esc="sum.paid"/> · Partly <b t-esc="sum.partly"/> · Not paid <b t-esc="sum.not_paid"/></span>
+                            <span t-if="sum.changed_invoices">Changed after snapshot <b t-esc="sum.changed_invoices"/></span>
+                            <span class="text-muted">(whole snapshot)</span>
+                        </div>
+
+                        <div t-if="!allRows.length" class="alert alert-light m-2 mb-0">
+                            No customers match the search. Remove a filter in the search box to see more customers.
+                        </div>
+                        <table class="o_cw_table" t-att-style="'width: ' + tableWidth + 'px;'">
+                            <colgroup>
+                                <col style="width: 34px;"/>
+                                <t t-foreach="columns" t-as="col" t-key="col.key">
+                                    <col t-att-style="'width: ' + col.width + 'px;'"/>
+                                </t>
+                            </colgroup>
+                            <thead>
+                                <tr class="o_cw_section_head">
+                                    <th class="o_cw_check" rowspan="2">
+                                        <input type="checkbox" class="form-check-input" t-att-checked="allSelected" t-on-change="toggleSelectAll"/>
+                                    </th>
+                                    <t t-foreach="sectionHeaders" t-as="sec" t-key="sec.key">
+                                        <th t-att-colspan="sec.span" t-att-style="'background: ' + sec.color" t-esc="sec.label"/>
+                                    </t>
+                                </tr>
+                                <tr class="o_cw_col_head">
+                                    <t t-foreach="columns" t-as="col" t-key="col.key">
+                                        <th t-att-style="'background: ' + sectionColor(col.section)"
+                                            t-att-class="col.type === 'money' ? 'text-end' : ''">
+                                            <span class="o_cw_th_label" t-on-click="(ev) => this.openMenu(ev, col)" t-att-title="col.locked ? 'Always shown' : ''">
+                                                <t t-esc="col.label"/>
+                                                <i t-if="state.sort and state.sort.key === col.key"
+                                                   t-att-class="state.sort.asc ? 'fa fa-caret-up ms-1' : 'fa fa-caret-down ms-1'"/>
+                                                <i t-if="col.locked" class="fa fa-lock ms-1 text-muted small"/>
+                                            </span>
+                                            <span class="o_cw_resizer" t-on-mousedown="(ev) => this.startResize(ev, col)"/>
+                                        </th>
+                                    </t>
+                                </tr>
+                            </thead>
+                            <t t-foreach="sections" t-as="section" t-key="section.key">
+                                <tbody>
+                                    <tr class="o_cw_section_row" t-on-click="() => this.toggleSection(section.key)">
+                                        <td t-att-colspan="columns.length + 1">
+                                            <i t-att-class="section.collapsed ? 'fa fa-caret-right me-2' : 'fa fa-caret-down me-2'"/>
+                                            <b t-esc="section.label"/> <span class="text-muted">(<t t-esc="section.rows.length"/>)</span>
+                                        </td>
+                                    </tr>
+                                    <t t-if="!section.collapsed">
+                                        <t t-foreach="section.rows" t-as="row" t-key="row.id">
+                                            <tr class="o_cw_row" t-att-class="{ 'o_cw_active': state.panelOpen and state.activeLineId === row.id, 'o_cw_selected': state.selected[row.id] }"
+                                                t-on-click="(ev) => this.onRowClick(ev, row)">
+                                                <td class="o_cw_check">
+                                                    <input type="checkbox" class="form-check-input" t-att-checked="state.selected[row.id]"
+                                                           t-on-change="() => this.toggleSelect(row)"/>
+                                                </td>
+                                                <t t-foreach="columns" t-as="col" t-key="col.key">
+                                                    <td t-att-class="cellClass(col, row)">
+                                                        <t t-if="col.key === 'partner'">
+                                                            <div class="d-flex align-items-center gap-1">
+                                                                <span class="text-truncate flex-grow-1" t-esc="row.partner" t-att-title="row.partner"/>
+                                                                <span t-if="row.customer_replied" class="badge text-bg-info flex-shrink-0" title="Customer replied">Replied</span>
+                                                                <span t-if="row.awaiting_approval" class="badge text-bg-warning flex-shrink-0" title="Awaiting approval">Approval</span>
+                                                                <span t-if="row.is_agreement" class="badge text-bg-success flex-shrink-0" title="Payment agreement">Agr.</span>
+                                                                <button class="btn btn-link btn-sm p-0 o_cw_chat"
+                                                                        t-att-class="row.message_count ? 'o_cw_has_messages' : ''"
+                                                                        t-on-click="(ev) => this.openChat(ev, row)" title="Internal discussion">
+                                                                    <i class="fa fa-comments"/>
+                                                                    <small t-if="row.message_count" t-esc="row.message_count"/>
+                                                                </button>
+                                                            </div>
+                                                        </t>
+                                                        <t t-elif="col.type === 'tags'">
+                                                            <t t-foreach="row.tags" t-as="tag" t-key="tag.id">
+                                                                <span t-attf-class="badge rounded-pill o_tag_color_{{ tag.color || 0 }} me-1" t-esc="tag.name"/>
+                                                            </t>
+                                                        </t>
+                                                        <t t-elif="col.type === 'note'">
+                                                            <div class="o_cw_note d-flex gap-1">
+                                                                <div class="flex-grow-1 overflow-hidden" t-if="row.note">
+                                                                    <div class="text-nowrap text-truncate small">
+                                                                        <span t-attf-class="badge o_tag_color_{{ row.note.color || 0 }}" t-esc="row.note.category"/>
+                                                                        <span class="ms-1" t-esc="row.note.date"/>
+                                                                        <span class="text-muted ms-1" t-if="row.note.count > 1">(<t t-esc="row.note.count"/>)</span>
+                                                                        <span t-if="row.note.promise_date" class="ms-1">→ <t t-esc="row.note.promise_date"/></span>
+                                                                        <span t-if="row.deadline_state and row.deadline_state !== 'none' and row.deadline_state !== 'closed'"
+                                                                              t-attf-class="badge ms-1 o_cw_deadline_{{ row.deadline_state }}" t-esc="row.deadline_label"/>
+                                                                        <span t-if="row.pattern and row.pattern !== 'none'" t-attf-class="badge ms-1 o_cw_pattern_{{ row.pattern }}" t-esc="row.pattern_label"/>
+                                                                    </div>
+                                                                    <div class="text-truncate small text-muted" t-esc="row.note.body" t-att-title="row.note.body"/>
+                                                                </div>
+                                                                <div class="flex-grow-1 text-muted small" t-else="">No notes yet</div>
+                                                                <button class="btn btn-sm btn-outline-primary align-self-center o_cw_followup"
+                                                                        t-on-click.stop="() => this.followUp([row.partner_id], 'note')">Follow up</button>
+                                                            </div>
+                                                        </t>
+                                                        <t t-elif="col.key === 'stage'">
+                                                            <span t-esc="row.stage or ''"/>
+                                                            <span t-if="row.due_to_send" class="badge text-bg-primary ms-1" title="The next stage is due">Due</span>
+                                                        </t>
+                                                        <t t-else="">
+                                                            <t t-esc="cellText(col, row)"/>
+                                                        </t>
+                                                    </td>
+                                                </t>
+                                            </tr>
+                                        </t>
+                                    </t>
+                                    <tr class="o_cw_subtotal">
+                                        <td/>
+                                        <t t-foreach="columns" t-as="col" t-key="col.key">
+                                            <td t-att-class="col.type === 'money' ? 'text-end o_cw_num' : ''">
+                                                <t t-if="col_first">Subtotal <t t-esc="section.label"/></t>
+                                                <t t-else="" t-esc="total(col, section.rows)"/>
+                                            </td>
+                                        </t>
+                                    </tr>
+                                </tbody>
+                            </t>
+                            <tfoot>
+                                <tr class="o_cw_grand_total">
+                                    <td/>
+                                    <t t-foreach="columns" t-as="col" t-key="col.key">
+                                        <td t-att-class="col.type === 'money' ? 'text-end o_cw_num' : ''">
+                                            <t t-if="col_first">Grand total (<t t-esc="allRows.length"/>)</t>
+                                            <t t-else="" t-esc="total(col, allRows)"/>
+                                        </td>
+                                    </t>
+                                </tr>
+                            </tfoot>
+                        </table>
+
+                        <!-- Reserved area: hidden columns (FR-12) -->
+                        <div class="o_cw_add_area p-3">
+                            <button class="btn btn-sm btn-outline-secondary" t-on-click="() => this.state.showAdd = !this.state.showAdd">
+                                <i class="fa fa-plus me-1"/>Columns
+                            </button>
+                            <button class="btn btn-sm btn-link" t-on-click="resetWidths">Default column widths</button>
+                            <select class="form-select form-select-sm w-auto d-inline-block ms-2" t-on-change="setPeriodMode" title="Period columns">
+                                <option value="default" t-att-selected="state.prefs.period_mode === 'default'">Periods: default</option>
+                                <option value="month" t-att-selected="state.prefs.period_mode === 'month'">Periods: one per month</option>
+                                <option value="year" t-att-selected="state.prefs.period_mode === 'year'">Periods: one per year</option>
+                                <option value="custom" t-att-selected="state.prefs.period_mode === 'custom'">Periods: custom</option>
+                            </select>
+                            <div t-if="state.prefs.period_mode === 'custom'" class="mt-2">
+                                <div class="small text-muted mb-1">
+                                    Tick the months where a new column starts. The months in between are added together.
+                                </div>
+                                <div class="d-flex flex-wrap gap-1">
+                                    <t t-foreach="state.data.all_months" t-as="m" t-key="m.key">
+                                        <button class="btn btn-sm" t-att-class="isBreak(m.key) or m_first ? 'btn-primary' : 'btn-outline-secondary'"
+                                                t-att-disabled="m_first" t-on-click="() => this.toggleBreak(m.key)" t-esc="m.label"/>
+                                    </t>
+                                </div>
+                            </div>
+                            <div t-if="state.showAdd" class="d-flex flex-wrap gap-4 mt-2">
+                                <div t-if="!hiddenBySection.length" class="text-muted">All columns are shown.</div>
+                                <t t-foreach="hiddenBySection" t-as="group" t-key="group.section.key">
+                                    <div>
+                                        <div class="fw-bold small mb-1" t-esc="group.section.label"/>
+                                        <t t-foreach="group.items" t-as="item" t-key="item.key">
+                                            <button class="btn btn-sm btn-light d-block mb-1" t-on-click="() => this.showColumn(item.key)">
+                                                <i class="fa fa-plus me-1"/><t t-esc="item.label"/>
+                                            </button>
+                                        </t>
+                                    </div>
+                                </t>
+                            </div>
+                        </div>
+
+                        <!-- Header menu -->
+                        <div t-if="state.menu and menuColumn" class="o_cw_menu dropdown-menu show p-2"
+                             t-att-style="'left: ' + state.menu.left + 'px; top: ' + state.menu.top + 'px;'">
+                            <t t-set="mcol" t-value="menuColumn"/>
+                            <button class="dropdown-item" t-on-click="() => this.sortBy(true)"><i class="fa fa-sort-amount-asc me-2"/>Sort ascending</button>
+                            <button class="dropdown-item" t-on-click="() => this.sortBy(false)"><i class="fa fa-sort-amount-desc me-2"/>Sort descending</button>
+                            <t t-if="mcol.filter === 'pick'">
+                                <div class="dropdown-divider"/>
+                                <input class="form-control form-control-sm mb-1" placeholder="Search..."
+                                       t-model="state.menuSearch"/>
+                                <div class="o_cw_menu_list">
+                                    <t t-foreach="menuOptions" t-as="opt" t-key="opt.key">
+                                        <label class="d-flex align-items-center gap-2 px-1 small">
+                                            <input type="checkbox" class="form-check-input mt-0"
+                                                   t-att-checked="state.menuPicked[opt.key]" t-on-change="() => this.togglePick(opt)"/>
+                                            <span class="flex-grow-1 text-truncate" t-esc="opt.label"/>
+                                            <span class="text-muted" t-esc="opt.count"/>
+                                        </label>
+                                    </t>
+                                </div>
+                                <button class="btn btn-sm btn-primary w-100 mt-1" t-on-click="applyFilter">Filter</button>
+                            </t>
+                            <t t-if="mcol.filter === 'range'">
+                                <div class="dropdown-divider"/>
+                                <div class="d-flex gap-1">
+                                    <input type="number" class="form-control form-control-sm" placeholder="Min" t-model="state.menuMin"/>
+                                    <input type="number" class="form-control form-control-sm" placeholder="Max" t-model="state.menuMax"/>
+                                </div>
+                                <button class="btn btn-sm btn-primary w-100 mt-1" t-on-click="applyFilter">Filter</button>
+                            </t>
+                            <t t-if="!mcol.locked">
+                                <div class="dropdown-divider"/>
+                                <button class="dropdown-item" t-on-click="() => this.hideColumn(mcol)"><i class="fa fa-eye-slash me-2"/>Hide column</button>
+                            </t>
+                        </div>
+                    </t>
+                </div>
+
+                <!-- Side panel (FR-32) -->
+                <div t-if="state.panelOpen and state.activeLineId" class="o_cw_panel border-start">
+                    <WorkbenchPanel lineId="state.activeLineId" tab="state.panelTab"
+                                    setTab.bind="setPanelTab" onClose.bind="togglePanel" onChanged="() => this.load()"/>
+                </div>
+            </div>
+        </Layout>
+        </div>
+    </t>
+
+    <!-- ===================== Side panel ===================== -->
+    <t t-name="collections_workbench.WorkbenchPanel">
+        <div class="o_cw_panel_inner d-flex flex-column h-100">
+            <t t-set="d" t-value="state.data"/>
+            <div class="d-flex align-items-center p-2 border-bottom">
+                <h5 class="mb-0 flex-grow-1 text-truncate" t-esc="d and d.name"/>
+                <button class="btn btn-sm btn-link" t-on-click="props.onClose" title="Close"><i class="fa fa-times"/></button>
+            </div>
+            <ul class="nav nav-tabs px-2 pt-1">
+                <li class="nav-item"><a href="#" class="nav-link" t-att-class="props.tab === 'customer' ? 'active' : ''" t-on-click.prevent="() => props.setTab('customer')">Customer</a></li>
+                <li class="nav-item"><a href="#" class="nav-link" t-att-class="props.tab === 'discussion' ? 'active' : ''" t-on-click.prevent="() => props.setTab('discussion')">Internal discussion</a></li>
+                <li class="nav-item"><a href="#" class="nav-link" t-att-class="props.tab === 'emails' ? 'active' : ''" t-on-click.prevent="() => props.setTab('emails')">
+                    Customer emails <span t-if="d and d.emails.length" class="badge text-bg-light" t-esc="d.emails.length"/></a></li>
+            </ul>
+            <div class="flex-grow-1 overflow-auto p-2" t-if="d">
+                <!-- Customer -->
+                <t t-if="props.tab === 'customer'">
+                    <div class="d-flex flex-wrap gap-1 mb-2">
+                        <button class="btn btn-sm btn-primary" t-on-click="() => this.followUp('note')">Follow up</button>
+                        <button class="btn btn-sm btn-secondary" t-on-click="openInvoices">Open invoices</button>
+                        <button class="btn btn-sm btn-secondary" t-on-click="() => this.statement('statement')" t-att-disabled="d.unreconciled > 0.005">Statement</button>
+                        <button class="btn btn-sm btn-secondary" t-on-click="() => this.statement('ledger')" t-att-disabled="d.unreconciled > 0.005">Ledger</button>
+                        <button class="btn btn-sm btn-link" t-on-click="openCard">Customer card</button>
+                    </div>
+                    <div t-if="d.unreconciled > 0.005" class="alert alert-danger py-1 small">
+                        Unreconciled payment <t t-esc="formatMoney(d.unreconciled)"/>: emails and statements are blocked.
+                    </div>
+                    <div t-if="d.awaiting_approval" class="alert alert-warning py-1 small">Awaiting approval in the Approvals queue.</div>
+                    <div t-if="d.suggest_blacklist" class="alert alert-danger py-1 small d-flex align-items-center">
+                        <span class="flex-grow-1">Final notice expired with no payment.</span>
+                        <button class="btn btn-sm btn-danger" t-on-click="moveBlacklist">Move to blacklist</button>
+                    </div>
+                    <div t-if="d.suggest_close" class="alert alert-success py-1 small">Paid in full: management can close this follow-up.</div>
+                    <table class="table table-sm small mb-2">
+                        <tr><td class="text-muted">Balance</td><td class="text-end fw-bold" t-esc="formatMoney(d.balance)"/></tr>
+                        <tr><td class="text-muted">Last payment</td><td class="text-end" t-esc="d.last_payment or '-'"/></tr>
+                        <tr><td class="text-muted">Tags</td><td class="text-end">
+                            <t t-foreach="d.tags" t-as="tag" t-key="tag_index">
+                                <span t-attf-class="badge rounded-pill o_tag_color_{{ tag.color || 0 }} ms-1" t-esc="tag.name"/>
+                            </t></td></tr>
+                        <tr><td class="text-muted">Salesperson</td><td class="text-end" t-esc="d.salesman or '-'"/></tr>
+                        <tr><td class="text-muted">Assigned to</td><td class="text-end">
+                            <select class="form-select form-select-sm" t-on-change="setAssignee">
+                                <option value="">-</option>
+                                <t t-foreach="d.employees" t-as="emp" t-key="emp[0]">
+                                    <option t-att-value="emp[0]" t-att-selected="emp[0] === d.assignee_id" t-esc="emp[1]"/>
+                                </t>
+                            </select></td></tr>
+                        <tr><td class="text-muted">Pipeline / stage</td><td class="text-end"><t t-esc="d.pipeline or '-'"/> / <t t-esc="d.stage or '-'"/></td></tr>
+                        <tr><td class="text-muted">Suggested</td><td class="text-end"><t t-esc="d.next_action or '-'"/>
+                            <span t-if="d.due_to_send" class="badge text-bg-primary ms-1">Due</span></td></tr>
+                        <tr><td class="text-muted">Credit limit</td><td class="text-end" t-esc="d.credit_limit ? formatMoney(d.credit_limit) : '-'"/></tr>
+                        <tr><td class="text-muted">Pattern</td><td class="text-end" t-esc="d.pattern"/></tr>
+                        <tr><td class="text-muted">Deadline</td><td class="text-end"><t t-esc="d.deadline"/> <t t-esc="d.deadline_date or ''"/></td></tr>
+                        <tr t-if="d.email"><td class="text-muted">Email</td><td class="text-end text-truncate" t-esc="d.email"/></tr>
+                        <tr t-if="d.phone"><td class="text-muted">Phone</td><td class="text-end" t-esc="d.phone"/></tr>
+                    </table>
+                    <h6>Notes</h6>
+                    <div t-if="!d.notes.length" class="text-muted small mb-2">No notes yet.</div>
+                    <t t-foreach="d.notes" t-as="n" t-key="n.id">
+                        <div class="border-bottom py-1 small">
+                            <span t-attf-class="badge o_tag_color_{{ n.color || 0 }}" t-esc="n.category"/>
+                            <span class="ms-1" t-esc="n.date"/>
+                            <span class="text-muted ms-1" t-esc="n.user"/>
+                            <span t-if="n.promise_date" class="ms-1">→ <t t-esc="n.promise_date"/></span>
+                            <span t-if="n.amount" class="ms-1" t-esc="formatMoney(n.amount)"/>
+                            <div t-esc="n.body"/>
+                        </div>
+                    </t>
+                    <button t-if="d.has_older_notes" class="btn btn-sm btn-link" t-on-click="loadOlder">Load older</button>
+                    <t t-if="d.cycles.length">
+                        <h6 class="mt-3">Closed cycles</h6>
+                        <table class="table table-sm small">
+                            <tr class="text-muted"><td>From</td><td>To</td><td>Highest stage</td><td class="text-end">Days</td></tr>
+                            <t t-foreach="d.cycles" t-as="c" t-key="c_index">
+                                <tr><td t-esc="c.start"/><td t-esc="c.end"/><td><t t-esc="c.top"/><t t-if="c.partial"> (partial)</t></td><td class="text-end" t-esc="c.days"/></tr>
+                            </t>
+                        </table>
+                    </t>
+                    <h6 class="mt-3">Follow-up log</h6>
+                    <div t-if="!d.log.length" class="text-muted small">Nothing yet.</div>
+                    <t t-foreach="d.log" t-as="n" t-key="n.id">
+                        <div class="small text-muted border-bottom py-1">
+                            <span t-esc="n.date"/> · <t t-esc="n.user"/><t t-if="n.channel"> · <t t-esc="n.channel"/></t>
+                            <div class="text-body" t-esc="n.body"/>
+                        </div>
+                    </t>
+                </t>
+                <!-- Internal discussion (FR-33): log note, @mentions, activities; no "Send message" -->
+                <t t-if="props.tab === 'discussion'">
+                    <div class="small text-muted mb-1">Internal only: nothing here reaches the customer.</div>
+                    <div class="o_cw_chatter">
+                        <Chatter threadModel="'collection.snapshot.line'" threadId="props.lineId" isChatterAside="true"/>
+                    </div>
+                </t>
+                <!-- Customer emails (FR-28) -->
+                <t t-if="props.tab === 'emails'">
+                    <div class="small text-muted mb-2">Emails sent to and received from the customer (on their Contacts card).</div>
+                    <div t-if="!d.emails.length" class="text-muted small">No emails yet.</div>
+                    <t t-foreach="d.emails" t-as="m" t-key="m.id">
+                        <div class="border rounded p-2 mb-2 small" t-att-class="m.incoming ? 'border-info' : ''">
+                            <div class="d-flex gap-1 align-items-center">
+                                <span t-if="m.incoming" class="badge text-bg-info">Received</span>
+                                <span t-else="" class="badge text-bg-light">Sent</span>
+                                <span t-if="m.failed" class="badge text-bg-danger">Failed</span>
+                                <b class="flex-grow-1 text-truncate" t-esc="m.subject"/>
+                                <span class="text-muted" t-esc="m.date"/>
+                            </div>
+                            <div class="text-muted" t-esc="m.author"/>
+                            <div class="o_cw_email_body mt-1" t-out="this.markup(m.body)"/>
+                        </div>
+                    </t>
+                </t>
+            </div>
+        </div>
+    </t>
+</templates>
+
+
+

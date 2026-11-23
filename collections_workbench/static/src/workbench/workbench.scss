@@ -1,0 +1,172 @@
+.o_cw_workbench {
+    .o_cw_layout {
+        height: 100%;
+    }
+    .o_cw_summary {
+        background: $o-gray-100;
+        border-bottom: 1px solid $o-gray-300;
+    }
+    .o_cw_table {
+        table-layout: fixed;
+        border-collapse: separate;
+        border-spacing: 0;
+        font-size: 0.85rem;
+
+        th, td {
+            border-bottom: 1px solid $o-gray-200;
+            border-right: 1px solid $o-gray-200;
+            padding: 3px 6px;
+            overflow: hidden;
+            white-space: nowrap;
+            text-overflow: ellipsis;
+            vertical-align: middle;
+        }
+        thead th {
+            position: sticky;
+            z-index: 2;
+            color: $o-gray-900;
+            font-weight: 600;
+        }
+        .o_cw_section_head th {
+            top: 0;
+            height: 26px;
+            text-align: center;
+            text-transform: uppercase;
+            font-size: 0.72rem;
+            letter-spacing: 0.04em;
+        }
+        .o_cw_col_head th {
+            top: 26px;
+            position: sticky;
+        }
+        .o_cw_check {
+            text-align: center;
+            background: $o-white;
+        }
+        thead .o_cw_check {
+            top: 0;
+        }
+        .o_cw_th_label {
+            cursor: pointer;
+            user-select: none;
+            &:hover {
+                text-decoration: underline;
+            }
+        }
+        .o_cw_resizer {
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 6px;
+            height: 100%;
+            cursor: col-resize;
+            &:hover {
+                background: $o-gray-400;
+            }
+        }
+        .o_cw_section_row td {
+            background: $o-gray-200;
+            cursor: pointer;
+            font-size: 0.8rem;
+        }
+        .o_cw_row {
+            cursor: default;
+            &:hover td {
+                background: $o-gray-100;
+            }
+            .o_cw_chat {
+                visibility: hidden;
+                color: $o-gray-600;
+            }
+            &:hover .o_cw_chat, .o_cw_chat.o_cw_has_messages {
+                visibility: visible;
+            }
+            .o_cw_followup {
+                visibility: hidden;
+            }
+            &:hover .o_cw_followup {
+                visibility: visible;
+            }
+        }
+        .o_cw_active td {
+            background: rgba($o-action, 0.08) !important;
+        }
+        .o_cw_selected td {
+            background: rgba($o-action, 0.04);
+        }
+        .o_cw_num {
+            font-variant-numeric: tabular-nums;
+        }
+        .o_cw_period {
+            background: #FFFBF1;
+        }
+        .o_cw_period_year {
+            background: #FFF4DB;
+        }
+        .o_cw_period_merged {
+            background: #FFF8E8;
+        }
+        .o_cw_alert {
+            color: $danger;
+            font-weight: 600;
+        }
+        .o_cw_status_paid {
+            color: $success;
+        }
+        .o_cw_status_partly {
+            color: $warning;
+        }
+        .o_cw_subtotal td {
+            background: $o-gray-100;
+            font-weight: 600;
+        }
+        tfoot td {
+            position: sticky;
+            bottom: 0;
+            z-index: 2;
+            background: #CFE2CF;
+            font-weight: 700;
+        }
+        .o_cw_note {
+            min-height: 34px;
+        }
+    }
+    .o_cw_deadline_late { background: $danger; color: $white; }
+    .o_cw_deadline_late_us { background: #7B4E8E; color: $white; }
+    .o_cw_deadline_today { background: #F08C2E; color: $white; }
+    .o_cw_deadline_soon { background: $warning; color: $o-gray-900; }
+    .o_cw_deadline_open { background: $info; color: $white; }
+    .o_cw_pattern_reliable { background: $success; color: $white; }
+    .o_cw_pattern_once { background: $warning; color: $o-gray-900; }
+    .o_cw_pattern_repeat { background: #F08C2E; color: $white; }
+    .o_cw_pattern_chronic { background: $danger; color: $white; }
+    .o_cw_pattern_unreach { background: $o-gray-600; color: $white; }
+
+    .o_cw_menu {
+        position: absolute;
+        z-index: 10;
+        min-width: 240px;
+        max-width: 320px;
+        .o_cw_menu_list {
+            max-height: 240px;
+            overflow-y: auto;
+        }
+    }
+    .o_cw_panel {
+        width: 440px;
+        min-width: 440px;
+        background: $o-white;
+    }
+    // Internal discussion only (BR-23): no "Send message" in the panel
+    .o_cw_chatter .o-mail-Chatter-sendMessage {
+        display: none !important;
+    }
+    .o_cw_email_body {
+        max-height: 220px;
+        overflow: auto;
+    }
+}
+
+.o_cw_board_tabs .btn {
+    white-space: nowrap;
+}

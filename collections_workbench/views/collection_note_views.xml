@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- ===================== Notes ===================== -->
+    <record id="collection_note_view_list" model="ir.ui.view">
+        <field name="name">collection.note.list</field>
+        <field name="model">collection.note</field>
+        <field name="arch" type="xml">
+            <list edit="false" delete="false" decoration-muted="is_system">
+                <field name="create_date" string="Written on"/>
+                <field name="partner_id"/>
+                <field name="category_id" widget="badge"/>
+                <field name="body"/>
+                <field name="promise_date"/>
+                <field name="amount"/>
+                <field name="channel" optional="hide"/>
+                <field name="user_id" widget="many2one_avatar_user"/>
+                <field name="is_system" column_invisible="1"/>
+                <field name="currency_id" column_invisible="1"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="collection_note_view_form" model="ir.ui.view">
+        <field name="name">collection.note.form</field>
+        <field name="model">collection.note</field>
+        <field name="arch" type="xml">
+            <form string="Collection note" delete="false">
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="partner_id" readonly="id"/>
+                            <field name="category_id" readonly="id"
+                                   domain="[('is_system', '=', False)]"
+                                   options="{'no_create': True, 'no_open': True}"/>
+                            <field name="promise_date" readonly="id" invisible="not requires_date"
+                                   required="requires_date"/>
+                            <field name="amount" readonly="id" invisible="not requires_amount"
+                                   required="requires_amount"/>
+                            <field name="currency_id" invisible="1"/>
+                            <field name="requires_date" invisible="1"/>
+                            <field name="requires_amount" invisible="1"/>
+                        </group>
+                        <group invisible="not id">
+                            <field name="create_date" string="Written on"/>
+                            <field name="user_id"/>
+                            <field name="channel" invisible="not channel"/>
+                            <field name="stage_id" invisible="not stage_id"/>
+                        </group>
+                    </group>
+                    <field name="body" readonly="id" placeholder="What did the customer say?"/>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="collection_note_view_search" model="ir.ui.view">
+        <field name="name">collection.note.search</field>
+        <field name="model">collection.note</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="partner_id"/>
+                <field name="category_id"/>
+                <field name="user_id"/>
+                <filter name="manual" string="Manual notes" domain="[('is_system', '=', False)]"/>
+                <filter name="system" string="System notes" domain="[('is_system', '=', True)]"/>
+                <group>
+                    <filter name="group_category" string="Category" context="{'group_by': 'category_id'}"/>
+                    <filter name="group_partner" string="Customer" context="{'group_by': 'partner_id'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_collection_note" model="ir.actions.act_window">
+        <field name="name">Collection notes</field>
+        <field name="res_model">collection.note</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+    <!-- ===================== Note categories (settings) ===================== -->
+    <record id="collection_note_category_view_list" model="ir.ui.view">
+        <field name="name">collection.note.category.list</field>
+        <field name="model">collection.note.category</field>
+        <field name="arch" type="xml">
+            <list editable="bottom">
+                <field name="sequence" widget="handle"/>
+                <field name="name"/>
+                <field name="color" widget="color_picker"/>
+                <field name="requires_date"/>
+                <field name="requires_amount"/>
+                <field name="is_promise"/>
+                <field name="is_no_answer"/>
+                <field name="closes_deadline"/>
+                <field name="late_on"/>
+                <field name="is_paid_claim" optional="show"/>
+                <field name="is_blacklist_recommendation" optional="show"/>
+                <field name="is_system" optional="hide"/>
+                <field name="active" widget="boolean_toggle" optional="show"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="action_collection_note_category" model="ir.actions.act_window">
+        <field name="name">Note categories</field>
+        <field name="res_model">collection.note.category</field>
+        <field name="view_mode">list</field>
+        <field name="context">{'active_test': False}</field>
+    </record>
+</odoo>

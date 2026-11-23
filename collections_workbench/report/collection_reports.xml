@@ -1,0 +1,189 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- ================= Statement of account / Ledger (FR-37) ================= -->
+    <record id="action_report_statement" model="ir.actions.report">
+        <field name="name">Statement of account</field>
+        <field name="model">res.partner</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">collections_workbench.report_statement</field>
+        <field name="report_file">collections_workbench.report_statement</field>
+        <field name="print_report_name">'Statement - %s' % object.name</field>
+    </record>
+
+    <template id="report_statement">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="doc">
+                <t t-set="o" t-value="doc['partner']"/>
+                <t t-call="web.external_layout">
+                    <div class="page">
+                        <div class="row mb-4">
+                            <div class="col-7">
+                                <h3 t-if="mode == 'statement'">Statement of account</h3>
+                                <h3 t-else="">Customer ledger</h3>
+                                <div>As of <span t-out="today" t-options="{'widget': 'date'}"/>, full period</div>
+                            </div>
+                            <div class="col-5">
+                                <strong t-out="o.name"/>
+                                <div t-field="o.contact_address" class="small"/>
+                            </div>
+                        </div>
+                        <table class="table table-sm o_main_table">
+                            <thead>
+                                <tr t-if="mode == 'statement'">
+                                    <th>Date</th><th>Number</th><th>Reference</th><th>Due date</th>
+                                    <th class="text-end">Amount</th><th class="text-end">Open</th>
+                                    <th class="text-end">Days overdue</th>
+                                </tr>
+                                <tr t-else="">
+                                    <th>Date</th><th>Number</th><th>Reference</th>
+                                    <th class="text-end">Debit</th><th class="text-end">Credit</th>
+                                    <th class="text-end">Balance</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <t t-foreach="doc['rows']" t-as="r">
+                                    <tr t-if="mode == 'statement'">
+                                        <td><span t-out="r['date']" t-options="{'widget': 'date'}"/></td>
+                                        <td t-out="r['number']"/>
+                                        <td t-out="r['ref']"/>
+                                        <td><span t-out="r['due']" t-options="{'widget': 'date'}"/></td>
+                                        <td class="text-end"><span t-out="r['amount']" t-options="{'widget': 'monetary', 'display_currency': currency}"/></td>
+                                        <td class="text-end"><span t-out="r['open']" t-options="{'widget': 'monetary', 'display_currency': currency}"/></td>
+                                        <td class="text-end" t-out="r['overdue'] or ''"/>
+                                    </tr>
+                                    <tr t-else="">
+                                        <td><span t-out="r['date']" t-options="{'widget': 'date'}"/></td>
+                                        <td t-out="r['number']"/>
+                                        <td t-out="r['ref']"/>
+                                        <td class="text-end"><span t-out="r['debit']" t-options="{'widget': 'monetary', 'display_currency': currency}"/></td>
+                                        <td class="text-end"><span t-out="r['credit']" t-options="{'widget': 'monetary', 'display_currency': currency}"/></td>
+                                        <td class="text-end"><span t-out="r['balance']" t-options="{'widget': 'monetary', 'display_currency': currency}"/></td>
+                                    </tr>
+                                </t>
+                                <tr t-if="not doc['rows']">
+                                    <td colspan="7" class="text-center text-muted">Nothing open.</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                        <div class="row justify-content-end">
+                            <div class="col-5">
+                                <table class="table table-sm">
+                                    <tr class="border-black fw-bold">
+                                        <td>Balance due</td>
+                                        <td class="text-end"><span t-out="doc['total']" t-options="{'widget': 'monetary', 'display_currency': currency}"/></td>
+                                    </tr>
+                                </table>
+                            </div>
+                        </div>
+                        <p class="small text-muted">If you have already paid, please ignore this statement or send us the payment details.</p>
+                    </div>
+                </t>
+            </t>
+        </t>
+    </template>
+
+    <!-- ================= One-page monthly report (FR-39) ================= -->
+    <record id="action_report_monthly" model="ir.actions.report">
+        <field name="name">Monthly collection report</field>
+        <field name="model">collection.snapshot</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">collections_workbench.report_monthly</field>
+        <field name="report_file">collections_workbench.report_monthly</field>
+        <field name="print_report_name">'Collection report - %s' % object.name</field>
+        <field name="binding_model_id" ref="model_collection_snapshot"/>
+        <field name="binding_type">report</field>
+    </record>
+
+    <template id="report_monthly">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="doc">
+                <t t-set="o" t-value="doc['snapshot']"/>
+                <t t-call="web.internal_layout">
+                    <t t-set="s" t-value="doc['snapshot']"/>
+                    <t t-set="money" t-value="{'widget': 'monetary', 'display_currency': currency}"/>
+                    <div class="page" style="font-size: 11px;">
+                        <h3>Collection report: <span t-out="s.name"/></h3>
+                        <div class="text-muted mb-3">
+                            Snapshot pulled on <span t-field="s.pull_date" t-options="{'widget': 'date'}"/>,
+                            figures as of <span t-out="today" t-options="{'widget': 'date'}"/>.
+                        </div>
+                        <!-- KPIs -->
+                        <table class="table table-sm table-bordered text-center mb-3">
+                            <tr class="text-muted">
+                                <td>Due at snapshot</td><td>Collected</td><td>Updated balance</td>
+                                <td>Collection rate</td><td>Rate excl. agreements</td><td>Rate: net amount</td>
+                                <td>Paid / Partly / Not paid</td><td>Avg days to close</td>
+                            </tr>
+                            <tr class="fw-bold" style="font-size: 14px;">
+                                <td><span t-out="doc['live']['open']" t-options="money"/></td>
+                                <td><span t-out="doc['live']['collected']" t-options="money"/></td>
+                                <td><span t-out="doc['live']['balance']" t-options="money"/></td>
+                                <td><t t-out="'%.1f' % (doc['live']['rate'] * 100)"/> %</td>
+                                <td><t t-out="'%.1f' % (doc['live']['rate_ex_agreements'] * 100)"/> %</td>
+                                <td><t t-out="'%.1f' % (doc['live']['rate_net'] * 100)"/> %</td>
+                                <td><t t-out="doc['live']['paid']"/> / <t t-out="doc['live']['partly']"/> / <t t-out="doc['live']['not_paid']"/></td>
+                                <td><t t-if="doc['live']['avg_days'] is not False"><t t-out="doc['live']['avg_days']"/> days</t><t t-else="">—</t></td>
+                            </tr>
+                        </table>
+                        <!-- Summary table -->
+                        <h5>Summary</h5>
+                        <table class="table table-sm mb-3">
+                            <thead>
+                                <tr><th></th><th class="text-end">Customers</th><th class="text-end">Due at snapshot</th>
+                                    <th class="text-end">Share</th><th class="text-end">Collected</th><th class="text-end">Balance</th>
+                                    <th class="text-end">Rate</th><th class="text-end">Paid / Partly / Not paid</th></tr>
+                            </thead>
+                            <tbody>
+                                <t t-foreach="doc['summary']" t-as="row">
+                                    <tr t-att-class="row[2] and 'fw-bold border-top border-dark' or ''">
+                                        <td t-out="row[0]"/>
+                                        <td class="text-end" t-out="row[1]['count']"/>
+                                        <td class="text-end"><span t-out="row[1]['due']" t-options="money"/></td>
+                                        <td class="text-end"><t t-out="'%.1f' % (row[1]['share'] * 100)"/> %</td>
+                                        <td class="text-end"><span t-out="row[1]['collected']" t-options="money"/></td>
+                                        <td class="text-end"><span t-out="row[1]['balance']" t-options="money"/></td>
+                                        <td class="text-end"><t t-out="'%.1f' % (row[1]['rate'] * 100)"/> %</td>
+                                        <td class="text-end"><t t-out="row[1]['paid']"/> / <t t-out="row[1]['partly']"/> / <t t-out="row[1]['not_paid']"/></td>
+                                    </tr>
+                                </t>
+                            </tbody>
+                        </table>
+                        <div class="text-muted small mb-3">Net total = Total − Blacklist − Court case − Agreements.</div>
+                        <div class="row">
+                            <!-- Trend -->
+                            <div class="col-6">
+                                <h5>Monthly trend</h5>
+                                <table class="table table-sm">
+                                    <t t-foreach="doc['trend']" t-as="t">
+                                        <tr>
+                                            <td style="width: 35%;" t-out="t['name']"/>
+                                            <td>
+                                                <div t-att-style="'background: #5B8DB8; height: 10px; width: ' + str(max(2, int(t['rate'] * 200))) + 'px;'"/>
+                                            </td>
+                                            <td class="text-end" style="width: 18%;"><t t-out="'%.1f' % (t['rate'] * 100)"/> %</td>
+                                        </tr>
+                                    </t>
+                                </table>
+                            </div>
+                            <!-- Per assignee -->
+                            <div class="col-6">
+                                <h5>Rate per assignee</h5>
+                                <table class="table table-sm">
+                                    <thead><tr><th>Assignee</th><th class="text-end">Due</th><th class="text-end">Collected</th><th class="text-end">Rate</th></tr></thead>
+                                    <t t-foreach="doc['assignees']" t-as="a">
+                                        <tr>
+                                            <td t-out="a['name']"/>
+                                            <td class="text-end"><span t-out="a['due']" t-options="money"/></td>
+                                            <td class="text-end"><span t-out="a['collected']" t-options="money"/></td>
+                                            <td class="text-end"><t t-out="'%.1f' % (a['rate'] * 100)"/> %</td>
+                                        </tr>
+                                    </t>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </t>
+            </t>
+        </t>
+    </template>
+</odoo>

@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="1">
+    <!-- Colours: Odoo colour index (1 red, 2 orange, 4 light blue, 8 dark blue, 10 green, 0 grey) -->
+    <record id="note_cat_paid_full" model="collection.note.category">
+        <field name="name">Paid in full</field>
+        <field name="sequence">10</field>
+        <field name="color">10</field>
+        <field name="closes_deadline" eval="True"/>
+        <field name="is_paid_claim" eval="True"/>
+    </record>
+    <record id="note_cat_paid_partial" model="collection.note.category">
+        <field name="name">Partial payment</field>
+        <field name="sequence">20</field>
+        <field name="color">10</field>
+        <field name="requires_amount" eval="True"/>
+        <field name="closes_deadline" eval="True"/>
+        <field name="is_paid_claim" eval="True"/>
+    </record>
+    <record id="note_cat_cheque_ready" model="collection.note.category">
+        <field name="name">Cheque ready for pickup</field>
+        <field name="sequence">30</field>
+        <field name="color">10</field>
+        <field name="closes_deadline" eval="True"/>
+    </record>
+    <record id="note_cat_promise" model="collection.note.category">
+        <field name="name">Promise to pay</field>
+        <field name="sequence">40</field>
+        <field name="color">2</field>
+        <field name="requires_date" eval="True"/>
+        <field name="requires_amount" eval="True"/>
+        <field name="is_promise" eval="True"/>
+        <field name="late_on">customer</field>
+    </record>
+    <record id="note_cat_meeting" model="collection.note.category">
+        <field name="name">Meeting scheduled</field>
+        <field name="sequence">50</field>
+        <field name="color">2</field>
+        <field name="requires_date" eval="True"/>
+        <field name="late_on">customer</field>
+    </record>
+    <record id="note_cat_field_visit" model="collection.note.category">
+        <field name="name">Field visit</field>
+        <field name="sequence">60</field>
+        <field name="color">4</field>
+        <field name="requires_date" eval="True"/>
+        <field name="late_on">us</field>
+    </record>
+    <record id="note_cat_pending_docs" model="collection.note.category">
+        <field name="name">Awaiting documents (LPO)</field>
+        <field name="sequence">70</field>
+        <field name="color">4</field>
+    </record>
+    <record id="note_cat_escalated" model="collection.note.category">
+        <field name="name">Escalated to management</field>
+        <field name="sequence">80</field>
+        <field name="color">4</field>
+    </record>
+    <record id="note_cat_contacted" model="collection.note.category">
+        <field name="name">Contacted, no action</field>
+        <field name="sequence">90</field>
+        <field name="color">0</field>
+    </record>
+    <record id="note_cat_no_answer" model="collection.note.category">
+        <field name="name">No answer</field>
+        <field name="sequence">100</field>
+        <field name="color">1</field>
+        <field name="is_no_answer" eval="True"/>
+    </record>
+    <record id="note_cat_dispute" model="collection.note.category">
+        <field name="name">Disputes balance</field>
+        <field name="sequence">110</field>
+        <field name="color">1</field>
+    </record>
+    <record id="note_cat_blacklist_rec" model="collection.note.category">
+        <field name="name">Blacklist recommended</field>
+        <field name="sequence">120</field>
+        <field name="color">1</field>
+        <field name="is_blacklist_recommendation" eval="True"/>
+    </record>
+    <record id="note_cat_writeoff" model="collection.note.category">
+        <field name="name">Small amount write-off</field>
+        <field name="sequence">130</field>
+        <field name="color">0</field>
+    </record>
+
+    <!-- System categories: written by the module only -->
+    <record id="note_cat_email_sent" model="collection.note.category">
+        <field name="name">Email sent</field>
+        <field name="sequence">200</field>
+        <field name="color">4</field>
+        <field name="is_system" eval="True"/>
+    </record>
+    <record id="note_cat_stage_recorded" model="collection.note.category">
+        <field name="name">Stage recorded (no email)</field>
+        <field name="sequence">210</field>
+        <field name="color">8</field>
+        <field name="is_system" eval="True"/>
+    </record>
+    <record id="note_cat_system" model="collection.note.category">
+        <field name="name">System</field>
+        <field name="sequence">220</field>
+        <field name="color">0</field>
+        <field name="is_system" eval="True"/>
+    </record>
+</odoo>

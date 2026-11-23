@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Link the default stage emails once; later edits in Settings are kept -->
+    <function model="collection.stage" name="_collection_link_default_templates"/>
+</odoo>

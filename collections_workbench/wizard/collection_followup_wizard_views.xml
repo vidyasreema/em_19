@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="collection_followup_wizard_view_form" model="ir.ui.view">
+        <field name="name">collection.followup.wizard.form</field>
+        <field name="model">collection.followup.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Follow up">
+                <div class="alert alert-info" role="alert" invisible="not pipeline_change_info">
+                    <field name="pipeline_change_info" readonly="1"/>
+                </div>
+                <group>
+                    <group>
+                        <field name="partner_ids" widget="many2many_tags" readonly="1"/>
+                        <field name="partner_count" invisible="1"/>
+                        <field name="kind" widget="radio"/>
+                        <p class="text-muted small" invisible="kind != 'note'">
+                            Notes cannot be edited or deleted later. A correction is a new note.
+                        </p>
+                    </group>
+                    <group invisible="kind != 'stage'">
+                        <field name="pipeline_id" options="{'no_create': True, 'no_open': True}"
+                               required="kind == 'stage'"/>
+                        <field name="stage_id" options="{'no_create': True, 'no_open': True}"
+                               required="kind == 'stage'"/>
+                        <field name="stage_has_email" invisible="1"/>
+                        <field name="send_mode" widget="radio" invisible="not stage_has_email"/>
+                        <field name="channel" invisible="send_mode != 'record'"
+                               required="kind == 'stage' and send_mode == 'record'"/>
+                    </group>
+                </group>
+                <group invisible="kind != 'note'">
+                    <group>
+                        <field name="note_category_id" required="kind == 'note'"
+                               options="{'no_create': True, 'no_open': True}"/>
+                        <field name="note_promise_date" invisible="not note_requires_date"
+                               required="kind == 'note' and note_requires_date"/>
+                        <field name="note_amount" invisible="not note_requires_amount"
+                               required="kind == 'note' and note_requires_amount"/>
+                        <field name="note_requires_date" invisible="1"/>
+                        <field name="note_requires_amount" invisible="1"/>
+                        <field name="currency_id" invisible="1"/>
+                    </group>
+                </group>
+                <group>
+                    <field name="deadline_date" invisible="not show_deadline"/>
+                    <field name="show_deadline" invisible="1"/>
+                    <field name="uses_email" invisible="1"/>
+                    <field name="template_id" invisible="not uses_email"
+                           options="{'no_create': True, 'no_open': True}"/>
+                    <field name="subject" invisible="not uses_email" readonly="partner_count &gt; 1"/>
+                </group>
+                <div invisible="not uses_email" class="mb-3">
+                    <div class="text-muted small mb-1" invisible="partner_count &lt;= 1">
+                        Preview for the first customer. Each customer receives the template with their own figures.
+                    </div>
+                    <field name="body" readonly="partner_count &gt; 1" class="border p-2"/>
+                </div>
+                <group>
+                    <field name="note" placeholder="Optional: what happened, e.g. spoke with the owner"/>
+                </group>
+                <div invisible="kind == 'note'">
+                    <separator string="Customers"/>
+                    <field name="preview_html" readonly="1"/>
+                </div>
+                <div invisible="partner_count != 1">
+                    <div class="d-flex align-items-center justify-content-between mt-3">
+                        <h5 class="mb-0">
+                            <span invisible="show_full_history">Last 3 notes</span>
+                            <span invisible="not show_full_history">Full history</span>
+                        </h5>
+                        <button name="action_toggle_history" type="object" class="btn btn-link"
+                                string="Full history" invisible="show_full_history"/>
+                        <button name="action_toggle_history" type="object" class="btn btn-link"
+                                string="Back" invisible="not show_full_history"/>
+                        <field name="show_full_history" invisible="1"/>
+                    </div>
+                    <field name="history_html" readonly="1"/>
+                </div>
+                <footer>
+                    <button name="action_confirm" type="object" string="Confirm" class="btn-primary"
+                            data-hotkey="q"/>
+                    <button string="Cancel" class="btn-secondary" special="cancel" data-hotkey="x"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <!-- Bulk "Follow up" from the snapshot table (FR-25) -->
+    <record id="action_server_snapshot_line_followup" model="ir.actions.server">
+        <field name="name">Follow up</field>
+        <field name="model_id" ref="model_collection_snapshot_line"/>
+        <field name="binding_model_id" ref="model_collection_snapshot_line"/>
+        <field name="binding_view_types">list,kanban</field>
+        <field name="group_ids" eval="[(4, ref('group_collection_user'))]"/>
+        <field name="state">code</field>
+        <field name="code">action = records.partner_id.action_collection_followup()</field>
+    </record>
+</odoo>

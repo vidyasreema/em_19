@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="collection_snapshot_wizard_form" model="ir.ui.view">
+        <field name="name">collection.snapshot.wizard.form</field>
+        <field name="model">collection.snapshot.wizard</field>
+        <field name="arch" type="xml">
+            <form string="New snapshot">
+                <p class="text-muted">
+                    Freezes every posted customer invoice with a remaining balance in the
+                    chosen period, at its remaining amount. The figures never change afterwards.
+                </p>
+                <group>
+                    <field name="period_type" widget="radio" options="{'horizontal': true}"/>
+                    <field name="month_date" invisible="period_type != 'before_month'"
+                           required="period_type == 'before_month'"
+                           options="{'datepicker': {'maxPrecision': 'months'}}"/>
+                    <field name="date_from" invisible="period_type != 'range'"
+                           required="period_type == 'range'"/>
+                    <field name="date_to" invisible="period_type != 'range'"
+                           required="period_type == 'range'"/>
+                </group>
+                <div class="alert alert-danger" role="alert" invisible="not duplicate_info">
+                    <field name="duplicate_info" readonly="1"/>
+                </div>
+                <div class="alert alert-info" role="status">
+                    <field name="customer_count" class="fw-bold"/> customers,
+                    <field name="invoice_count" class="fw-bold"/> invoices.
+                </div>
+                <div class="alert alert-warning" role="alert" invisible="not unreconciled_count">
+                    <p class="mb-2">
+                        <strong><field name="unreconciled_count"/> customers have unreconciled payments.</strong>
+                        You can still generate: their lines will carry an "Unreconciled" flag and
+                        emails to them stay blocked until the payment is reconciled.
+                    </p>
+                    <field name="unreconciled_html" nolabel="1"/>
+                </div>
+                <footer>
+                    <button name="action_generate" type="object" string="Generate" class="btn-primary" invisible="duplicate_info"/>
+                    <button string="Cancel" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_collection_snapshot_wizard" model="ir.actions.act_window">
+        <field name="name">New snapshot</field>
+        <field name="res_model">collection.snapshot.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+        <field name="group_ids" eval="[(4, ref('collections_workbench.group_collection_accountant'))]"/>
+    </record>
+</odoo>

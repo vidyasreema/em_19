@@ -1,0 +1,162 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="1">
+    <!-- Collection emails, in English (BR-26, FR-27). Editable in Settings > Technical > Email Templates. -->
+    <record id="mail_template_stage_claim" model="mail.template">
+        <field name="name">Collections: Claim</field>
+        <field name="model_id" ref="base.model_res_partner"/>
+        <field name="subject">Account balance - {{ object.name }}</field>
+        <field name="email_to">{{ object.email }}</field>
+        <field name="auto_delete" eval="False"/>
+        <field name="body_html" type="html">
+<div>
+<p>Dear <t t-out="object.name"/>,</p>
+<p>Your account shows an outstanding balance of <t t-out="ctx.get('cw_balance')"/> as of <t t-out="ctx.get('cw_date')"/>.</p>
+<p>Kindly review it and arrange settlement, or let us know if anything needs clarification.</p>
+<p>Kind regards,<br/>Accounts Department<br/><t t-out="ctx.get('cw_company')"/></p>
+</div>
+        </field>
+    </record>
+    <record id="mail_template_stage_reminder_1" model="mail.template">
+        <field name="name">Collections: First reminder</field>
+        <field name="model_id" ref="base.model_res_partner"/>
+        <field name="subject">Payment reminder - {{ object.name }}</field>
+        <field name="email_to">{{ object.email }}</field>
+        <field name="auto_delete" eval="False"/>
+        <field name="body_html" type="html">
+<div>
+<p>Dear <t t-out="object.name"/>,</p>
+<p>This is a friendly reminder that your account shows an outstanding balance of <t t-out="ctx.get('cw_balance')"/> as of <t t-out="ctx.get('cw_date')"/>.</p>
+<p>We would appreciate settlement at your earliest convenience.</p>
+<p>Kind regards,<br/>Accounts Department<br/><t t-out="ctx.get('cw_company')"/></p>
+</div>
+        </field>
+    </record>
+    <record id="mail_template_stage_reminder_2" model="mail.template">
+        <field name="name">Collections: Second reminder</field>
+        <field name="model_id" ref="base.model_res_partner"/>
+        <field name="subject">Second reminder - outstanding balance {{ ctx.get('cw_balance') }}</field>
+        <field name="email_to">{{ object.email }}</field>
+        <field name="auto_delete" eval="False"/>
+        <field name="body_html" type="html">
+<div>
+<p>Dear <t t-out="object.name"/>,</p>
+<p>Further to our previous reminder, the balance of <t t-out="ctx.get('cw_balance')"/> remains outstanding as of <t t-out="ctx.get('cw_date')"/>. Please arrange payment or contact us to agree a settlement date.</p>
+<p>Kind regards,<br/>Accounts Department<br/><t t-out="ctx.get('cw_company')"/></p>
+</div>
+        </field>
+    </record>
+    <record id="mail_template_stage_reminder_3" model="mail.template">
+        <field name="name">Collections: Third reminder</field>
+        <field name="model_id" ref="base.model_res_partner"/>
+        <field name="subject">Third reminder - outstanding balance {{ ctx.get('cw_balance') }}</field>
+        <field name="email_to">{{ object.email }}</field>
+        <field name="auto_delete" eval="False"/>
+        <field name="body_html" type="html">
+<div>
+<p>Dear <t t-out="object.name"/>,</p>
+<p>Despite our previous reminders, the balance of <t t-out="ctx.get('cw_balance')"/> remains outstanding as of <t t-out="ctx.get('cw_date')"/>. Please arrange payment within 7 days to avoid a hold on credit sales.</p>
+<p>Kind regards,<br/>Accounts Department<br/><t t-out="ctx.get('cw_company')"/></p>
+</div>
+        </field>
+    </record>
+    <record id="mail_template_stage_credit_hold" model="mail.template">
+        <field name="name">Collections: Credit sales hold</field>
+        <field name="model_id" ref="base.model_res_partner"/>
+        <field name="subject">Credit sales on hold - {{ object.name }}</field>
+        <field name="email_to">{{ object.email }}</field>
+        <field name="auto_delete" eval="False"/>
+        <field name="body_html" type="html">
+<div>
+<p>Dear <t t-out="object.name"/>,</p>
+<p>As the balance of <t t-out="ctx.get('cw_balance')"/> remains unpaid, credit sales on your account are on hold effective <t t-out="ctx.get('cw_date')"/> until outstanding dues are settled. Cash orders remain available.</p>
+<p>Kind regards,<br/>Accounts Department<br/><t t-out="ctx.get('cw_company')"/></p>
+</div>
+        </field>
+    </record>
+    <record id="mail_template_stage_final_notice" model="mail.template">
+        <field name="name">Collections: Final notice</field>
+        <field name="model_id" ref="base.model_res_partner"/>
+        <field name="subject">Final notice - settlement required by {{ ctx.get('cw_deadline') }}</field>
+        <field name="email_to">{{ object.email }}</field>
+        <field name="auto_delete" eval="False"/>
+        <field name="body_html" type="html">
+<div>
+<p>Dear <t t-out="object.name"/>,</p>
+<p>This is a final notice. The balance of <t t-out="ctx.get('cw_balance')"/> must be settled no later than <t t-out="ctx.get('cw_deadline')"/>. If not settled by then, the account will be referred to management for further action.</p>
+<p>Kind regards,<br/>Accounts Department<br/><t t-out="ctx.get('cw_company')"/></p>
+</div>
+        </field>
+    </record>
+    <record id="mail_template_stage_management" model="mail.template">
+        <field name="name">Collections: Referred to management</field>
+        <field name="model_id" ref="base.model_res_partner"/>
+        <field name="subject">Account referred to management - {{ object.name }}</field>
+        <field name="email_to">{{ object.email }}</field>
+        <field name="auto_delete" eval="False"/>
+        <field name="body_html" type="html">
+<div>
+<p>Dear <t t-out="object.name"/>,</p>
+<p>Your account with an outstanding balance of <t t-out="ctx.get('cw_balance')"/> has been referred to our management as of <t t-out="ctx.get('cw_date')"/>. Please contact us urgently.</p>
+<p>Kind regards,<br/>Accounts Department<br/><t t-out="ctx.get('cw_company')"/></p>
+</div>
+        </field>
+    </record>
+    <record id="mail_template_soa" model="mail.template">
+        <field name="name">Collections: Statement of account</field>
+        <field name="model_id" ref="base.model_res_partner"/>
+        <field name="subject">Statement of account - {{ object.name }}</field>
+        <field name="email_to">{{ object.email }}</field>
+        <field name="auto_delete" eval="False"/>
+        <field name="body_html" type="html">
+<div>
+<p>Dear <t t-out="object.name"/>,</p>
+<p>Please find attached your statement of account as of <t t-out="ctx.get('cw_date')"/>, showing a balance of <t t-out="ctx.get('cw_balance')"/>.</p>
+<p>Please let us know if anything needs clarification.</p>
+<p>Kind regards,<br/>Accounts Department<br/><t t-out="ctx.get('cw_company')"/></p>
+</div>
+        </field>
+    </record>
+    <record id="mail_template_thanks" model="mail.template">
+        <field name="name">Collections: Thank you for payment</field>
+        <field name="model_id" ref="base.model_res_partner"/>
+        <field name="subject">Thank you for your payment - {{ object.name }}</field>
+        <field name="email_to">{{ object.email }}</field>
+        <field name="auto_delete" eval="False"/>
+        <field name="body_html" type="html">
+<div>
+<p>Dear <t t-out="object.name"/>,</p>
+<p>Thank you for your payment of <t t-out="ctx.get('cw_paid')"/> received on <t t-out="ctx.get('cw_paydate')"/>.<t t-out="ctx.get('cw_remaining')"/></p>
+<p>We appreciate your business.</p>
+<p>Kind regards,<br/>Accounts Department<br/><t t-out="ctx.get('cw_company')"/></p>
+</div>
+        </field>
+    </record>
+    <record id="mail_template_remain" model="mail.template">
+        <field name="name">Collections: Remaining balance request</field>
+        <field name="model_id" ref="base.model_res_partner"/>
+        <field name="subject">Remaining balance - {{ object.name }}</field>
+        <field name="email_to">{{ object.email }}</field>
+        <field name="auto_delete" eval="False"/>
+        <field name="body_html" type="html">
+<div>
+<p>Dear <t t-out="object.name"/>,</p>
+<p>Thank you for your recent payment. Following it, a balance of <t t-out="ctx.get('cw_balance')"/> remains outstanding as of <t t-out="ctx.get('cw_date')"/>. Kindly arrange settlement of the remaining amount by <t t-out="ctx.get('cw_deadline')"/>.</p>
+<p>Kind regards,<br/>Accounts Department<br/><t t-out="ctx.get('cw_company')"/></p>
+</div>
+        </field>
+    </record>
+    <record id="mail_template_custom" model="mail.template">
+        <field name="name">Collections: Custom message</field>
+        <field name="model_id" ref="base.model_res_partner"/>
+        <field name="subject">{{ object.name }}</field>
+        <field name="email_to">{{ object.email }}</field>
+        <field name="auto_delete" eval="False"/>
+        <field name="body_html" type="html">
+<div>
+<p>Dear <t t-out="object.name"/>,</p>
+<p><br/></p>
+<p>Kind regards,<br/>Accounts Department<br/><t t-out="ctx.get('cw_company')"/></p>
+</div>
+        </field>
+    </record>
+</odoo>

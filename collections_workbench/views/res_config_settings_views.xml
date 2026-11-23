@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- General settings (FR-41) -->
+    <record id="res_config_settings_view_form_collections" model="ir.ui.view">
+        <field name="name">res.config.settings.view.form.collections</field>
+        <field name="model">res.config.settings</field>
+        <field name="priority" eval="90"/>
+        <field name="inherit_id" ref="base.res_config_settings_view_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//app[@name='account']" position="after">
+                <app data-string="Collections" string="Collections" name="collections_workbench"
+                     groups="collections_workbench.group_collection_manager">
+                    <block title="Classification tags" name="collection_tags">
+                        <setting string="Agreement" help="Added when a customer enters Payment Agreements.">
+                            <field name="collection_agreement_tag_ids" widget="many2many_tags"/>
+                        </setting>
+                        <setting string="Court case" help="Added when a customer enters Legal Cases.">
+                            <field name="collection_court_tag_ids" widget="many2many_tags"/>
+                        </setting>
+                        <setting string="Blacklist" help='Added by a "Blacklist recommended" note or a confirmed move after the final notice.'>
+                            <field name="collection_blacklist_tag_ids" widget="many2many_tags"/>
+                        </setting>
+                        <setting string="VIP / High Profile" help="These customers go to the Approvals queue on stages that require approval.">
+                            <field name="collection_vip_tag_ids" widget="many2many_tags"/>
+                        </setting>
+                    </block>
+                    <block title="Behaviour pattern" name="collection_pattern">
+                        <setting string="Promise grace" help="Days after the promised date before a promise is judged.">
+                            <field name="collection_grace_days" class="o_light_label"/> days
+                        </setting>
+                        <setting string="Promise kept ratio" help="Share of the promised amount that must be paid by the date + grace.">
+                            <field name="collection_keep_ratio" class="o_light_label"/> %
+                        </setting>
+                        <setting string="Repeat" help="Broken promises before the customer is marked Repeat.">
+                            <field name="collection_repeat_broken"/>
+                        </setting>
+                        <setting string="Chronic" help="Broken promises, or days a broken promise stays unpaid, before Chronic.">
+                            <field name="collection_chronic_broken"/> broken or
+                            <field name="collection_chronic_days"/> days
+                        </setting>
+                        <setting string="Unreachable" help='"No answer" notes in a row before Unreachable.'>
+                            <field name="collection_unreach_streak"/>
+                        </setting>
+                        <setting string="Evaluation window" help="Only promises from the last N days count. 0 = all history.">
+                            <field name="collection_pattern_window"/> days
+                        </setting>
+                    </block>
+                    <block title="Follow-up" name="collection_followup">
+                        <setting string="Partial payment" help="A partial payment pauses escalation and suggests a remaining balance request.">
+                            <field name="collection_partial_enabled"/>
+                            <div class="content-group mt-2" invisible="not collection_partial_enabled">
+                                Pause for <field name="collection_partial_wait" class="oe_inline"/> days
+                            </div>
+                        </setting>
+                        <setting string="Sender email" help="Official accountant address used to send collection emails.">
+                            <field name="collection_sender_email" placeholder="accounts@company.com"/>
+                        </setting>
+                        <setting string="People collections can be assigned to" help="Only these employees appear in the assignee list.">
+                            <field name="collection_employee_ids" widget="many2many_tags"/>
+                        </setting>
+                    </block>
+                </app>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="action_collection_settings" model="ir.actions.act_window">
+        <field name="name">General settings</field>
+        <field name="res_model">res.config.settings</field>
+        <field name="view_mode">form</field>
+        <field name="context">{'module': 'collections_workbench', 'bin_size': False}</field>
+    </record>
+</odoo>

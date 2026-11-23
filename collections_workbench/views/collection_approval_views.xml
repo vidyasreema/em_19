@@ -1,0 +1,117 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Approvals queue (FR-23) -->
+    <record id="collection_approval_view_list" model="ir.ui.view">
+        <field name="name">collection.approval.list</field>
+        <field name="model">collection.approval</field>
+        <field name="arch" type="xml">
+            <list create="false" delete="false">
+                <field name="request_date"/>
+                <field name="partner_id"/>
+                <field name="pipeline_id" optional="hide"/>
+                <field name="stage_id"/>
+                <field name="channel"/>
+                <field name="requested_by" widget="many2one_avatar_user"/>
+                <field name="state" widget="badge" decoration-warning="state == 'pending'"
+                       decoration-success="state == 'approved'" decoration-danger="state == 'rejected'"/>
+                <field name="approved_as" optional="show"/>
+                <field name="decided_by" optional="show" widget="many2one_avatar_user"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="collection_approval_view_kanban" model="ir.ui.view">
+        <field name="name">collection.approval.kanban</field>
+        <field name="model">collection.approval</field>
+        <field name="arch" type="xml">
+            <kanban default_group_by="state" create="false" delete="false" group_create="false"
+                    group_delete="false" group_edit="false" records_draggable="false">
+                <field name="state"/>
+                <templates>
+                    <t t-name="card">
+                        <field name="partner_id" class="fw-bold"/>
+                        <div>
+                            <field name="stage_id"/> · <field name="channel"/>
+                        </div>
+                        <div class="d-flex gap-1 mt-1" invisible="state != 'pending'"
+                             groups="collections_workbench.group_collection_accountant">
+                            <button name="action_approve_owner" type="object" string="Owner OK"
+                                    class="btn btn-sm btn-primary"/>
+                            <button name="action_approve_manager" type="object" string="Manager OK"
+                                    class="btn btn-sm btn-primary"/>
+                            <button name="action_reject" type="object" string="Reject"
+                                    class="btn btn-sm btn-secondary"/>
+                        </div>
+                        <footer>
+                            <field name="request_date" widget="date"/>
+                            <field name="requested_by" widget="many2one_avatar_user" class="ms-auto"/>
+                        </footer>
+                    </t>
+                </templates>
+            </kanban>
+        </field>
+    </record>
+
+    <record id="collection_approval_view_form" model="ir.ui.view">
+        <field name="name">collection.approval.form</field>
+        <field name="model">collection.approval</field>
+        <field name="arch" type="xml">
+            <form create="false" delete="false">
+                <header>
+                    <button name="action_approve_owner" type="object" string="Approved by owner"
+                            class="btn-primary" invisible="state != 'pending'"
+                            groups="collections_workbench.group_collection_accountant"/>
+                    <button name="action_approve_manager" type="object" string="Approved by manager"
+                            class="btn-primary" invisible="state != 'pending'"
+                            groups="collections_workbench.group_collection_accountant"/>
+                    <button name="action_reject" type="object" string="Reject"
+                            invisible="state != 'pending'"
+                            groups="collections_workbench.group_collection_accountant"/>
+                    <field name="state" widget="statusbar"/>
+                </header>
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="partner_id" readonly="1"/>
+                            <field name="pipeline_id" readonly="1"/>
+                            <field name="stage_id" readonly="1"/>
+                            <field name="channel" readonly="1"/>
+                            <field name="template_id" readonly="1" invisible="not template_id"/>
+                        </group>
+                        <group>
+                            <field name="requested_by"/>
+                            <field name="request_date"/>
+                            <field name="approved_as" readonly="1" invisible="not approved_as"/>
+                            <field name="decided_by" invisible="not decided_by"/>
+                            <field name="decision_date" invisible="not decision_date"/>
+                        </group>
+                    </group>
+                    <field name="note" readonly="1"/>
+                    <group invisible="channel != 'email'" string="Email that will be sent">
+                        <field name="subject" readonly="1"/>
+                    </group>
+                    <field name="body" readonly="1" invisible="channel != 'email'" class="border p-2"/>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_collection_approval" model="ir.actions.act_window">
+        <field name="name">Approvals</field>
+        <field name="res_model">collection.approval</field>
+        <field name="view_mode">kanban,list,form</field>
+        <field name="context">{'search_default_pending': 1}</field>
+    </record>
+
+    <record id="collection_approval_view_search" model="ir.ui.view">
+        <field name="name">collection.approval.search</field>
+        <field name="model">collection.approval</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="partner_id"/>
+                <filter name="pending" string="Awaiting approval" domain="[('state', '=', 'pending')]"/>
+            </search>
+        </field>
+    </record>
+</odoo>

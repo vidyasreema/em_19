@@ -1,0 +1,182 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Customer card: all collection settings live here (BR-2, BR-6) -->
+    <record id="view_partner_form_collections" model="ir.ui.view">
+        <field name="name">res.partner.form.collections</field>
+        <field name="model">res.partner</field>
+        <field name="inherit_id" ref="base.view_partner_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//notebook" position="inside">
+                <page string="Collections" name="collections"
+                      groups="collections_workbench.group_collection_user">
+                    <div class="d-flex flex-wrap gap-2 mb-2">
+                        <button name="action_collection_followup" type="object" string="Follow up"
+                                class="btn btn-primary"/>
+                        <button name="action_collection_move_blacklist" type="object" string="Move to blacklist"
+                                class="btn btn-danger" invisible="not collection_suggest_blacklist"
+                                confirm="Move this customer to the Blacklist pipeline?"/>
+                        <button name="action_collection_close" type="object" string="Close (paid in full)"
+                                class="btn btn-success" invisible="not collection_suggest_close"
+                                groups="collections_workbench.group_collection_manager"
+                                confirm="Close this follow-up? The cycle is saved in Closed cycles."/>
+                    </div>
+                    <div class="alert alert-warning" role="alert" invisible="not collection_awaiting_approval">
+                        A request for this customer is waiting in the Approvals queue.
+                    </div>
+                    <div class="alert alert-danger" role="alert" invisible="not collection_suggest_blacklist">
+                        The final notice deadline has passed with no payment: moving to the blacklist is suggested.
+                    </div>
+                    <div class="alert alert-success" role="alert" invisible="not collection_suggest_close">
+                        Paid in full. Management can close this follow-up.
+                    </div>
+                    <group>
+                        <group string="Follow-up">
+                            <field name="collection_assignee_id" options="{'no_create': True}"/>
+                            <field name="collection_pipeline_id" readonly="1"/>
+                            <field name="collection_stage_id" readonly="1"/>
+                            <field name="collection_stage_date" readonly="1"/>
+                            <field name="collection_next_action" readonly="1"
+                                   invisible="not collection_next_action"/>
+                            <field name="collection_due_to_send" readonly="1"
+                                   invisible="not collection_due_to_send"/>
+                            <field name="collection_suggest_blacklist" invisible="1"/>
+                            <field name="collection_suggest_close" invisible="1"/>
+                            <field name="collection_awaiting_approval" invisible="1"/>
+                        </group>
+                        <group string="Status">
+                            <field name="collection_open_balance"/>
+                            <field name="collection_unreconciled"
+                                   decoration-danger="collection_unreconciled &gt; 0"/>
+                            <field name="collection_last_payment_date"/>
+                            <field name="collection_pattern" widget="badge"/>
+                            <field name="collection_deadline_state" widget="badge"/>
+                            <field name="collection_deadline_date"
+                                   invisible="collection_deadline_state == 'none'"/>
+                        </group>
+                    </group>
+                    <separator string="Notes"/>
+                    <field name="collection_note_ids" readonly="1" nolabel="1">
+                        <list decoration-muted="is_system" limit="10">
+                            <field name="create_date" string="Written on"/>
+                            <field name="category_id" widget="badge"/>
+                            <field name="body"/>
+                            <field name="promise_date"/>
+                            <field name="amount"/>
+                            <field name="user_id" widget="many2one_avatar_user"/>
+                            <field name="is_system" column_invisible="1"/>
+                            <field name="currency_id" column_invisible="1"/>
+                        </list>
+                    </field>
+                    <separator string="Closed cycles" invisible="not collection_cycle_ids"/>
+                    <field name="collection_cycle_ids" readonly="1" nolabel="1"
+                           invisible="not collection_cycle_ids">
+                        <list>
+                            <field name="date_start"/>
+                            <field name="date_end"/>
+                            <field name="days"/>
+                            <field name="max_stage_id"/>
+                            <field name="had_partial"/>
+                        </list>
+                    </field>
+                </page>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Follow-up board: standard Kanban by stage (FR-21) -->
+    <record id="res_partner_view_kanban_collection" model="ir.ui.view">
+        <field name="name">res.partner.kanban.collection</field>
+        <field name="model">res.partner</field>
+        <field name="priority">100</field>
+        <field name="arch" type="xml">
+            <kanban js_class="collection_board_kanban"
+                    default_group_by="collection_stage_id" create="false" group_create="false"
+                    group_delete="false" group_edit="false" quick_create="false"
+                    default_order="collection_stage_date">
+                <field name="collection_stage_id"/>
+                <templates>
+                    <t t-name="card">
+                        <field name="display_name" class="fw-bold"/>
+                        <field name="collection_open_balance" widget="monetary"/>
+                        <field name="category_id" widget="many2many_tags" options="{'color_field': 'color'}"/>
+                        <div class="d-flex gap-1 flex-wrap">
+                            <field name="collection_pattern" widget="badge" invisible="collection_pattern == 'none'"/>
+                            <field name="collection_deadline_state" widget="badge"
+                                   invisible="collection_deadline_state in ('none', 'closed')"/>
+                            <span class="badge text-bg-warning" invisible="not collection_due_to_send">Due to send</span>
+                            <span class="badge text-bg-danger" invisible="collection_unreconciled &lt;= 0">Unreconciled</span>
+                            <span class="badge text-bg-warning" invisible="not collection_awaiting_approval">Awaiting approval</span>
+                            <span class="badge text-bg-danger" invisible="not collection_suggest_blacklist">Blacklist suggested</span>
+                            <span class="badge text-bg-success" invisible="not collection_suggest_close">Close?</span>
+                        </div>
+                        <div class="text-muted small" invisible="not collection_next_action">
+                            Next: <field name="collection_next_action"/>
+                        </div>
+                        <button name="action_collection_followup" type="object" string="Follow up"
+                                class="btn btn-sm btn-primary mt-1 align-self-start"/>
+                        <footer>
+                            <field name="collection_stage_date" widget="date"/>
+                            <field name="collection_assignee_id" widget="many2one_avatar_employee" class="ms-auto"/>
+                        </footer>
+                    </t>
+                </templates>
+            </kanban>
+        </field>
+    </record>
+
+    <record id="res_partner_view_search_collection" model="ir.ui.view">
+        <field name="name">res.partner.search.collection</field>
+        <field name="model">res.partner</field>
+        <field name="priority">100</field>
+        <field name="mode">primary</field>
+        <field name="inherit_id" ref="base.view_res_partner_filter"/>
+        <field name="arch" type="xml">
+            <xpath expr="//search" position="inside">
+                <field name="collection_assignee_id"/>
+                <filter name="collection_mine" string="Assigned to me"
+                        domain="[('collection_assignee_id.user_id', '=', uid)]"/>
+                <filter name="collection_due" string="Due to send"
+                        domain="[('collection_due_to_send', '=', True)]"/>
+                <filter name="collection_overdue" string="Overdue promise"
+                        domain="[('collection_deadline_state', '=', 'late')]"/>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="action_collection_board_collection" model="ir.actions.act_window">
+        <field name="name">Collection Follow-up</field>
+        <field name="res_model">res.partner</field>
+        <field name="view_mode">kanban,list,form</field>
+        <field name="view_id" ref="res_partner_view_kanban_collection"/>
+        <field name="search_view_id" ref="res_partner_view_search_collection"/>
+        <field name="domain" eval="['|', ('collection_pipeline_id', '=', ref('pipeline_collection')), '&amp;', ('collection_pipeline_id', '=', False), ('collection_snapshot_line_ids.snapshot_id.state', '=', 'active')]"/>
+        <field name="context" eval="{'default_collection_pipeline_id': ref('pipeline_collection'), 'search_default_collection_mine': 1}"/>
+    </record>
+    <record id="action_collection_board_agreement" model="ir.actions.act_window">
+        <field name="name">Payment Agreements</field>
+        <field name="res_model">res.partner</field>
+        <field name="view_mode">kanban,list,form</field>
+        <field name="view_id" ref="res_partner_view_kanban_collection"/>
+        <field name="search_view_id" ref="res_partner_view_search_collection"/>
+        <field name="domain" eval="[('collection_pipeline_id', '=', ref('pipeline_agreement'))]"/>
+        <field name="context" eval="{'default_collection_pipeline_id': ref('pipeline_agreement')}"/>
+    </record>
+    <record id="action_collection_board_blacklist" model="ir.actions.act_window">
+        <field name="name">Blacklist</field>
+        <field name="res_model">res.partner</field>
+        <field name="view_mode">kanban,list,form</field>
+        <field name="view_id" ref="res_partner_view_kanban_collection"/>
+        <field name="search_view_id" ref="res_partner_view_search_collection"/>
+        <field name="domain" eval="[('collection_pipeline_id', '=', ref('pipeline_blacklist'))]"/>
+        <field name="context" eval="{'default_collection_pipeline_id': ref('pipeline_blacklist')}"/>
+    </record>
+    <record id="action_collection_board_legal" model="ir.actions.act_window">
+        <field name="name">Legal Cases</field>
+        <field name="res_model">res.partner</field>
+        <field name="view_mode">kanban,list,form</field>
+        <field name="view_id" ref="res_partner_view_kanban_collection"/>
+        <field name="search_view_id" ref="res_partner_view_search_collection"/>
+        <field name="domain" eval="[('collection_pipeline_id', '=', ref('pipeline_legal'))]"/>
+        <field name="context" eval="{'default_collection_pipeline_id': ref('pipeline_legal')}"/>
+    </record>
+</odoo>

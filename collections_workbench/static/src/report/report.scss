@@ -1,0 +1,15 @@
+.o_cw_report {
+    .o_cw_kpi .card-body { min-height: 4.5rem; }
+    .o_cw_bar_row {
+        display: grid;
+        grid-template-columns: minmax(0, 11rem) minmax(0, 1fr) 4.5rem;
+        gap: .5rem;
+        align-items: center;
+        padding: .2rem 0;
+    }
+    .o_cw_bar_track { background: var(--gray-200, #e9ecef); height: .75rem; border-radius: 2px; overflow: hidden; }
+    .o_cw_bar { background: #5B8DB8; height: 100%; }
+    .o_cw_bar_current .o_cw_bar { background: $o-brand-primary; }
+    .o_cw_bar_current .o_cw_bar_label { font-weight: bold; }
+    .o_cw_bar_value { text-align: right; font-variant-numeric: tabular-nums; }
+}

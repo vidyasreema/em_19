@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <menuitem id="menu_collections_root" name="Collections" sequence="45"
+              web_icon="account,static/description/icon.png"
+              groups="collections_workbench.group_collection_user"/>
+
+    <menuitem id="menu_collections_dashboard" name="Dashboard" parent="menu_collections_root"
+              action="action_collection_dashboard" sequence="5"/>
+    <menuitem id="menu_collections_snapshot_lines" name="Collections table" parent="menu_collections_root"
+              action="action_collection_snapshot_line" sequence="10"/>
+    <menuitem id="menu_collections_snapshots" name="Snapshots" parent="menu_collections_root" sequence="20"/>
+    <menuitem id="menu_collections_snapshot_list" name="All snapshots" parent="menu_collections_snapshots"
+              action="action_collection_snapshot" sequence="20"/>
+    <menuitem id="menu_collections_snapshot_new" name="New snapshot" parent="menu_collections_snapshots"
+              action="action_collection_snapshot_wizard" sequence="30"
+              groups="collections_workbench.group_collection_accountant"/>
+    <menuitem id="menu_collections_packages" name="Statement packages" parent="menu_collections_snapshots"
+              action="action_collection_statement_package" sequence="40"/>
+
+    <menuitem id="menu_collections_board" name="Follow-up board" parent="menu_collections_root" sequence="30"/>
+    <menuitem id="menu_collections_board_approvals" name="Approvals" parent="menu_collections_board"
+              action="action_collection_approval" sequence="5"/>
+    <menuitem id="menu_collections_board_collection" name="Collection Follow-up" parent="menu_collections_board"
+              action="action_collection_board_collection" sequence="10"/>
+    <menuitem id="menu_collections_board_agreement" name="Payment Agreements" parent="menu_collections_board"
+              action="action_collection_board_agreement" sequence="20"/>
+    <menuitem id="menu_collections_board_blacklist" name="Blacklist" parent="menu_collections_board"
+              action="action_collection_board_blacklist" sequence="30"/>
+    <menuitem id="menu_collections_board_legal" name="Legal Cases" parent="menu_collections_board"
+              action="action_collection_board_legal" sequence="40"/>
+    <menuitem id="menu_collections_notes" name="Notes" parent="menu_collections_board"
+              action="action_collection_note" sequence="50"/>
+    <menuitem id="menu_collections_cycles" name="Closed cycles" parent="menu_collections_board"
+              action="action_collection_cycle" sequence="60"/>
+
+    <menuitem id="menu_collections_report" name="Report" parent="menu_collections_root"
+              action="action_collection_report" sequence="40"/>
+
+    <menuitem id="menu_collections_settings" name="Settings" parent="menu_collections_root" sequence="90"
+              groups="collections_workbench.group_collection_manager"/>
+    <menuitem id="menu_collections_settings_pipelines" name="Pipelines &amp; stages"
+              parent="menu_collections_settings" action="action_collection_pipeline" sequence="10"/>
+    <menuitem id="menu_collections_settings_categories" name="Note categories"
+              parent="menu_collections_settings" action="action_collection_note_category" sequence="20"/>
+    <menuitem id="menu_collections_settings_general" name="General settings"
+              parent="menu_collections_settings" action="action_collection_settings" sequence="30"
+              groups="base.group_system"/>
+    <menuitem id="menu_collections_settings_templates" name="Email templates"
+              parent="menu_collections_settings" action="action_collection_mail_templates" sequence="25"/>
+</odoo>

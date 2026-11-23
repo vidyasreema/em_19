@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="collections_workbench.Report">
+        <div class="o_action o_cw_report h-100 overflow-auto p-3">
+            <t t-set="d" t-value="state.data"/>
+            <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
+                <div class="flex-grow-1">
+                    <h2 class="mb-0">Report</h2>
+                    <div class="text-muted" t-if="d and d.name">
+                        Collection summary: <t t-esc="d.name"/> · Snapshot pulled <t t-esc="d.pull_date"/> · collected up to today (<t t-esc="d.today"/>)
+                    </div>
+                    <div class="text-muted" t-elif="d">No snapshot yet: the accountant creates one with New snapshot.</div>
+                </div>
+                <t t-if="d and d.snapshot_id">
+                    <select class="form-select form-select-sm w-auto" t-on-change="selectSnapshot" title="Snapshot">
+                        <t t-foreach="d.snapshots" t-as="snap" t-key="snap.id">
+                            <option t-att-value="snap.id" t-att-selected="snap.id === d.snapshot_id">
+                                <t t-esc="snap.name"/><t t-if="snap.state === 'archived'"> (archived)</t>
+                            </option>
+                        </t>
+                    </select>
+                    <button class="btn btn-sm btn-primary" t-on-click="downloadPdf"><i class="fa fa-download me-1"/>Download PDF</button>
+                    <button class="btn btn-sm btn-secondary" t-if="d.can_email" t-on-click="emailReport"><i class="fa fa-envelope me-1"/>Email report</button>
+                </t>
+            </div>
+            <t t-if="d and d.snapshot_id">
+                <div class="row g-2 mb-4">
+                    <t t-foreach="kpis" t-as="k" t-key="k.label">
+                        <div class="col-6 col-md-3">
+                            <div class="card h-100 o_cw_kpi">
+                                <div class="card-body py-2">
+                                    <div class="small text-muted" t-esc="k.label"/>
+                                    <div class="fs-4 fw-bold text-nowrap" t-esc="k.value"/>
+                                    <div class="small text-muted" t-if="k.help" t-esc="k.help"/>
+                                </div>
+                            </div>
+                        </div>
+                    </t>
+                </div>
+
+                <h5>Summary by list</h5>
+                <div class="table-responsive mb-1">
+                    <table class="table table-sm align-middle">
+                        <thead>
+                            <tr class="text-muted">
+                                <th>List</th><th class="text-end">Customers</th><th class="text-end">Due at snapshot</th>
+                                <th class="text-end">Share</th><th class="text-end">Collected</th><th class="text-end">Balance</th>
+                                <th class="text-end">Rate</th><th class="text-end">Paid / partly / not paid</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <t t-foreach="d.summary" t-as="row" t-key="row.label">
+                                <tr t-att-class="row.total ? 'fw-bold border-top border-dark' : ''">
+                                    <td t-esc="row.label"/>
+                                    <td class="text-end" t-esc="row.count"/>
+                                    <td class="text-end text-nowrap" t-esc="formatMoney(row.due)"/>
+                                    <td class="text-end" t-esc="pct(row.share)"/>
+                                    <td class="text-end text-nowrap" t-esc="formatMoney(row.collected)"/>
+                                    <td class="text-end text-nowrap" t-esc="formatMoney(row.balance)"/>
+                                    <td class="text-end" t-esc="pct(row.rate)"/>
+                                    <td class="text-end text-nowrap"><t t-esc="row.paid"/> / <t t-esc="row.partly"/> / <t t-esc="row.not_paid"/></td>
+                                </tr>
+                            </t>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="small text-muted mb-4">Net total = Total − Blacklist − Court case − Agreements: the collectable base the team is measured on.</div>
+
+                <div class="row g-4">
+                    <div class="col-lg-6">
+                        <h5>Trend: collection rate by snapshot</h5>
+                        <t t-foreach="d.trend" t-as="t" t-key="t.id">
+                            <div class="o_cw_bar_row" t-att-class="t.id === d.snapshot_id ? 'o_cw_bar_current' : ''">
+                                <div class="o_cw_bar_label text-truncate" t-att-title="t.name" t-esc="t.name"/>
+                                <div class="o_cw_bar_track"><div class="o_cw_bar" t-att-style="'width: ' + barWidth(t.rate, d.trend)"/></div>
+                                <div class="o_cw_bar_value" t-esc="pct(t.rate)"/>
+                            </div>
+                        </t>
+                        <div class="small text-muted mt-1">Each bar: share of that snapshot's opening balance collected so far.</div>
+                    </div>
+                    <div class="col-lg-6">
+                        <h5>Collection rate by assignee</h5>
+                        <t t-foreach="d.assignees" t-as="a" t-key="a.name">
+                            <div class="o_cw_bar_row">
+                                <div class="o_cw_bar_label text-truncate" t-att-title="a.name" t-esc="a.name"/>
+                                <div class="o_cw_bar_track"><div class="o_cw_bar" t-att-style="'width: ' + barWidth(a.rate, d.assignees)"/></div>
+                                <div class="o_cw_bar_value" t-esc="pct(a.rate)"/>
+                            </div>
+                        </t>
+                    </div>
+                </div>
+            </t>
+        </div>
+    </t>
+</templates>

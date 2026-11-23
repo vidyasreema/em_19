@@ -1,0 +1,174 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="1">
+    <!-- ===== Collection Follow-up (BR-11, Appendix G) ===== -->
+    <record id="pipeline_collection" model="collection.pipeline">
+        <field name="name">Collection Follow-up</field>
+        <field name="sequence">10</field>
+        <field name="pipeline_type">collection</field>
+        <field name="description">Customers being chased stage by stage</field>
+    </record>
+    <record id="stage_claim" model="collection.stage">
+        <field name="pipeline_id" ref="pipeline_collection"/>
+        <field name="name">Claim</field>
+        <field name="sequence">10</field>
+        <field name="wait_days">7</field>
+        <field name="has_email" eval="True"/>
+    </record>
+    <record id="stage_reminder_1" model="collection.stage">
+        <field name="pipeline_id" ref="pipeline_collection"/>
+        <field name="name">First reminder</field>
+        <field name="sequence">20</field>
+        <field name="wait_days">7</field>
+        <field name="has_email" eval="True"/>
+    </record>
+    <record id="stage_reminder_2" model="collection.stage">
+        <field name="pipeline_id" ref="pipeline_collection"/>
+        <field name="name">Second reminder</field>
+        <field name="sequence">30</field>
+        <field name="wait_days">7</field>
+        <field name="has_email" eval="True"/>
+    </record>
+    <record id="stage_reminder_3" model="collection.stage">
+        <field name="pipeline_id" ref="pipeline_collection"/>
+        <field name="name">Third reminder</field>
+        <field name="sequence">40</field>
+        <field name="wait_days">7</field>
+        <field name="has_email" eval="True"/>
+    </record>
+    <record id="stage_credit_hold" model="collection.stage">
+        <field name="pipeline_id" ref="pipeline_collection"/>
+        <field name="name">Credit sales hold</field>
+        <field name="sequence">50</field>
+        <field name="wait_days">7</field>
+        <field name="has_email" eval="True"/>
+        <field name="requires_approval" eval="True"/>
+        <field name="sets_credit_limit" eval="True"/>
+    </record>
+    <record id="stage_final_notice" model="collection.stage">
+        <field name="pipeline_id" ref="pipeline_collection"/>
+        <field name="name">Final notice with deadline</field>
+        <field name="sequence">60</field>
+        <field name="wait_days">10</field>
+        <field name="has_email" eval="True"/>
+        <field name="requires_approval" eval="True"/>
+        <field name="suggests_blacklist" eval="True"/>
+    </record>
+    <record id="stage_management" model="collection.stage">
+        <field name="pipeline_id" ref="pipeline_collection"/>
+        <field name="name">Referred to management</field>
+        <field name="sequence">70</field>
+        <field name="wait_days">0</field>
+    </record>
+    <record id="stage_partial" model="collection.stage">
+        <field name="pipeline_id" ref="pipeline_collection"/>
+        <field name="name">Partial payment</field>
+        <field name="sequence">80</field>
+        <field name="wait_days">7</field>
+        <field name="is_partial" eval="True"/>
+    </record>
+
+    <!-- ===== Payment Agreements ===== -->
+    <record id="pipeline_agreement" model="collection.pipeline">
+        <field name="name">Payment Agreements</field>
+        <field name="sequence">20</field>
+        <field name="pipeline_type">agreement</field>
+        <field name="description">Customers paying by an agreed schedule</field>
+    </record>
+    <record id="stage_agr_agreed" model="collection.stage">
+        <field name="pipeline_id" ref="pipeline_agreement"/>
+        <field name="name">Agreed</field>
+        <field name="sequence">10</field>
+    </record>
+    <record id="stage_agr_on_track" model="collection.stage">
+        <field name="pipeline_id" ref="pipeline_agreement"/>
+        <field name="name">On track</field>
+        <field name="sequence">20</field>
+    </record>
+    <record id="stage_agr_late" model="collection.stage">
+        <field name="pipeline_id" ref="pipeline_agreement"/>
+        <field name="name">Late on installment</field>
+        <field name="sequence">30</field>
+    </record>
+    <record id="stage_agr_completed" model="collection.stage">
+        <field name="pipeline_id" ref="pipeline_agreement"/>
+        <field name="name">Completed</field>
+        <field name="sequence">40</field>
+        <field name="fold" eval="True"/>
+    </record>
+
+    <!-- ===== Blacklist ===== -->
+    <record id="pipeline_blacklist" model="collection.pipeline">
+        <field name="name">Blacklist</field>
+        <field name="sequence">30</field>
+        <field name="pipeline_type">blacklist</field>
+        <field name="description">Customers recommended or moved to the blacklist</field>
+        <field name="tag_id" ref="tag_blacklist"/>
+    </record>
+    <record id="stage_bl_moved" model="collection.stage">
+        <field name="pipeline_id" ref="pipeline_blacklist"/>
+        <field name="name">Moved to blacklist</field>
+        <field name="sequence">10</field>
+    </record>
+    <record id="stage_bl_final_demand" model="collection.stage">
+        <field name="pipeline_id" ref="pipeline_blacklist"/>
+        <field name="name">Final demand</field>
+        <field name="sequence">20</field>
+    </record>
+    <record id="stage_bl_writeoff_review" model="collection.stage">
+        <field name="pipeline_id" ref="pipeline_blacklist"/>
+        <field name="name">Write-off review</field>
+        <field name="sequence">30</field>
+    </record>
+    <record id="stage_bl_recovered" model="collection.stage">
+        <field name="pipeline_id" ref="pipeline_blacklist"/>
+        <field name="name">Recovered</field>
+        <field name="sequence">40</field>
+        <field name="fold" eval="True"/>
+    </record>
+    <record id="stage_bl_written_off" model="collection.stage">
+        <field name="pipeline_id" ref="pipeline_blacklist"/>
+        <field name="name">Written off</field>
+        <field name="sequence">50</field>
+        <field name="fold" eval="True"/>
+    </record>
+
+    <!-- ===== Legal Cases ===== -->
+    <record id="pipeline_legal" model="collection.pipeline">
+        <field name="name">Legal Cases</field>
+        <field name="sequence">40</field>
+        <field name="pipeline_type">legal</field>
+        <field name="description">Customers in a court case</field>
+        <field name="tag_id" ref="tag_court_case"/>
+    </record>
+    <record id="stage_legal_preparation" model="collection.stage">
+        <field name="pipeline_id" ref="pipeline_legal"/>
+        <field name="name">Case preparation</field>
+        <field name="sequence">10</field>
+    </record>
+    <record id="stage_legal_filed" model="collection.stage">
+        <field name="pipeline_id" ref="pipeline_legal"/>
+        <field name="name">Filed</field>
+        <field name="sequence">20</field>
+    </record>
+    <record id="stage_legal_hearing" model="collection.stage">
+        <field name="pipeline_id" ref="pipeline_legal"/>
+        <field name="name">Hearing</field>
+        <field name="sequence">30</field>
+    </record>
+    <record id="stage_legal_judgment" model="collection.stage">
+        <field name="pipeline_id" ref="pipeline_legal"/>
+        <field name="name">Judgment</field>
+        <field name="sequence">40</field>
+    </record>
+    <record id="stage_legal_enforcement" model="collection.stage">
+        <field name="pipeline_id" ref="pipeline_legal"/>
+        <field name="name">Enforcement</field>
+        <field name="sequence">50</field>
+    </record>
+    <record id="stage_legal_closed" model="collection.stage">
+        <field name="pipeline_id" ref="pipeline_legal"/>
+        <field name="name">Closed</field>
+        <field name="sequence">60</field>
+        <field name="fold" eval="True"/>
+    </record>
+</odoo>

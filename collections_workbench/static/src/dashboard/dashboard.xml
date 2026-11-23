@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="collections_workbench.Dashboard">
+        <div class="o_action o_cw_dashboard h-100 overflow-auto p-3">
+            <t t-set="d" t-value="state.data"/>
+            <div class="d-flex align-items-center mb-3">
+                <div class="flex-grow-1">
+                    <h2 class="mb-0">Dashboard</h2>
+                    <div class="text-muted" t-if="d and d.snapshot">What to do today · Snapshot: <t t-esc="d.snapshot"/></div>
+                    <div class="text-muted" t-elif="d">No snapshot yet: the accountant creates one with New snapshot.</div>
+                </div>
+                <div class="btn-group" t-if="d and d.can_team">
+                    <button class="btn btn-sm" t-att-class="state.scope === 'team' ? 'btn-primary' : 'btn-outline-primary'"
+                            t-on-click="() => this.setScope('team')">Team</button>
+                    <button class="btn btn-sm" t-att-class="state.scope === 'mine' ? 'btn-primary' : 'btn-outline-primary'"
+                            t-on-click="() => this.setScope('mine')">My customers</button>
+                </div>
+            </div>
+            <t t-if="d">
+                <div class="row g-3 mb-4">
+                    <t t-foreach="d.cards" t-as="card" t-key="card.key">
+                        <div class="col-6 col-md-4 col-xl-3">
+                            <div t-attf-class="card h-100 o_cw_card border-{{ card.tone }} {{ card.value ? '' : 'o_cw_card_empty' }}" t-att-role="card.value ? 'button' : null" t-att-title="card.value ? 'Open these customers' : 'Nothing to open: no customer in this box right now'" t-on-click="() => this.openCard(card)">
+                                <div class="card-body">
+                                    <div t-attf-class="display-6 fw-bold text-{{ card.value ? card.tone : 'muted' }}" t-esc="card.value"/>
+                                    <div class="fw-bold" t-esc="card.label"/>
+                                    <div class="small text-muted" t-esc="card.help"/>
+                                </div>
+                            </div>
+                        </div>
+                    </t>
+                </div>
+                <div class="row g-4">
+                    <div class="col-lg-6">
+                        <h5>Work queue</h5>
+                        <div t-if="!d.queue.length" class="text-muted">Nothing urgent. Well done.</div>
+                        <table class="table table-sm table-hover" t-else="">
+                            <t t-foreach="d.queue" t-as="item" t-key="item.line_id">
+                                <tr role="button" t-on-click="() => this.openLine(item)">
+                                    <td t-esc="item.partner"/>
+                                    <td class="text-muted text-nowrap" t-esc="item.why"/>
+                                    <td class="text-end text-nowrap" t-esc="formatMoney(item.total_due)"/>
+                                </tr>
+                            </t>
+                        </table>
+                    </div>
+                    <div class="col-lg-6">
+                        <h5>Workload</h5>
+                        <table class="table table-sm">
+                            <tr class="text-muted"><td>Assigned to</td><td class="text-end text-nowrap">Customers</td><td class="text-end text-nowrap">Due</td><td class="text-end text-nowrap">Collected</td><td class="text-end text-nowrap">Rate</td></tr>
+                            <t t-foreach="d.workload" t-as="w" t-key="w.name">
+                                <tr>
+                                    <td t-esc="w.name"/>
+                                    <td class="text-end text-nowrap ps-3" t-esc="w.customers"/>
+                                    <td class="text-end text-nowrap ps-3" t-esc="formatMoney(w.due)"/>
+                                    <td class="text-end text-nowrap ps-3" t-esc="formatMoney(w.collected)"/>
+                                    <td class="text-end text-nowrap ps-3" t-esc="(w.rate * 100).toFixed(1) + ' %'"/>
+                                </tr>
+                            </t>
+                        </table>
+                    </div>
+                </div>
+            </t>
+        </div>
+    </t>
+</templates>

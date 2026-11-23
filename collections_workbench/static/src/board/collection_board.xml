@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="collections_workbench.BoardView" t-inherit="web.KanbanView" t-inherit-mode="primary">
+        <xpath expr="//t[@t-component='props.Renderer']" position="before">
+            <div class="o_cw_board_tabs d-flex flex-wrap gap-1 px-3 py-2 border-bottom bg-view">
+                <t t-foreach="boardTabs" t-as="tab" t-key="tab.key">
+                    <button type="button" class="btn btn-sm"
+                            t-att-class="tab.pipeline_id and tab.pipeline_id === activePipelineId ? 'btn-primary' : 'btn-light'"
+                            t-on-click="() => this.openBoardTab(tab)">
+                        <t t-esc="tab.name"/>
+                        <span class="badge rounded-pill ms-1"
+                              t-att-class="tab.key === 'approvals' and tab.count ? 'text-bg-warning' : 'text-bg-secondary'"
+                              t-esc="tab.count"/>
+                    </button>
+                </t>
+            </div>
+        </xpath>
+    </t>
+</templates>

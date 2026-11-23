@@ -1,0 +1,18 @@
+.o_cw_dashboard {
+    background: $o-gray-100;
+    .o_cw_card {
+        cursor: pointer;
+        border-width: 0 0 0 4px !important;
+        transition: box-shadow 0.15s;
+        &:hover {
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+        }
+        &.o_cw_card_empty {
+            cursor: default;
+            opacity: 0.6;
+            &:hover {
+                box-shadow: none;
+            }
+        }
+    }
+}
